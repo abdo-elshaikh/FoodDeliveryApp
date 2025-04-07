@@ -3,9 +3,17 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FoodDeliveryApp.Models
 {
+    public enum OrderStatus
+    {
+        Pending,
+        InProgress,
+        Completed,
+        Cancelled
+    }
     public class Order
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int OrdId { get; set; }
         [Required(ErrorMessage = "Order Date is required.")]
         [DataType(DataType.Date)]
@@ -14,11 +22,11 @@ namespace FoodDeliveryApp.Models
         public decimal OrdSum { get; set; }
         [Required(ErrorMessage = "Order Status is required.")]
         public OrderStatus OrdStatus { get; set; }
-        public string EmpId { get; set; }
-        public string CustId { get; set; }
-        [ForeignKey("EmpId")]
+        public int EmployeeId { get; set; }
+        public int CustomerId { get; set; }
+        [ForeignKey("EmployeeId")]
         public Employee Employee { get; set; }
-        [ForeignKey("CustId")]
+        [ForeignKey("CustomerId")]
         public Customer Customer { get; set; }
         // Navigation property for OrderDetail
         public ICollection<OrderDetail> OrderDetails { get; set; }

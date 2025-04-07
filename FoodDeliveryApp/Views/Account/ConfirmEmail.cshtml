@@ -1,0 +1,23 @@
+﻿@{
+    ViewData["Title"] = "Confirm Email";
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4">Confirm Email</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+        <p>You can now <a asp-action="Login">login</a> to your account.</p>
+    }
+    else
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+        <p>Please try again or contact support.</p>
+    }
+    <a asp-action="Index" asp-controller="Home" class="btn btn-primary">Return to Home</a>
+</div>

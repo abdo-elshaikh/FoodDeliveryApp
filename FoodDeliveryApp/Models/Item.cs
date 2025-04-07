@@ -6,6 +6,7 @@ namespace FoodDeliveryApp.Models
     public class Item
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ItemId { get; set; }
         public string ItemName { get; set; }
         public string? ItemDescription { get; set; }

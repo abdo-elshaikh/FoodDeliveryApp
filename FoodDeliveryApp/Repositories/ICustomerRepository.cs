@@ -5,7 +5,7 @@ namespace FoodDeliveryApp.Repositories
 {
     public interface ICustomerRepository : IRepository<Customer>
     {
-        Customer GetByCustId(string custId);
+        Customer GetByCustId(int custId);
     }
 }
 

@@ -1,27 +1,20 @@
-﻿// Repositories/Repository.cs
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using FoodDeliveryApp.Data;
 using System.Linq.Expressions;
 
 namespace FoodDeliveryApp.Repositories
 {
-    public class Repository<T> : IRepository<T> where T : class
+    public class Repository<T>(ApplicationDbContext context) : IRepository<T> where T : class
     {
-        private readonly ApplicationDbContext _context;
-        private readonly DbSet<T> _dbSet;
-
-        public Repository(ApplicationDbContext context)
-        {
-            _context = context;
-            _dbSet = context.Set<T>();
-        }
+        private readonly ApplicationDbContext _context = context;
+        private readonly DbSet<T> _dbSet = context.Set<T>();
 
         public IEnumerable<T> GetAll()
         {
-            return _dbSet.ToList();
+            return [.. _dbSet];
         }
 
-        public T GetById(object id)
+        public T? GetById(object id)
         {
             return _dbSet.Find(id);
         }
@@ -44,7 +37,7 @@ namespace FoodDeliveryApp.Repositories
 
         public IEnumerable<T> Find(Expression<Func<T, bool>> predicate)
         {
-            return _dbSet.Where(predicate).ToList();
+            return _dbSet.Where(predicate);
         }
 
         public int SaveChanges()

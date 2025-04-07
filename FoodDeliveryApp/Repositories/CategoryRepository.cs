@@ -13,13 +13,13 @@ namespace FoodDeliveryApp.Repositories
         }
         public Category GetByCategoryId(int cateqId)
         {
-            return _context.Categories.FirstOrDefault(c => c.CateqId == cateqId);
+            return _context.Categories.FirstOrDefault(c => c.CategoryId == cateqId);
         }
 
         // GetWithItems method is used to get the category with its items
         public Category GetWithItems(int catId)
         {
-            return _context.Categories.Include(c => c.Items).FirstOrDefault(c => c.CateqId == catId);
+            return _context.Categories.Include(c => c.Items).FirstOrDefault(c => c.CategoryId == catId);
         }
     }
 }

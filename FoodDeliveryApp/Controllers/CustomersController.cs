@@ -47,9 +47,9 @@ namespace FoodDeliveryApp.Controllers
         }
 
         [HttpPost]
-        public IActionResult Edit(string id, Customer customer)
+        public IActionResult Edit(int id, Customer customer)
         {
-            if (id != customer.CustId) return NotFound();
+            if (id != customer.CustomerId) return NotFound();
             if (ModelState.IsValid)
             {
                 _customerRepository.Update(customer);

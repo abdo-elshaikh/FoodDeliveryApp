@@ -1,0 +1,43 @@
+﻿@model IEnumerable<FoodDeliveryApp.Models.User>
+
+@{
+    ViewData["Title"] = "User List";
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4">User List</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Date</th>
+                <th>Is Active</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model)
+            {
+                <tr>
+                    <td>@user.Email</td>
+                    <td>@user.CreatedAt</td>
+                    <td>@user.IsActive</td>
+                    <td>
+                        <a asp-action="UserEdit" asp-route-id="@user.Id" class="btn btn-sm btn-primary">Edit</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <a asp-action="Index" asp-controller="Home" class="btn btn-primary">Back to Home</a>
+</div>

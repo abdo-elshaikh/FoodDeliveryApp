@@ -49,9 +49,9 @@ namespace FoodDeliveryApp.Controllers
         }
 
         [HttpPost]
-        public IActionResult Edit(string id, Employee employee)
+        public IActionResult Edit(int id, Employee employee)
         {
-            if (id != employee.EmpId) return NotFound();
+            if (id != employee.EmployeeId) return NotFound();
 
             if (ModelState.IsValid)
             {

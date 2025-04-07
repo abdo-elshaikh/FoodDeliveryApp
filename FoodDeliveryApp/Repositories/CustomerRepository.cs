@@ -13,9 +13,9 @@ namespace FoodDeliveryApp.Repositories
             _context = context;
         }
 
-        public Customer GetByCustId(string custId)
+        public Customer GetByCustId(int custId)
         {
-            return _context.Customers.Include(c => c.User).FirstOrDefault(c => c.CustId == custId);
+            return _context.Customers.Include(c => c.User).FirstOrDefault(c => c.CustomerId == custId);
         }
     }
 }

@@ -1,23 +1,30 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 
 namespace FoodDeliveryApp.Models
 {
-    public class User
+        public enum UserRole
+        {
+            Customer,
+            Employee,
+            Admin
+        }
+    public class User : IdentityUser
     {
-        [Key]
-        [Required(ErrorMessage = "User ID is required.")]
-        [StringLength(100, MinimumLength = 3, ErrorMessage = "User ID must be between 3 and 100 characters.")]
-        public string UserId { get; set; }
-        [Required(ErrorMessage = "Email is required.")]
-        [StringLength(100, MinimumLength = 3, ErrorMessage = "Email must be between 3 and 100 characters.")]
-        [DataType(DataType.EmailAddress)]
-        public string Email { get; set; }
-        [Required(ErrorMessage = "Password is required.")]
-        [StringLength(100, MinimumLength = 3, ErrorMessage = "Password must be between 3 and 100 characters.")]
-        [DataType(DataType.Password)]
-        public string Password { get; set; }
-        [Required(ErrorMessage = "User Category is required.")]
 
-        public UserCategory UserCategory { get; set; }
+        [Required, EmailAddress, StringLength(100)]
+        [Display(Name = "Email Address")]
+        public override string Email { get; set; }
+
+        public UserRole Role { get; set; } = UserRole.Customer;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        // Navigation properties
+        public virtual Customer? Customer { get; set; }
+        public virtual Employee? Employee { get; set; }
     }
 }

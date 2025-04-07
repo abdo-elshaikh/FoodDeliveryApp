@@ -46,7 +46,7 @@ namespace FoodDeliveryApp.Controllers
         [HttpPost]
         public IActionResult Edit(int id, Category category)
         {
-            if (id != category.CateqId) return NotFound();
+            if (id != category.CategoryId) return NotFound();
 
             if (ModelState.IsValid)
             {
