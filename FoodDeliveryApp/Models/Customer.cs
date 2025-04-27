@@ -3,58 +3,47 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FoodDeliveryApp.Models
 {
-    public class Customer
+    public class CustomerProfile
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int CustomerId { get; set; }
-
-        [Required, StringLength(50)]
-        public string FirstName { get; set; }
-
-        [Required, StringLength(50)]
-        public string LastName { get; set; }
-
-        [Required, Phone]
-        [StringLength(20)]
-        public string PhoneNumber { get; set; }
+        public int Id { get; set; }
 
         [Required]
         public string UserId { get; set; }
 
-        [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
+        [Required]
+        [StringLength(50)]
+        public string FirstName { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string LastName { get; set; }
+
+        [Phone]
+        [StringLength(20)]
+        public string? PhoneNumber { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfBirth { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        [StringLength(255)]
+        public string? ProfilePictureUrl { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
-        public bool IsActive { get; set; } = true;
+        public bool ReceivePromotions { get; set; } = false;
 
-        public virtual ICollection<Address> Addresses { get; set; } = new List<Address>();
-        public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
-    }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal LoyaltyPoints { get; set; } = 0;
 
-    public class Address
-    {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int AddressId { get; set; }
-
-        [Required, StringLength(100)]
-        public string Street { get; set; }
-
-        [Required, StringLength(50)]
-        public string City { get; set; }
-
-        [Required, StringLength(50)]
-        public string State { get; set; }
-
-        [Required, StringLength(10)]
-        public string? ZipCode { get; set; }
-
-        public int CustomerId { get; set; }
-
-        [ForeignKey("CustomerId")]
-        public virtual Customer Customer { get; set; }
+        // Navigation properties
+        public virtual ApplicationUser User { get; set; }
+        public virtual ICollection<Order> Orders { get; set; } = new HashSet<Order>();
+        public virtual ICollection<Address> Addresses { get; set; } = new HashSet<Address>();
+        public virtual ICollection<PaymentMethod> PaymentMethods { get; set; } = new HashSet<PaymentMethod>();
+        public virtual ICollection<Review> Reviews { get; set; } = new HashSet<Review>();
     }
 }

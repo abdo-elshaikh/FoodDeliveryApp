@@ -1,0 +1,23 @@
+﻿@{
+    var categories = ViewData["Categories"] as List<FoodDeliveryApp.ViewModels.CategoryViewModel> ?? new List<FoodDeliveryApp.ViewModels.CategoryViewModel>();
+}
+
+@foreach (var category in categories)
+{
+    <li>
+        <a class="dropdown-item ripple-effect" asp-controller="Menu" asp-action="Category" asp-route-id="@category.Id">
+            @category.Name
+        </a>
+    </li>
+}
+<li class="dropdown-divider"></li>
+<li>
+    <a class="dropdown-item ripple-effect" asp-controller="Menu" asp-action="Index">
+        <i class="fas fa-list me-2"></i>All Menu
+    </a>
+</li>
+<li>
+    <a class="dropdown-item ripple-effect" asp-controller="Menu" asp-action="Specials">
+        <i class="fas fa-star me-2"></i>Specials
+    </a>
+</li>

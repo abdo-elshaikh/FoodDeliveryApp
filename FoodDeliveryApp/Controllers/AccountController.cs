@@ -1,173 +1,160 @@
 ﻿using FoodDeliveryApp.Models;
 using FoodDeliveryApp.Services;
-using FoodDeliveryApp.ViewModels.Account;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using static FoodDeliveryApp.ViewModels.AccountViewModels;
 
 namespace FoodDeliveryApp.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly UserManager<User> _userManager;
-        private readonly SignInManager<User> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IEmailSender _emailSender;
+        private readonly ILogger<AccountController> _logger;
 
         public AccountController(
-            UserManager<User> userManager,
-            SignInManager<User> signInManager,
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
             RoleManager<IdentityRole> roleManager,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            ILogger<AccountController> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
             _emailSender = emailSender;
+            _logger = logger;
         }
 
-        // GET: Account/Register
-        public IActionResult Register()
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult Register(string returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             return View(new RegisterViewModel());
         }
 
-        // POST: Account/Register
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterViewModel model)
+        public async Task<IActionResult> Register(RegisterViewModel model, string returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
+
             if (!ModelState.IsValid)
             {
                 return View(model);
             }
 
-            var existingUser = await _userManager.FindByEmailAsync(model.Email);
-            if (existingUser != null)
-            {
-                ModelState.AddModelError("Email", "Email is already registered. Please try again.");
-                return View(model);
-            }
-
-            var user = new User
+            var user = new ApplicationUser
             {
                 UserName = model.Email,
                 Email = model.Email,
-                EmailConfirmed = false,
                 Role = model.Role,
-                IsActive = true
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
+
             if (!result.Succeeded)
             {
-                AddErrorsToModelState(result);
+                AddErrors(result);
                 return View(model);
             }
 
-            // Assign role to user
-            var role = model.Role.ToString();
-
-            if (!await _roleManager.RoleExistsAsync(role))
+            // Create role if it doesn't exist
+            var roleName = model.Role.ToString();
+            if (!await _roleManager.RoleExistsAsync(roleName))
             {
-                await _roleManager.CreateAsync(new IdentityRole(role));
+                await _roleManager.CreateAsync(new IdentityRole(roleName));
             }
 
-            await _userManager.AddToRoleAsync(user, role);
+            // Add user to role
+            await _userManager.AddToRoleAsync(user, roleName);
 
-            // Generate email confirmation token
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var callbackUrl = Url.Action("ConfirmEmail", "Account",
-                new { userId = user.Id, token },
-                protocol: Request.Scheme);
-            // Send email with the callback URL
-            try
+            // Send confirmation email
+            await SendEmailConfirmation(user);
+
+            _logger.LogInformation("User created a new account with password.");
+
+            if (_userManager.Options.SignIn.RequireConfirmedAccount)
             {
-                await _emailSender.SendEmailAsync(model.Email, "Confirm your email",
-                    $"Please confirm your account by <a href='{callbackUrl}'>clicking here</a>.");
-                TempData["Success"] = "Registration successful! Please check your email to confirm your account.";
+                return RedirectToAction("RegisterConfirmation", new { email = model.Email });
             }
-            catch (Exception ex)
-            {
-                TempData["Error"] = "Error sending email: " + ex.Message;
-            }
-            return RedirectToAction("Login");
+
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return RedirectToLocal(returnUrl);
         }
 
-        // GET: Account/Login
+        [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login(string returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
             return View(new LoginViewModel());
         }
 
-        // POST: Account/Login
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
+
             if (!ModelState.IsValid)
             {
                 return View(model);
             }
 
-            // Debug: Log the email being searched
-            Console.WriteLine($"Searching for email: {model.Email}");
 
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
+            if (user == null || !user.IsActive || !user.EmailConfirmed)
             {
-                // Debug: Log when user is not found
-                Console.WriteLine($"User not found for email: {model.Email}");
-                ModelState.AddModelError("", "Invalid login attempt.");
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
                 return View(model);
             }
-
-            if (!user.EmailConfirmed)
-            {
-                ModelState.AddModelError("", "Please confirm your email before logging in.");
-                return View(model);
-            }
-
-            // Debug: Log the user found
-            Console.WriteLine($"User found: {user.UserName}");
             var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, lockoutOnFailure: false);
-            // Debug: Log the result of the login attempt
-            Console.WriteLine($"Login attempt result: {result.Succeeded}");
-
             if (result.Succeeded)
             {
-                TempData["Success"] = "Login successful!";
-                return RedirectToAction("Index", "Home");
+                _logger.LogInformation("User logged in.");
+                TempData["SuccessMessage"] = "Login successful!";
+                return RedirectToLocal(returnUrl);
             }
-
             if (result.IsLockedOut)
             {
-                ModelState.AddModelError("", "Account locked out. Please try again later.");
+                _logger.LogWarning("User account locked out.");
+                return RedirectToAction("Lockout");
             }
             else
             {
-                ModelState.AddModelError("", "Invalid login attempt.");
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             }
+
             return View(model);
         }
 
-        // GET: Account/Logout
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            TempData["Success"] = "Logout successful!";
+            _logger.LogInformation("User logged out.");
+            TempData["SuccessMessage"] = "Logout successful!";
             return RedirectToAction("Index", "Home");
         }
 
-        // GET: Account/ForgotPassword
+        [HttpGet]
+        [AllowAnonymous]
         public IActionResult ForgotPassword()
         {
-            return View(new ForgotPasswordViewModel());
+            var model = new ForgotPasswordViewModel();
+            return View(model);
         }
 
-        // POST: Account/ForgotPassword
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
         {
@@ -177,43 +164,39 @@ namespace FoodDeliveryApp.Controllers
             }
 
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if(user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            if (user == null || !user.EmailConfirmed)
             {
-                ModelState.AddModelError("", "Invalid email or email not confirmed.");
-                TempData["Error"] = "Invalid email or email not confirmed.";
-                return View(model);
+                // Don't reveal that the user does not exist or is not confirmed
+                return RedirectToAction("ForgotPasswordConfirmation");
             }
 
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var callbackUrl = Url.Action("ResetPassword", "Account", new { token }, protocol: Request.Scheme);
+            await SendPasswordResetEmail(user);
 
-            // Send email with the callback URL
-            try
+            return RedirectToAction("ForgotPasswordConfirmation");
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ResetPassword(string code = null)
+        {
+            if (code == null)
             {
-                await _emailSender.SendEmailAsync(model.Email, "Reset Password",
-                    $"Please reset your password by <a href='{callbackUrl}'>clicking here</a>.");
-                TempData["Success"] = "Reset password email sent. Please check your inbox.";
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = "Error sending email: " + ex.Message;
+                return BadRequest("A code must be supplied for password reset.");
             }
 
+            var model = new ResetPasswordViewModel { Token = code };
             return View(model);
         }
 
-        // GET: Account/ResetPassword
-        public IActionResult ResetPassword(string token = null)
-        {
-            if (string.IsNullOrEmpty(token))
-            {
-                return BadRequest("A token must be supplied for password reset.");
-            }
-            return View(new ResetPasswordViewModel { Token = token });
-        }
-
-        // POST: Account/ResetPassword
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
         {
@@ -225,76 +208,61 @@ namespace FoodDeliveryApp.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
+                // Don't reveal that the user does not exist
                 return RedirectToAction("ResetPasswordConfirmation");
             }
 
             var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
             if (result.Succeeded)
             {
-                TempData["Success"] = "Password reset successful!";
                 return RedirectToAction("ResetPasswordConfirmation");
             }
 
-            AddErrorsToModelState(result);
-            return View(model);
+            AddErrors(result);
+            return View();
         }
 
-        // GET: Account/ResetPasswordConfirmation
+        [HttpGet]
+        [AllowAnonymous]
         public IActionResult ResetPasswordConfirmation()
         {
             return View();
         }
 
-
-        // Confirm Email
-        // GET: Account/ConfirmEmail
         [HttpGet]
-        [AllowAnonymous]
-        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        public async Task<IActionResult> ConfirmEmail(string userId, string code)
         {
-            if (userId == null || token == null)
+            if (userId == null || code == null)
             {
-                return RedirectToAction("Login");
+                return RedirectToAction("Index", "Home");
             }
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                return RedirectToAction("Login");
+                return NotFound($"Unable to load user with ID '{userId}'.");
             }
-            var result = await _userManager.ConfirmEmailAsync(user, token);
-            if (result.Succeeded)
+
+            var result = await _userManager.ConfirmEmailAsync(user, code);
+            if (!result.Succeeded)
             {
-                TempData["Success"] = "Email confirmed successfully!";
-                return RedirectToAction("Login");
+                throw new InvalidOperationException($"Error confirming email for user with ID '{userId}':");
             }
-            TempData["Error"] = "Error confirming email.";
-            return RedirectToAction("Login");
+
+            return View(result.Succeeded ? "ConfirmEmail" : "Error");
         }
 
-        // GET: Account/UserProfile
+        [HttpGet]
         [Authorize]
-        public async Task<IActionResult> UserProfile()
+        public IActionResult ChangePassword()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                return RedirectToAction("Login");
-            }
-
-            var model = new UserProfileViewModel
-            {
-                Email = user.Email
-            };
-
-            return View(model);
+            return View();
         }
 
-
-        // POST: Account/UserProfile
         [HttpPost]
-        [ValidateAntiForgeryToken]
         [Authorize]
-        public async Task<IActionResult> UserProfile(UserProfileViewModel model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -304,57 +272,66 @@ namespace FoodDeliveryApp.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
-                return RedirectToAction("Login");
+                return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             }
 
-            user.Email = model.Email;
-            user.UserName = model.Email;
+            var changePasswordResult = await _userManager.ChangePasswordAsync(
+                user,
+                model.OldPassword,
+                model.NewPassword);
 
-            var result = await _userManager.UpdateAsync(user);
-            if (result.Succeeded)
+            if (!changePasswordResult.Succeeded)
             {
-                await _signInManager.RefreshSignInAsync(user);
-                TempData["Success"] = "Profile updated successfully!";
-                return RedirectToAction("Index", "Home");
+                AddErrors(changePasswordResult);
+                return View(model);
             }
 
-            AddErrorsToModelState(result);
-            return View(model);
+            await _signInManager.RefreshSignInAsync(user);
+            _logger.LogInformation("User changed their password successfully.");
+
+            return RedirectToAction("ChangePasswordConfirmation");
         }
 
-        // GET: Account/UserList
+        [HttpGet]
+        [Authorize]
+        public IActionResult ChangePasswordConfirmation()
+        {
+            return View();
+        }
+
+        [HttpGet]
         [Authorize(Roles = "Admin")]
-        public IActionResult UserList()
+        public IActionResult ManageUsers()
         {
             var users = _userManager.Users.ToList();
             return View(users);
         }
 
-        // GET: Account/UserEdit
+        [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UserEdit(string id)
+        public async Task<IActionResult> EditUser(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
-                TempData["Error"] = "User not found.";
-                return RedirectToAction("UserList");
+                return NotFound();
             }
 
-            var model = new UserEditViewModel
+            var model = new EditUserViewModel
             {
                 Id = user.Id,
                 Email = user.Email,
+                Role = user.Role,
+                IsActive = user.IsActive
             };
 
             return View(model);
         }
 
-        // POST: Account/UserEdit
         [HttpPost]
-        [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UserEdit(UserEditViewModel model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditUser(EditUserViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -364,31 +341,85 @@ namespace FoodDeliveryApp.Controllers
             var user = await _userManager.FindByIdAsync(model.Id);
             if (user == null)
             {
-                TempData["Error"] = "User not found.";
-                return RedirectToAction("UserList");
+                return NotFound();
             }
 
             user.Email = model.Email;
             user.UserName = model.Email;
+            user.Role = model.Role;
+            user.IsActive = model.IsActive;
+            user.UpdatedAt = DateTime.UtcNow;
 
             var result = await _userManager.UpdateAsync(user);
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                TempData["Success"] = "User updated successfully!";
-                return RedirectToAction("UserList");
+                AddErrors(result);
+                return View(model);
             }
 
-            AddErrorsToModelState(result);
-            return View(model);
+            // Update roles if changed
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            await _userManager.AddToRoleAsync(user, model.Role.ToString());
+
+            return RedirectToAction("ManageUsers");
         }
 
-        
-        private void AddErrorsToModelState(IdentityResult result)
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
+        #region Helpers
+
+        private void AddErrors(IdentityResult result)
         {
             foreach (var error in result.Errors)
             {
-                ModelState.AddModelError("", error.Description);
+                ModelState.AddModelError(string.Empty, error.Description);
             }
         }
+
+        private IActionResult RedirectToLocal(string returnUrl)
+        {
+            if (Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            return RedirectToAction("Index", "Home");
+        }
+
+        private async Task SendEmailConfirmation(ApplicationUser user)
+        {
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var callbackUrl = Url.Action(
+                "ConfirmEmail",
+                "Account",
+                new { userId = user.Id, Token = token },
+                protocol: HttpContext.Request.Scheme);
+
+            await _emailSender.SendEmailAsync(
+                user.Email,
+                "Confirm your email",
+                $"Please confirm your account by <a href='{callbackUrl}'>clicking here</a>.");
+        }
+
+        private async Task SendPasswordResetEmail(ApplicationUser user)
+        {
+            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var callbackUrl = Url.Action(
+                "ResetPassword",
+                "Account",
+                new { Token = code },
+                protocol: HttpContext.Request.Scheme);
+
+            await _emailSender.SendEmailAsync(
+                user.Email,
+                "Reset Password",
+                $"Please reset your password by <a href='{callbackUrl}'>clicking here</a>.");
+        }
+
+        #endregion
     }
 }

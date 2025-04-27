@@ -1,4 +1,5 @@
 ﻿using FoodDeliveryApp.Models;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
 
 namespace FoodDeliveryApp.ViewModels.Account
@@ -17,10 +18,12 @@ namespace FoodDeliveryApp.ViewModels.Account
         public string Password { get; set; }
 
         [DataType(DataType.Password)]
+        [Required(ErrorMessage = "Confirm password is required")]
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; }
 
         public UserRole Role { get; set; } = UserRole.Customer;
+                
     }
 }

@@ -1,0 +1,96 @@
+﻿@model FoodDeliveryApp.ViewModels.OrderViewModels.OrderCreateViewModel
+
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <h1 class="display-6 mb-4">Review Your Order</h1>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Delivery Information</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <input type="hidden" asp-for="UserId" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Delivery Address</label>
+                            <!-- Address selection would go here -->
+                        </div>
+
+                        @* <div class="mb-3"> *@
+                        @*     <label asp-for="DeliveryInstructions" class="form-label">Special Instructions</label> *@
+                        @*     <textarea asp-for="DeliveryInstructions" class="form-control" rows="3"></textarea> *@
+                        @* </div> *@
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                Place Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var restaurantGroup in Model.Items.GroupBy(i => i.RestaurantId))
+                    {
+                        <h6 class="mt-3">@restaurantGroup.First().RestaurantName</h6>
+                        <ul class="list-group mb-3">
+                            @foreach (var item in restaurantGroup)
+                            {
+                                <li class="list-group-item">
+                                    @item.Name × @item.Quantity - @((item.Price * item.Quantity).ToString("C"))
+                                </li>
+                            }
+                        </ul>
+                    }
+
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>Subtotal:</span>
+                        <span>@Model.Items.Sum(i => i.Price * i.Quantity).ToString("C")</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Delivery Fee:</span>
+                        <span>@CalculateDeliveryFee(Model.Items.GroupBy(i => i.RestaurantId).Count()).ToString("C")</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Tax:</span>
+                        <span>@((Model.Items.Sum(i => i.Price * i.Quantity) * 0.1m).ToString("C"))</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold fs-5">
+                        <span>Total:</span>
+                        <span>
+                            @{
+                                var subtotal = Model.Items.Sum(i => i.Price * i.Quantity);
+                                var deliveryFee = CalculateDeliveryFee(Model.Items.GroupBy(i => i.RestaurantId).Count());
+                                var tax = subtotal * 0.1m;
+                                var total = subtotal + deliveryFee + tax;
+                            }
+                            @total.ToString("C")
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private decimal CalculateDeliveryFee(int restaurantCount)
+    {
+        return 3m + (Math.Max(0, restaurantCount - 1) * 2m);
+    }
+}

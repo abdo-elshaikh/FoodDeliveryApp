@@ -1,0 +1,127 @@
+﻿@model FoodDeliveryApp.ViewModels.PromotionViewModels.RestaurantPromotionsViewModel
+
+@{
+    ViewData["Title"] = $"{Model.RestaurantName} - Promotions Management";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>@Model.RestaurantName - Promotions</h2>
+        <a asp-action="CreatePromotion" asp-route-restaurantId="@Model.RestaurantId" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create New Promotion
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model.Promotions.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Code</th>
+                                <th>Description</th>
+                                <th>Discount</th>
+                                <th>Valid Period</th>
+                                <th>Min. Order</th>
+                                <th>Usage Limit</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var promotion in Model.Promotions)
+                            {
+                                <tr>
+                                    <td><strong>@promotion.Code</strong></td>
+                                    <td>@promotion.Description</td>
+                                    <td>
+                                        @if (promotion.IsPercentage)
+                                        {
+                                            @promotion.DiscountValue
+                                
+                                            <span>%</span>
+                                        }
+                                        else
+                                        {
+                                            <span>$</span>
+                                            @promotion.DiscountValue
+                                        }
+                                    </td>
+                                    <td>
+                                        @promotion.StartDate.ToString("MMM dd, yyyy") -
+                                        @promotion.EndDate.ToString("MMM dd, yyyy")
+                                    </td>
+                                    <td>
+                                        @if (promotion.MinimumOrderAmount > 0)
+                                        {
+                                            <span>$@promotion.MinimumOrderAmount</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">None</span>
+                                        }
+                                    </td>
+                                    <td>@promotion.UsageLimit</td>
+                                    <td>
+                                        <span class="badge @(promotion.IsActive ? "bg-success" : "bg-secondary")">
+                                            @(promotion.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="PromotionDetails" asp-route-id="@promotion.Id"
+                                               class="btn btn-sm btn-outline-primary" title="Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a asp-action="EditPromotion" asp-route-id="@promotion.Id"
+                                               class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form asp-action="TogglePromotionStatus" asp-route-id="@promotion.Id"
+                                                  method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm @(promotion.IsActive ? "btn-outline-warning" : "btn-outline-success")"
+                                                        title="@(promotion.IsActive ? "Deactivate" : "Activate")">
+                                                    <i class="fas @(promotion.IsActive ? "fa-toggle-off" : "fa-toggle-on")"></i>
+                                                </button>
+                                            </form>
+                                            <form asp-action="DeletePromotion" asp-route-id="@promotion.Id"
+                                                  method="post" class="d-inline"
+                                                  onsubmit="return confirm('Are you sure you want to delete this promotion?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No promotions found for this restaurant.
+        </div>
+    }
+</div>

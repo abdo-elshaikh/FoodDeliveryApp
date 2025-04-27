@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using FoodDeliveryApp.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace FoodDeliveryApp.ViewModels.Account
 {
@@ -19,5 +20,12 @@ namespace FoodDeliveryApp.ViewModels.Account
         [StringLength(50, ErrorMessage = "Last name cannot be longer than 50 characters")]
         [Display(Name = "Last Name")]
         public string? LastName { get; set; }
+        public bool IsActive { get; set; }
+
+        public bool IsEmailConfirmed { get; set; }
+
+        [Display(Name = "Role")]
+        public UserRole Role { get; set; }
+
     }
 }

@@ -1,44 +1,56 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FoodDeliveryApp.Models
 {
-    public enum EmployeeCategory
+    public enum EmployeePosition
     {
         Manager,
-        Staff,
+        DeliveryDriver,
         Chef,
-        Delivery,
-        Waiter,
-        cashier
+        CustomerService,
+        Cashier
     }
 
-    public class Employee
+    public class EmployeeProfile
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int EmployeeId { get; set; }
-
-        [Required, StringLength(50)]
-        public string FirstName { get; set; }
-
-        [Required, StringLength(50)]
-        public string LastName { get; set; }
-
-        [Required]
-        public EmployeeCategory EmpCategory { get; set; }
+        public int Id { get; set; }
 
         [Required]
         public string UserId { get; set; }
 
-        [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
+        [Required]
+        [StringLength(50)]
+        public string FirstName { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string LastName { get; set; }
+
+        [Phone]
+        [StringLength(20)]
+        public string? PhoneNumber { get; set; }
+
+        [Required]
+        public EmployeePosition Position { get; set; }
+
+        [Required]
+        [DataType(DataType.Date)]
+        public DateTime HireDate { get; set; } = DateTime.UtcNow;
+
+        [DataType(DataType.Date)]
+        public DateTime? TerminationDate { get; set; }
+
+        [StringLength(255)]
+        public string? ProfilePictureUrl { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
         public bool IsActive { get; set; } = true;
 
-        public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
+        // Navigation properties
+        public virtual ApplicationUser User { get; set; }
+        public virtual ICollection<Order> DeliveryOrders { get; set; } = new HashSet<Order>();
     }
 }

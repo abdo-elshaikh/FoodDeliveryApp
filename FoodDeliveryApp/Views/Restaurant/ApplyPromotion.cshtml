@@ -1,0 +1,49 @@
+﻿@model FoodDeliveryApp.ViewModels.RestaurantViewModels.PromotionApplyViewModel
+@{
+    ViewData["Title"] = "Apply Promotion";
+}
+
+<div class="container my-5">
+    <h1>Apply Promotion</h1>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert" data-bs-animate="fade">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" aria-label="Close alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" data-bs-animate="fade">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" aria-label="Close alert"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Enter Promotion Code</h5>
+            <form asp-action="ApplyPromotion" method="post" aria-labelledby="applyPromoHeading">
+                <input type="hidden" name="returnUrl" value="@Model" />
+                <div class="input-group mb-3">
+                    <input type="text" name="code" class="form-control" placeholder="Enter promo code" aria-label="Promotion code" required />
+                    <button type="submit" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Apply promotion code">Apply</button>
+                </div>
+            </form>
+            <a asp-action="Index" asp-controller="Home" class="btn btn-secondary" aria-label="Cancel and return">Cancel</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize Bootstrap tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    </script>
+}

@@ -3,16 +3,19 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FoodDeliveryApp.Models
 {
-        public enum UserRole
-        {
-            Customer,
-            Employee,
-            Admin
-        }
-    public class User : IdentityUser
+    public enum UserRole
     {
+        Customer,
+        Employee,
+        Admin,
+        Owner
+    }
 
-        [Required, EmailAddress, StringLength(100)]
+    public class ApplicationUser : IdentityUser
+    {
+        [Required]
+        [EmailAddress]
+        [StringLength(100)]
         [Display(Name = "Email Address")]
         public override string Email { get; set; }
 
@@ -24,7 +27,8 @@ namespace FoodDeliveryApp.Models
         public bool IsActive { get; set; } = true;
 
         // Navigation properties
-        public virtual Customer? Customer { get; set; }
-        public virtual Employee? Employee { get; set; }
+        public virtual CustomerProfile? CustomerProfile { get; set; }
+        public virtual EmployeeProfile? EmployeeProfile { get; set; }
+        public virtual ICollection<Restaurant> Restaurants { get; set; } = new HashSet<Restaurant>();
     }
 }

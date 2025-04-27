@@ -24,19 +24,35 @@ namespace FoodDeliveryApp.Migrations
 
             modelBuilder.Entity("FoodDeliveryApp.Models.Address", b =>
                 {
-                    b.Property<int>("AddressId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("AddressId"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("City")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
-                    b.Property<int>("CustomerId")
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CustomerProfileId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("State")
                         .IsRequired()
@@ -48,425 +64,49 @@ namespace FoodDeliveryApp.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
-                    b.Property<string>("ZipCode")
+                    b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("longtext");
 
-                    b.HasKey("AddressId");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
 
-                    b.HasIndex("CustomerId");
+                    b.HasKey("Id");
 
-                    b.ToTable("Addresses", (string)null);
+                    b.HasIndex("CustomerProfileId");
+
+                    b.ToTable("Addresses");
 
                     b.HasData(
                         new
                         {
-                            AddressId = 1,
-                            City = "Springfield",
-                            CustomerId = 1,
-                            State = "IL",
+                            Id = 1,
+                            City = "New York",
+                            Country = "USA",
+                            CreatedAt = new DateTime(2025, 3, 29, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            CustomerProfileId = 1,
+                            IsDefault = true,
+                            PostalCode = "10001",
+                            State = "NY",
                             Street = "123 Main St",
-                            ZipCode = "62701"
+                            Title = "Home"
                         },
                         new
                         {
-                            AddressId = 2,
-                            City = "Springfield",
-                            CustomerId = 1,
-                            State = "IL",
-                            Street = "456 Elm St",
-                            ZipCode = "62702"
+                            Id = 2,
+                            City = "New York",
+                            Country = "USA",
+                            CreatedAt = new DateTime(2025, 4, 7, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            CustomerProfileId = 1,
+                            IsDefault = false,
+                            PostalCode = "10002",
+                            State = "NY",
+                            Street = "456 Work Ave",
+                            Title = "Home"
                         });
                 });
 
-            modelBuilder.Entity("FoodDeliveryApp.Models.Category", b =>
-                {
-                    b.Property<int>("CategoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("CategoryId"));
-
-                    b.Property<string>("CategoryDescription")
-                        .HasColumnType("longtext");
-
-                    b.Property<byte[]>("CategoryImage")
-                        .HasColumnType("longblob");
-
-                    b.Property<string>("CategoryName")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.HasKey("CategoryId");
-
-                    b.ToTable("Categories", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            CategoryId = 1,
-                            CategoryDescription = "Drinks and refreshments",
-                            CategoryName = "Beverages"
-                        },
-                        new
-                        {
-                            CategoryId = 2,
-                            CategoryDescription = "Light bites",
-                            CategoryName = "Snacks"
-                        },
-                        new
-                        {
-                            CategoryId = 3,
-                            CategoryDescription = "Sweet treats",
-                            CategoryName = "Desserts"
-                        });
-                });
-
-            modelBuilder.Entity("FoodDeliveryApp.Models.Customer", b =>
-                {
-                    b.Property<int>("CustomerId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("CustomerId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("varchar(255)");
-
-                    b.HasKey("CustomerId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("Customers", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            CustomerId = 1,
-                            CreatedAt = new DateTime(2025, 4, 7, 17, 5, 9, 542, DateTimeKind.Utc).AddTicks(7705),
-                            FirstName = "Jane",
-                            IsActive = true,
-                            LastName = "Smith",
-                            PhoneNumber = "123-456-7890",
-                            UpdatedAt = new DateTime(2025, 4, 7, 17, 5, 9, 542, DateTimeKind.Utc).AddTicks(7706),
-                            UserId = "3"
-                        });
-                });
-
-            modelBuilder.Entity("FoodDeliveryApp.Models.Employee", b =>
-                {
-                    b.Property<int>("EmployeeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("EmployeeId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("EmpCategory")
-                        .HasColumnType("int");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("varchar(255)");
-
-                    b.HasKey("EmployeeId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("Employees", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            EmployeeId = 1,
-                            CreatedAt = new DateTime(2025, 4, 7, 17, 5, 9, 542, DateTimeKind.Utc).AddTicks(7649),
-                            EmpCategory = 3,
-                            FirstName = "John",
-                            IsActive = true,
-                            LastName = "Doe",
-                            UpdatedAt = new DateTime(2025, 4, 7, 17, 5, 9, 542, DateTimeKind.Utc).AddTicks(7650),
-                            UserId = "2"
-                        });
-                });
-
-            modelBuilder.Entity("FoodDeliveryApp.Models.Item", b =>
-                {
-                    b.Property<int>("ItemId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ItemId"));
-
-                    b.Property<int>("CateqId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsAvailable")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("ItemDescription")
-                        .HasColumnType("longtext");
-
-                    b.Property<byte[]>("ItemImage")
-                        .HasColumnType("longblob");
-
-                    b.Property<string>("ItemName")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<decimal>("ItemPrice")
-                        .HasColumnType("decimal(18, 2)");
-
-                    b.HasKey("ItemId");
-
-                    b.HasIndex("CateqId");
-
-                    b.ToTable("Items", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            ItemId = 1,
-                            CateqId = 1,
-                            IsAvailable = false,
-                            ItemName = "Cola",
-                            ItemPrice = 2.50m
-                        },
-                        new
-                        {
-                            ItemId = 2,
-                            CateqId = 2,
-                            IsAvailable = false,
-                            ItemName = "Chips",
-                            ItemPrice = 1.75m
-                        },
-                        new
-                        {
-                            ItemId = 3,
-                            CateqId = 3,
-                            IsAvailable = false,
-                            ItemName = "Cake",
-                            ItemPrice = 3.00m
-                        },
-                        new
-                        {
-                            ItemId = 4,
-                            CateqId = 1,
-                            IsAvailable = false,
-                            ItemName = "Water",
-                            ItemPrice = 1.00m
-                        },
-                        new
-                        {
-                            ItemId = 5,
-                            CateqId = 3,
-                            IsAvailable = false,
-                            ItemName = "Cookies",
-                            ItemPrice = 2.00m
-                        },
-                        new
-                        {
-                            ItemId = 6,
-                            CateqId = 2,
-                            IsAvailable = false,
-                            ItemName = "Candy",
-                            ItemPrice = 0.50m
-                        },
-                        new
-                        {
-                            ItemId = 7,
-                            CateqId = 1,
-                            IsAvailable = false,
-                            ItemName = "Juice",
-                            ItemPrice = 2.00m
-                        },
-                        new
-                        {
-                            ItemId = 8,
-                            CateqId = 3,
-                            IsAvailable = false,
-                            ItemName = "Brownie",
-                            ItemPrice = 2.50m
-                        },
-                        new
-                        {
-                            ItemId = 9,
-                            CateqId = 1,
-                            IsAvailable = false,
-                            ItemName = "Soda",
-                            ItemPrice = 1.50m
-                        },
-                        new
-                        {
-                            ItemId = 10,
-                            CateqId = 2,
-                            IsAvailable = false,
-                            ItemName = "Granola Bar",
-                            ItemPrice = 1.25m
-                        });
-                });
-
-            modelBuilder.Entity("FoodDeliveryApp.Models.Order", b =>
-                {
-                    b.Property<int>("OrdId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OrdId"));
-
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EmployeeId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("OrdDate")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("OrdStatus")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("OrdSum")
-                        .HasColumnType("decimal(18, 2)");
-
-                    b.HasKey("OrdId");
-
-                    b.HasIndex("CustomerId");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.ToTable("Orders", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            OrdId = 1,
-                            CustomerId = 1,
-                            EmployeeId = 1,
-                            OrdDate = new DateTime(2025, 4, 7, 19, 5, 9, 542, DateTimeKind.Local).AddTicks(7969),
-                            OrdStatus = 0,
-                            OrdSum = 6.25m
-                        });
-                });
-
-            modelBuilder.Entity("FoodDeliveryApp.Models.OrderDetail", b =>
-                {
-                    b.Property<int>("OrdDetId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("OrdDetId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("OrdAmount")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<decimal>("OrdDiscount")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<int>("OrdId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OrdQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("OrdTax")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<decimal>("OrdTotal")
-                        .HasColumnType("decimal(65,30)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.HasKey("OrdDetId");
-
-                    b.HasIndex("ItemId");
-
-                    b.HasIndex("OrdId");
-
-                    b.ToTable("OrderDetails", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            OrdDetId = 1,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ItemId = 1,
-                            OrdAmount = 2.50m,
-                            OrdDiscount = 0m,
-                            OrdId = 1,
-                            OrdQuantity = 1,
-                            OrdTax = 0m,
-                            OrdTotal = 0m,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            OrdDetId = 2,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ItemId = 2,
-                            OrdAmount = 1.75m,
-                            OrdDiscount = 0m,
-                            OrdId = 1,
-                            OrdQuantity = 2,
-                            OrdTax = 0m,
-                            OrdTotal = 0m,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        });
-                });
-
-            modelBuilder.Entity("FoodDeliveryApp.Models.User", b =>
+            modelBuilder.Entity("FoodDeliveryApp.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("varchar(255)");
@@ -547,56 +187,1198 @@ namespace FoodDeliveryApp.Migrations
                         {
                             Id = "1",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "a34574cf-1622-47f7-bf52-be398b45f479",
-                            CreatedAt = new DateTime(2025, 4, 7, 17, 5, 9, 242, DateTimeKind.Utc).AddTicks(6354),
-                            Email = "admin@fooddelivery.com",
+                            ConcurrencyStamp = "3a50bcb5-cfda-42d4-a25f-805f8a583bb4",
+                            CreatedAt = new DateTime(2025, 4, 27, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            Email = "admin@foodfast.com",
                             EmailConfirmed = true,
                             IsActive = true,
                             LockoutEnabled = false,
-                            NormalizedEmail = "ADMIN@FOODDELIVERY.COM",
-                            NormalizedUserName = "ADMIN@FOODDELIVERY.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEJv+jXuG0RBWudBaNnOh5nrEiS5ZgeQxeSx1Ub7xZ89lFz7gE0nvxYczBD4r965VQA==",
-                            PhoneNumberConfirmed = false,
+                            NormalizedEmail = "ADMIN@FOODFAST.COM",
+                            NormalizedUserName = "ADMIN@FOODFAST.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAEE1Sny3g3Ji2kx2PBn6MJptfdG4+V0gX7SOvyl5uxTz4uJ3cLeyOhF9LWhAGQ3iThQ==",
+                            PhoneNumber = "555-000-0000",
+                            PhoneNumberConfirmed = true,
                             Role = 2,
-                            SecurityStamp = "aae53328-7454-44c2-a91e-d80490c19c33",
+                            SecurityStamp = "dc4286f1-6a3d-4500-8ab7-bf4134aafcd3",
                             TwoFactorEnabled = false,
-                            UserName = "admin@fooddelivery.com"
+                            UserName = "admin@foodfast.com"
                         },
                         new
                         {
                             Id = "2",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "36e2050c-db67-4501-820b-c796ddaba04b",
-                            CreatedAt = new DateTime(2025, 4, 7, 17, 5, 9, 344, DateTimeKind.Utc).AddTicks(350),
-                            Email = "employee@fooddelivery.com",
+                            ConcurrencyStamp = "b8c50b8a-e1ef-42b6-9aa7-81cd6d5d18af",
+                            CreatedAt = new DateTime(2025, 4, 27, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            Email = "customer@foodfast.com",
                             EmailConfirmed = true,
                             IsActive = true,
                             LockoutEnabled = false,
-                            NormalizedUserName = "EMPLOYEE",
-                            PasswordHash = "AQAAAAIAAYagAAAAECB8yXh+W44wnoU9BT0k/ruKrDf0J5muljJwgu4Un8KjQDhyR8uXUpktZ+fTqU712Q==",
-                            PhoneNumberConfirmed = false,
-                            Role = 1,
-                            SecurityStamp = "3c393360-9e20-4065-990a-d7f238b2681f",
+                            NormalizedEmail = "CUSTOMER@FOODFAST.COM",
+                            NormalizedUserName = "CUSTOMER@FOODFAST.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAEJC76ekXQMgU68nyOyyMquLBA19M2be9pNwfzO1pGMyFvuXSPxDviRY29EPUVhz2sw==",
+                            PhoneNumber = "555-111-1111",
+                            PhoneNumberConfirmed = true,
+                            Role = 0,
+                            SecurityStamp = "9b443810-f729-4c53-b002-97a1bcb1f14d",
                             TwoFactorEnabled = false,
-                            UserName = "employee"
+                            UserName = "customer@foodfast.com"
                         },
                         new
                         {
                             Id = "3",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "50a0a907-687a-460c-b76c-7b6bf502d8f1",
-                            CreatedAt = new DateTime(2025, 4, 7, 17, 5, 9, 457, DateTimeKind.Utc).AddTicks(9570),
-                            Email = "customer@fooddelivery.com",
+                            ConcurrencyStamp = "c63cd1e2-c373-4050-bd20-5130a59409ea",
+                            CreatedAt = new DateTime(2025, 4, 27, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            Email = "employee@foodfast.com",
                             EmailConfirmed = true,
                             IsActive = true,
                             LockoutEnabled = false,
-                            NormalizedUserName = "CUSTOMER",
-                            PasswordHash = "AQAAAAIAAYagAAAAEHiMIZWcxgFdBLvEmksm+ycRFfA+ebJ/W8bK7S1NXRE6KxP6Vdj3UJVCdjLtNmf9Mg==",
-                            PhoneNumberConfirmed = false,
-                            Role = 0,
-                            SecurityStamp = "3da5b0b4-ec71-4eb7-b016-51e72e509287",
+                            NormalizedEmail = "EMPLOYEE@FOODFAST.COM",
+                            NormalizedUserName = "EMPLOYEE@FOODFAST.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAEDFEE4gunP/1A+NRx4wQxJeuriTdpKmv57qNcCG2aJpwD48+JIRgHiy4hcyUJGkWWA==",
+                            PhoneNumber = "555-222-2222",
+                            PhoneNumberConfirmed = true,
+                            Role = 1,
+                            SecurityStamp = "5f1fad9e-c480-4701-a14f-eb8fd84075cd",
                             TwoFactorEnabled = false,
-                            UserName = "customer"
+                            UserName = "employee@foodfast.com"
+                        },
+                        new
+                        {
+                            Id = "4",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "cda6d085-4dfa-428b-a03b-7d5ae1e575f1",
+                            CreatedAt = new DateTime(2025, 4, 27, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            Email = "owner@foodfast.com",
+                            EmailConfirmed = true,
+                            IsActive = true,
+                            LockoutEnabled = false,
+                            NormalizedEmail = "OWNER@FOODFAST.COM",
+                            NormalizedUserName = "OWNER@FOODFAST.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAEEvszjMJyyxWgtxEtaikM/nO5npZeYXgE4i2PDjk3eM2gt5+xyhnb8/sLeFslTGvKA==",
+                            PhoneNumber = "555-333-3333",
+                            PhoneNumberConfirmed = true,
+                            Role = 3,
+                            SecurityStamp = "0efe198a-67f5-4afa-91ac-dc0e4f26875a",
+                            TwoFactorEnabled = false,
+                            UserName = "owner@foodfast.com"
+                        });
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Cart", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Carts");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.CartItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CartId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MenuItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CartId");
+
+                    b.HasIndex("MenuItemId");
+
+                    b.ToTable("CartItems");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.CustomerProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<decimal>("LoyaltyPoints")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("ProfilePictureUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<bool>("ReceivePromotions")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("CustomerProfiles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2025, 3, 28, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            DateOfBirth = new DateTime(1990, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            FirstName = "John",
+                            IsActive = true,
+                            LastName = "Doe",
+                            LoyaltyPoints = 0m,
+                            PhoneNumber = "555-111-1111",
+                            ProfilePictureUrl = "/images/users/user2.jpg",
+                            ReceivePromotions = false,
+                            UpdatedAt = new DateTime(2025, 4, 27, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            UserId = "2"
+                        });
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Customization", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CartItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ChoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OptionId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CartItemId");
+
+                    b.HasIndex("ChoiceId");
+
+                    b.HasIndex("OptionId");
+
+                    b.ToTable("Customizations");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.CustomizationChoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CustomizationOptionId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomizationOptionId");
+
+                    b.ToTable("CustomizationChoices");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.CustomizationOption", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("AllowMultiple")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("MenuItemId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MenuItemId");
+
+                    b.ToTable("CustomizationOptions");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.EmployeeProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime>("HireDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProfilePictureUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime?>("TerminationDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("EmployeeProfiles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2024, 10, 27, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            FirstName = "Jane",
+                            HireDate = new DateTime(2024, 10, 27, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            IsActive = true,
+                            LastName = "Smith",
+                            PhoneNumber = "555-222-2222",
+                            Position = 1,
+                            UpdatedAt = new DateTime(2025, 4, 27, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            UserId = "3"
+                        });
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.MenuItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("RestaurantCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RestaurantCategoryId");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.ToTable("MenuItems");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2025, 3, 29, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            Description = "Classic pasta with eggs, cheese, pancetta, and pepper",
+                            ImageUrl = "/images/menu/carbonara.jpg",
+                            IsAvailable = true,
+                            Name = "Spaghetti Carbonara",
+                            Price = 14.99m,
+                            RestaurantId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2025, 3, 29, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            Description = "Traditional pizza with tomato sauce, mozzarella, and basil",
+                            ImageUrl = "/images/menu/pizza.jpg",
+                            IsAvailable = true,
+                            Name = "Margherita Pizza",
+                            Price = 12.99m,
+                            RestaurantId = 1
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2025, 4, 3, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            Description = "Grilled tortilla filled with cheese and chicken",
+                            ImageUrl = "/images/menu/quesadilla.jpg",
+                            IsAvailable = true,
+                            Name = "Chicken Quesadilla",
+                            Price = 9.99m,
+                            RestaurantId = 2
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(2025, 4, 3, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            Description = "Large flour tortilla with beef, rice, and beans",
+                            ImageUrl = "/images/menu/burrito.jpg",
+                            IsAvailable = true,
+                            Name = "Beef Burrito",
+                            Price = 11.99m,
+                            RestaurantId = 2
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CreatedAt = new DateTime(2025, 4, 8, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            Description = "Crispy chicken in a sweet and spicy sauce",
+                            ImageUrl = "/images/menu/general-tsos.jpg",
+                            IsAvailable = true,
+                            Name = "General Tso's Chicken",
+                            Price = 13.99m,
+                            RestaurantId = 3
+                        },
+                        new
+                        {
+                            Id = 6,
+                            CreatedAt = new DateTime(2025, 4, 8, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            Description = "Stir-fried noodles with mixed vegetables",
+                            ImageUrl = "/images/menu/lo-mein.jpg",
+                            IsAvailable = true,
+                            Name = "Vegetable Lo Mein",
+                            Price = 10.99m,
+                            RestaurantId = 3
+                        });
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Order", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AddressId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CustomerProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DeliveryAddressId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DeliveryFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("EmployeeProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("PaymentDetails")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("PaymentMethodType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SpecialInstructions")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Tax")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Total")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddressId");
+
+                    b.HasIndex("CustomerProfileId");
+
+                    b.HasIndex("EmployeeProfileId");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.OrderCustomization", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OptionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OrderItemId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderItemId");
+
+                    b.ToTable("OrderCustomizations");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.OrderItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MenuItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SpecialInstructions")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MenuItemId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.ToTable("OrderItems");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            MenuItemId = 1,
+                            OrderId = 1,
+                            Price = 14.99m,
+                            Quantity = 1,
+                            RestaurantId = 1,
+                            SpecialInstructions = "No cheese"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            MenuItemId = 3,
+                            OrderId = 2,
+                            Price = 9.99m,
+                            Quantity = 2,
+                            RestaurantId = 2,
+                            SpecialInstructions = "Extra cheese, no beans"
+                        });
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Payment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("PaymentMethodId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TransactionId")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("PaymentMethodId");
+
+                    b.ToTable("Payments");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Amount = 22.48m,
+                            OrderId = 1,
+                            PaymentDate = new DateTime(2025, 4, 17, 23, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            PaymentMethodId = 1,
+                            Status = 1,
+                            TransactionId = "PAY-123456789"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Amount = 17.78m,
+                            OrderId = 2,
+                            PaymentDate = new DateTime(2025, 4, 22, 23, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            PaymentMethodId = 1,
+                            Status = 1,
+                            TransactionId = "PAY-987654321"
+                        });
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.PaymentMethod", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccountNumberMasked")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("CustomerProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerProfileId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PaymentMethods");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AccountNumberMasked = "************1234",
+                            CreatedAt = new DateTime(2025, 3, 30, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            IsDefault = true,
+                            Provider = "Visa",
+                            Type = 0,
+                            UserId = "2"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            AccountNumberMasked = "********@paypal.com",
+                            CreatedAt = new DateTime(2025, 4, 13, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            IsDefault = false,
+                            Provider = "PayPal",
+                            Type = 2,
+                            UserId = "2"
+                        });
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Promotion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<decimal>("DiscountValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsPercentage")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int?>("MinimumOrderAmount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RestaurantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("UsageLimit")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.ToTable("Promotions");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "WELCOME20",
+                            Description = "20% off your first order",
+                            DiscountValue = 20m,
+                            EndDate = new DateTime(2025, 5, 27, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            IsActive = true,
+                            IsPercentage = true,
+                            MinimumOrderAmount = 15,
+                            StartDate = new DateTime(2025, 4, 17, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            UsageLimit = 1000
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "ITALIAN10",
+                            Description = "10% off all Italian restaurants",
+                            DiscountValue = 10m,
+                            EndDate = new DateTime(2025, 5, 12, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            IsActive = true,
+                            IsPercentage = true,
+                            RestaurantId = 1,
+                            StartDate = new DateTime(2025, 4, 22, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326)
+                        });
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.PromotionUsage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PromotionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UsedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("PromotionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PromotionUsages");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Restaurant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<TimeSpan>("ClosingTime")
+                        .HasColumnType("time(6)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("DeliveryFee")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("LocationUrl")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<TimeSpan>("OpeningTime")
+                        .HasColumnType("time(6)");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<decimal>("Rating")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<decimal>("TaxRate")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("WebsiteUrl")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Restaurants");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Address = "123 Pasta Street",
+                            CategoryId = 1,
+                            City = "New York",
+                            ClosingTime = new TimeSpan(0, 22, 0, 0, 0),
+                            CreatedAt = new DateTime(2025, 3, 28, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            DeliveryFee = 0m,
+                            Description = "Authentic Italian restaurant since 1985",
+                            ImageUrl = "/images/restaurants/italian.jpg",
+                            IsActive = true,
+                            Name = "Mama Mia Italian",
+                            OpeningTime = new TimeSpan(0, 11, 0, 0, 0),
+                            OwnerId = "4",
+                            PhoneNumber = "555-123-4567",
+                            PostalCode = "10001",
+                            Rating = 0m,
+                            State = "NY",
+                            TaxRate = 0m
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Address = "456 Salsa Avenue",
+                            CategoryId = 2,
+                            City = "Los Angeles",
+                            ClosingTime = new TimeSpan(0, 23, 0, 0, 0),
+                            CreatedAt = new DateTime(2025, 4, 2, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            DeliveryFee = 0m,
+                            Description = "The best Mexican food in town",
+                            ImageUrl = "/images/restaurants/mexican.jpg",
+                            IsActive = true,
+                            Name = "Taco Fiesta",
+                            OpeningTime = new TimeSpan(0, 10, 0, 0, 0),
+                            OwnerId = "4",
+                            PhoneNumber = "555-234-5678",
+                            PostalCode = "90001",
+                            Rating = 0m,
+                            State = "CA",
+                            TaxRate = 0m
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Address = "789 Noodle Road",
+                            CategoryId = 3,
+                            City = "Chicago",
+                            ClosingTime = new TimeSpan(0, 21, 30, 0, 0),
+                            CreatedAt = new DateTime(2025, 4, 7, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            DeliveryFee = 0m,
+                            Description = "Authentic Chinese cuisine",
+                            ImageUrl = "/images/restaurants/asian.jpg",
+                            IsActive = true,
+                            Name = "Golden Wok",
+                            OpeningTime = new TimeSpan(0, 10, 30, 0, 0),
+                            OwnerId = "4",
+                            PhoneNumber = "555-345-6789",
+                            PostalCode = "60601",
+                            Rating = 0m,
+                            State = "IL",
+                            TaxRate = 0m
+                        });
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.RestaurantCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RestaurantCategories");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Authentic Italian cuisine",
+                            Name = "Italian"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Traditional Mexican food",
+                            Name = "Mexican"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Various Asian cuisines",
+                            Name = "Asian"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Description = "Classic American dishes",
+                            Name = "American"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Description = "Plant-based meals",
+                            Name = "Vegetarian"
+                        });
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("CustomerProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Rating")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerProfileId");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.ToTable("Reviews");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Comment = "Best Italian food I've ever had!",
+                            CreatedAt = new DateTime(2025, 4, 18, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            CustomerProfileId = 1,
+                            Rating = 5.0m,
+                            RestaurantId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Comment = "Great tacos, but a bit spicy for my taste.",
+                            CreatedAt = new DateTime(2025, 4, 23, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            CustomerProfileId = 1,
+                            Rating = 4.5m,
+                            RestaurantId = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Comment = "Good Chinese food, but the service was slow.",
+                            CreatedAt = new DateTime(2025, 4, 25, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            CustomerProfileId = 1,
+                            Rating = 4.0m,
+                            RestaurantId = 3
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Comment = "Decent food, but not as good as I expected.",
+                            CreatedAt = new DateTime(2025, 4, 26, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            CustomerProfileId = 1,
+                            Rating = 3.5m,
+                            RestaurantId = 1
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Comment = "Loved the burrito, will order again!",
+                            CreatedAt = new DateTime(2025, 4, 24, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            CustomerProfileId = 1,
+                            Rating = 4.0m,
+                            RestaurantId = 2
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Comment = "The best General Tso's chicken in town!",
+                            CreatedAt = new DateTime(2025, 4, 25, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            CustomerProfileId = 1,
+                            Rating = 5.0m,
+                            RestaurantId = 3
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Comment = "Great pizza, but a bit overpriced.",
+                            CreatedAt = new DateTime(2025, 4, 26, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            CustomerProfileId = 1,
+                            Rating = 4.5m,
+                            RestaurantId = 1
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Comment = "Good food, but the delivery was late.",
+                            CreatedAt = new DateTime(2025, 4, 24, 22, 1, 54, 990, DateTimeKind.Utc).AddTicks(1326),
+                            CustomerProfileId = 1,
+                            Rating = 4.0m,
+                            RestaurantId = 2
                         });
                 });
 
@@ -629,20 +1411,30 @@ namespace FoodDeliveryApp.Migrations
                         new
                         {
                             Id = "1",
+                            ConcurrencyStamp = "2ad256b5-1982-44c8-8eab-5b77e3e3c845",
+                            Name = "Admin",
+                            NormalizedName = "ADMIN"
+                        },
+                        new
+                        {
+                            Id = "2",
+                            ConcurrencyStamp = "9c1e53b5-f042-4fdf-a087-6fed2e8514b4",
                             Name = "Customer",
                             NormalizedName = "CUSTOMER"
                         },
                         new
                         {
-                            Id = "2",
+                            Id = "3",
+                            ConcurrencyStamp = "0ff02069-02f6-4507-ade2-4f6cbad8a9df",
                             Name = "Employee",
                             NormalizedName = "EMPLOYEE"
                         },
                         new
                         {
-                            Id = "3",
-                            Name = "Admin",
-                            NormalizedName = "ADMIN"
+                            Id = "4",
+                            ConcurrencyStamp = "419cb23b-a550-442b-bd4e-04b2f9ea6e90",
+                            Name = "Owner",
+                            NormalizedName = "OWNER"
                         });
                 });
 
@@ -736,7 +1528,7 @@ namespace FoodDeliveryApp.Migrations
                         new
                         {
                             UserId = "1",
-                            RoleId = "3"
+                            RoleId = "1"
                         },
                         new
                         {
@@ -746,7 +1538,12 @@ namespace FoodDeliveryApp.Migrations
                         new
                         {
                             UserId = "3",
-                            RoleId = "1"
+                            RoleId = "3"
+                        },
+                        new
+                        {
+                            UserId = "4",
+                            RoleId = "4"
                         });
                 });
 
@@ -771,84 +1568,291 @@ namespace FoodDeliveryApp.Migrations
 
             modelBuilder.Entity("FoodDeliveryApp.Models.Address", b =>
                 {
-                    b.HasOne("FoodDeliveryApp.Models.Customer", "Customer")
+                    b.HasOne("FoodDeliveryApp.Models.CustomerProfile", "CustomerProfile")
                         .WithMany("Addresses")
-                        .HasForeignKey("CustomerId")
+                        .HasForeignKey("CustomerProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Customer");
+                    b.Navigation("CustomerProfile");
                 });
 
-            modelBuilder.Entity("FoodDeliveryApp.Models.Customer", b =>
+            modelBuilder.Entity("FoodDeliveryApp.Models.CartItem", b =>
                 {
-                    b.HasOne("FoodDeliveryApp.Models.User", "User")
-                        .WithOne("Customer")
-                        .HasForeignKey("FoodDeliveryApp.Models.Customer", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("FoodDeliveryApp.Models.Employee", b =>
-                {
-                    b.HasOne("FoodDeliveryApp.Models.User", "User")
-                        .WithOne("Employee")
-                        .HasForeignKey("FoodDeliveryApp.Models.Employee", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("FoodDeliveryApp.Models.Item", b =>
-                {
-                    b.HasOne("FoodDeliveryApp.Models.Category", "Category")
+                    b.HasOne("FoodDeliveryApp.Models.Cart", "Cart")
                         .WithMany("Items")
-                        .HasForeignKey("CateqId")
+                        .HasForeignKey("CartId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Category");
+                    b.HasOne("FoodDeliveryApp.Models.MenuItem", "MenuItem")
+                        .WithMany()
+                        .HasForeignKey("MenuItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cart");
+
+                    b.Navigation("MenuItem");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.CustomerProfile", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.ApplicationUser", "User")
+                        .WithOne("CustomerProfile")
+                        .HasForeignKey("FoodDeliveryApp.Models.CustomerProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Customization", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.CartItem", "CartItem")
+                        .WithMany("Customizations")
+                        .HasForeignKey("CartItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FoodDeliveryApp.Models.CustomizationChoice", "Choice")
+                        .WithMany()
+                        .HasForeignKey("ChoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FoodDeliveryApp.Models.CustomizationOption", "Option")
+                        .WithMany()
+                        .HasForeignKey("OptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CartItem");
+
+                    b.Navigation("Choice");
+
+                    b.Navigation("Option");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.CustomizationChoice", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.CustomizationOption", null)
+                        .WithMany("Choices")
+                        .HasForeignKey("CustomizationOptionId");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.CustomizationOption", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.MenuItem", "MenuItem")
+                        .WithMany()
+                        .HasForeignKey("MenuItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MenuItem");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.EmployeeProfile", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.ApplicationUser", "User")
+                        .WithOne("EmployeeProfile")
+                        .HasForeignKey("FoodDeliveryApp.Models.EmployeeProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.MenuItem", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.RestaurantCategory", null)
+                        .WithMany("MenuItems")
+                        .HasForeignKey("RestaurantCategoryId");
+
+                    b.HasOne("FoodDeliveryApp.Models.Restaurant", "Restaurant")
+                        .WithMany("MenuItems")
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Restaurant");
                 });
 
             modelBuilder.Entity("FoodDeliveryApp.Models.Order", b =>
                 {
-                    b.HasOne("FoodDeliveryApp.Models.Customer", "Customer")
+                    b.HasOne("FoodDeliveryApp.Models.Address", "Address")
+                        .WithMany()
+                        .HasForeignKey("AddressId");
+
+                    b.HasOne("FoodDeliveryApp.Models.CustomerProfile", null)
                         .WithMany("Orders")
-                        .HasForeignKey("CustomerId")
+                        .HasForeignKey("CustomerProfileId");
+
+                    b.HasOne("FoodDeliveryApp.Models.EmployeeProfile", null)
+                        .WithMany("DeliveryOrders")
+                        .HasForeignKey("EmployeeProfileId");
+
+                    b.HasOne("FoodDeliveryApp.Models.Restaurant", "Restaurant")
+                        .WithMany("Orders")
+                        .HasForeignKey("RestaurantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FoodDeliveryApp.Models.Employee", "Employee")
-                        .WithMany("Orders")
-                        .HasForeignKey("EmployeeId")
+                    b.HasOne("FoodDeliveryApp.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Customer");
+                    b.Navigation("Address");
 
-                    b.Navigation("Employee");
+                    b.Navigation("Restaurant");
+
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("FoodDeliveryApp.Models.OrderDetail", b =>
+            modelBuilder.Entity("FoodDeliveryApp.Models.OrderCustomization", b =>
                 {
-                    b.HasOne("FoodDeliveryApp.Models.Item", "Item")
-                        .WithMany("OrderDetails")
-                        .HasForeignKey("ItemId")
+                    b.HasOne("FoodDeliveryApp.Models.OrderItem", "OrderItem")
+                        .WithMany("Customizations")
+                        .HasForeignKey("OrderItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OrderItem");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.OrderItem", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.MenuItem", "MenuItem")
+                        .WithMany("OrderItems")
+                        .HasForeignKey("MenuItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("FoodDeliveryApp.Models.Order", "Order")
-                        .WithMany("OrderDetails")
-                        .HasForeignKey("OrdId")
+                        .WithMany("OrderItems")
+                        .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Item");
+                    b.HasOne("FoodDeliveryApp.Models.Restaurant", "Restaurant")
+                        .WithMany()
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MenuItem");
 
                     b.Navigation("Order");
+
+                    b.Navigation("Restaurant");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Payment", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.Order", "Order")
+                        .WithOne("Payment")
+                        .HasForeignKey("FoodDeliveryApp.Models.Payment", "OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FoodDeliveryApp.Models.PaymentMethod", "PaymentMethod")
+                        .WithMany("Payments")
+                        .HasForeignKey("PaymentMethodId");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("PaymentMethod");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.PaymentMethod", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.CustomerProfile", null)
+                        .WithMany("PaymentMethods")
+                        .HasForeignKey("CustomerProfileId");
+
+                    b.HasOne("FoodDeliveryApp.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Promotion", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.Restaurant", "Restaurant")
+                        .WithMany("Promotions")
+                        .HasForeignKey("RestaurantId");
+
+                    b.Navigation("Restaurant");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.PromotionUsage", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FoodDeliveryApp.Models.Promotion", "Promotion")
+                        .WithMany("PromotionUsages")
+                        .HasForeignKey("PromotionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FoodDeliveryApp.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Promotion");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Restaurant", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.RestaurantCategory", "Category")
+                        .WithMany("Restaurants")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FoodDeliveryApp.Models.ApplicationUser", "Owner")
+                        .WithMany("Restaurants")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Review", b =>
+                {
+                    b.HasOne("FoodDeliveryApp.Models.CustomerProfile", "CustomerProfile")
+                        .WithMany("Reviews")
+                        .HasForeignKey("CustomerProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FoodDeliveryApp.Models.Restaurant", "Restaurant")
+                        .WithMany("Reviews")
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CustomerProfile");
+
+                    b.Navigation("Restaurant");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -862,7 +1866,7 @@ namespace FoodDeliveryApp.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("FoodDeliveryApp.Models.User", null)
+                    b.HasOne("FoodDeliveryApp.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -871,7 +1875,7 @@ namespace FoodDeliveryApp.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("FoodDeliveryApp.Models.User", null)
+                    b.HasOne("FoodDeliveryApp.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -886,7 +1890,7 @@ namespace FoodDeliveryApp.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FoodDeliveryApp.Models.User", null)
+                    b.HasOne("FoodDeliveryApp.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -895,45 +1899,96 @@ namespace FoodDeliveryApp.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("FoodDeliveryApp.Models.User", null)
+                    b.HasOne("FoodDeliveryApp.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FoodDeliveryApp.Models.Category", b =>
+            modelBuilder.Entity("FoodDeliveryApp.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("CustomerProfile");
+
+                    b.Navigation("EmployeeProfile");
+
+                    b.Navigation("Restaurants");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Cart", b =>
                 {
                     b.Navigation("Items");
                 });
 
-            modelBuilder.Entity("FoodDeliveryApp.Models.Customer", b =>
+            modelBuilder.Entity("FoodDeliveryApp.Models.CartItem", b =>
+                {
+                    b.Navigation("Customizations");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.CustomerProfile", b =>
                 {
                     b.Navigation("Addresses");
 
                     b.Navigation("Orders");
+
+                    b.Navigation("PaymentMethods");
+
+                    b.Navigation("Reviews");
                 });
 
-            modelBuilder.Entity("FoodDeliveryApp.Models.Employee", b =>
+            modelBuilder.Entity("FoodDeliveryApp.Models.CustomizationOption", b =>
                 {
-                    b.Navigation("Orders");
+                    b.Navigation("Choices");
                 });
 
-            modelBuilder.Entity("FoodDeliveryApp.Models.Item", b =>
+            modelBuilder.Entity("FoodDeliveryApp.Models.EmployeeProfile", b =>
                 {
-                    b.Navigation("OrderDetails");
+                    b.Navigation("DeliveryOrders");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.MenuItem", b =>
+                {
+                    b.Navigation("OrderItems");
                 });
 
             modelBuilder.Entity("FoodDeliveryApp.Models.Order", b =>
                 {
-                    b.Navigation("OrderDetails");
+                    b.Navigation("OrderItems");
+
+                    b.Navigation("Payment");
                 });
 
-            modelBuilder.Entity("FoodDeliveryApp.Models.User", b =>
+            modelBuilder.Entity("FoodDeliveryApp.Models.OrderItem", b =>
                 {
-                    b.Navigation("Customer");
+                    b.Navigation("Customizations");
+                });
 
-                    b.Navigation("Employee");
+            modelBuilder.Entity("FoodDeliveryApp.Models.PaymentMethod", b =>
+                {
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Promotion", b =>
+                {
+                    b.Navigation("PromotionUsages");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.Restaurant", b =>
+                {
+                    b.Navigation("MenuItems");
+
+                    b.Navigation("Orders");
+
+                    b.Navigation("Promotions");
+
+                    b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("FoodDeliveryApp.Models.RestaurantCategory", b =>
+                {
+                    b.Navigation("MenuItems");
+
+                    b.Navigation("Restaurants");
                 });
 #pragma warning restore 612, 618
         }

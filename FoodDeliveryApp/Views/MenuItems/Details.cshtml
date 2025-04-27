@@ -1,0 +1,676 @@
+﻿<!-- Views/MenuItems/Details.cshtml -->
+@model FoodDeliveryApp.ViewModels.MenuItems.MenuItemDetailsViewModel
+@{
+    ViewData["Title"] = Model.MenuItem.Name;
+    ViewData["ActiveMenu"] = "Restaurants";
+}
+
+<!-- Hero Section with Blurred Image Backdrop -->
+<section class="menu-item-hero position-relative overflow-hidden">
+    <div class="hero-backdrop" style="background-image: url('@(Model.MenuItem.Name ?? "/images/default-food.webp")');"></div>
+    <div class="container py-5 position-relative z-1">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb glassmorphic p-3 rounded-3">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Restaurants" asp-action="Details" asp-route-id="@Model.Restaurant.Id">@Model.Restaurant.Name</a></li>
+                <li class="breadcrumb-item"><a asp-controller="MenuItems" asp-action="ByRestaurant" asp-route-restaurantId="@Model.Restaurant.Id">Menu</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.MenuItem.Name</li>
+            </ol>
+        </nav>
+    </div>
+</section>
+
+<!-- Main Content -->
+<div class="container my-5">
+    <!-- Notification Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show glassmorphic p-4 rounded-3" role="alert" aria-live="assertive">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
+                <div>@TempData["SuccessMessage"]</div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show glassmorphic p-4 rounded-3" role="alert" aria-live="assertive">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-danger"></i>
+                <div>@TempData["ErrorMessage"]</div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+
+    <div class="row g-5">
+        <!-- Image Column -->
+        <div class="col-lg-6">
+            <div class="menu-item-image-container glassmorphic rounded-4 shadow-lg overflow-hidden position-relative" data-bs-toggle="modal" data-bs-target="#imageZoomModal" role="button" tabindex="0" aria-label="Zoom in on @Model.MenuItem.Name image">
+                @if (!string.IsNullOrEmpty(Model.MenuItem.ImageUrl))
+                {
+                    <img src="@Model.MenuItem.ImageUrl" alt="@Model.MenuItem.Name" class="img-fluid w-100" style="max-height: 500px; object-fit: cover;" loading="lazy">
+                }
+                else
+                {
+                    <div class="d-flex justify-content-center align-items-center bg-light" style="height: 500px;">
+                        <i class="bi bi-egg-fried display-4 text-muted"></i>
+                    </div>
+                }
+                @if (!Model.MenuItem.IsAvailable)
+                {
+                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-50">
+                        <span class="badge bg-danger fs-5 py-2 px-3 rounded-pill">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> Unavailable
+                        </span>
+                    </div>
+                }
+                <div class="zoom-icon position-absolute bottom-0 end-0 m-3 text-white">
+                    <i class="bi bi-zoom-in fs-4"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Column -->
+        <div class="col-lg-6">
+            <div class="menu-item-details glassmorphic p-4 rounded-3">
+                <!-- Header with Price -->
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1 class="fw-bold mb-2">@Model.MenuItem.Name</h1>
+                        <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+                            <a asp-controller="Restaurants" asp-action="Details" asp-route-id="@Model.Restaurant.Id" class="badge bg-primary bg-opacity-10 text-primary rounded-pill text-decoration-none">
+                                <i class="bi bi-shop me-1"></i> @Model.Restaurant.Name
+                            </a>
+                            @if (Model.MenuItem.IsVegetarian)
+                            {
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill">
+                                    <i class="bi bi-leaf me-1"></i> Vegetarian
+                                </span>
+                            }
+                            @if (Model.MenuItem.IsVegan)
+                            {
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill">
+                                    <i class="bi bi-tree me-1"></i> Vegan
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="price-display glassmorphic p-2 rounded-3">
+                        <span class="fs-2 fw-bold text-primary">$<span id="basePrice">@Model.MenuItem.Price.ToString("0.00")</span></span>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-5">
+                    <h4 class="section-title mb-3">
+                        <i class="bi bi-card-text me-2 text-primary"></i> Description
+                    </h4>
+                    <p class="lead text-muted">@Model.MenuItem.Description</p>
+                </div>
+
+                <!-- Customization Options -->
+                @if (Model.CustomizationOptions.Any())
+                {
+                    <div class="mb-5">
+                        <h4 class="section-title mb-3">
+                            <i class="bi bi-gear me-2 text-primary"></i> Customize Your Order
+                        </h4>
+                        <div class="accordion" id="customizationAccordion">
+                            @foreach (var option in Model.CustomizationOptions)
+                            {
+                                <div class="accordion-item glassmorphic mb-2 rounded-3 overflow-hidden">
+                                    <h5 class="accordion-header" id="heading@(option.Id)">
+                                        <button class="accordion-button collapsed bg-transparent" type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(option.Id)" aria-expanded="false" aria-controls="collapse@(option.Id)">
+                                            @option.Name @(option.IsRequired ? "<span class='text-danger'>*</span>" : "")
+                                        </button>
+                                    </h5>
+                                    <div id="collapse@(option.Id)" class="accordion-collapse collapse" aria-labelledby="heading@(option.Id)" data-bs-parent="#customizationAccordion">
+                                        <div class="accordion-body">
+                                            @foreach (var choice in option.Choices)
+                                            {
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input customization-choice" type="@(option.AllowMultiple ? "checkbox" : "radio")" name="option_@option.Id" id="choice_@choice.Id" value="@choice.Id" data-price="@choice.Price" @(choice.IsDefault ? "checked" : "") @(option.IsRequired && !option.AllowMultiple ? "required" : "") aria-label="@choice.Name">
+                                                    <label class="form-check-label d-flex justify-content-between w-100" for="choice_@choice.Id">
+                                                        <span>@choice.Name</span>
+                                                        @if (choice.Price > 0)
+                                                        {
+                                                            <span class="text-primary">+$@choice.Price.ToString("0.00")</span>
+                                                        }
+                                                    </label>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Quantity and Add to Cart -->
+                @if (Model.MenuItem.IsAvailable)
+                {
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="quantity-selector input-group rounded-pill w-25">
+                            <button class="btn btn-outline-secondary rounded-start-pill" type="button" id="decrementQty" aria-label="Decrease quantity">
+                                <i class="bi bi-dash"></i>
+                            </button>
+                            <input type="number" class="form-control text-center border-0" value="1" min="1" max="10" id="itemQuantity" aria-label="Quantity">
+                            <button class="btn btn-outline-secondary rounded-end-pill" type="button" id="incrementQty" aria-label="Increase quantity">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                        <button class="btn btn-primary rounded-pill flex-grow-1" id="addToCartBtn" data-id="@Model.MenuItem.Id" data-name="@Model.MenuItem.Name" data-image="@Model.MenuItem.ImageUrl" aria-label="Add @Model.MenuItem.Name to cart">
+                            <i class="bi bi-cart-plus me-2"></i> Add to Cart - $<span id="totalPrice">@Model.MenuItem.Price.ToString("0.00")</span>
+                        </button>
+                    </div>
+                }
+
+                <!-- Action Buttons -->
+                <div class="d-flex flex-wrap gap-2 pt-3 border-top">
+                    <a asp-controller="MenuItems" asp-action="ByRestaurant" asp-route-restaurantId="@Model.Restaurant.Id" class="btn btn-outline-secondary rounded-pill px-4">
+                        <i class="bi bi-arrow-left me-2"></i> Back to Menu
+                    </a>
+                    @if (User.IsInRole("Owner") || User.IsInRole("Admin"))
+                    {
+                        <div class="dropdown ms-auto">
+                            <button class="btn btn-outline-primary rounded-pill dropdown-toggle" type="button" id="itemActions" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Manage item">
+                                <i class="bi bi-gear-fill me-1"></i> Manage
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end glassmorphic rounded-3 border-0 shadow-lg" aria-labelledby="itemActions">
+                                <li>
+                                    <a class="dropdown-item" asp-action="Edit" asp-route-id="@Model.MenuItem.Id">
+                                        <i class="bi bi-pencil-fill me-2 text-primary"></i> Edit Item
+                                    </a>
+                                </li>
+                                <li>
+                                    <form asp-action="ToggleAvailability" asp-route-id="@Model.MenuItem.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-power me-2 text-primary"></i> @(Model.MenuItem.IsAvailable ? "Mark Unavailable" : "Mark Available")
+                                        </button>
+                                    </form>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form asp-action="Delete" asp-route-id="@Model.MenuItem.Id" method="post" onsubmit="return confirm('Are you sure you want to delete this menu item?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="bi bi-trash-fill me-2"></i> Delete Item
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                </div>
+
+                <!-- Last Updated -->
+                <div class="mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-clock-history me-1"></i>
+                        Last updated: @(Model.MenuItem.UpdatedAt?.ToString("MMMM dd, yyyy") ?? Model.MenuItem.CreatedAt.ToString("MMMM dd, yyyy"))
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sticky Add to Cart Bar (Mobile) -->
+@if (Model.MenuItem.IsAvailable)
+{
+    <div class="sticky-cart-bar glassmorphic d-lg-none position-fixed bottom-0 start-0 w-100 p-3 shadow-lg" style="z-index: 10;">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="fs-5 fw-bold">Total: $<span id="stickyTotalPrice">@Model.MenuItem.Price.ToString("0.00")</span></div>
+            <button class="btn btn-primary rounded-pill px-4" id="stickyAddToCartBtn" data-id="@Model.MenuItem.Id" data-name="@Model.MenuItem.Name" data-image="@Model.MenuItem.ImageUrl" aria-label="Add @Model.MenuItem.Name to cart">
+                <i class="bi bi-cart-plus me-2"></i> Add to Cart
+            </button>
+        </div>
+    </div>
+}
+
+<!-- Image Zoom Modal -->
+<div class="modal fade" id="imageZoomModal" tabindex="-1" aria-labelledby="imageZoomModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content glassmorphic border-0">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="imageZoomModalLabel">@Model.MenuItem.Name</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <img src="@(Model.MenuItem.ImageUrl ?? "/images/default-food.webp")" alt="@Model.MenuItem.Name" class="img-fluid w-100 rounded-3" style="max-height: 600px; object-fit: contain;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Related Items Section -->
+@if (Model.RelatedItems.Any())
+{
+    <section class="related-items py-5 bg-light">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold">Explore Similar Dishes</h3>
+                <a asp-controller="MenuItems" asp-action="ByRestaurant" asp-route-restaurantId="@Model.Restaurant.Id" class="btn btn-outline-primary rounded-pill">
+                    Full Menu <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                @foreach (var item in Model.RelatedItems.Take(3))
+                {
+                    <div class="col" data-aos="fade-up">
+                        <div class="card h-100 glassmorphic rounded-4 overflow-hidden">
+                            <div class="card-img-top position-relative" style="height: 180px;">
+                                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" class="img-fluid w-100 h-100" style="object-fit: cover;" alt="@item.Name" loading="lazy">
+                                }
+                                else
+                                {
+                                    <div class="d-flex justify-content-center align-items-center bg-light h-100">
+                                        <i class="bi bi-egg-fried text-muted" style="font-size: 2rem;"></i>
+                                    </div>
+                                }
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <span class="badge bg-primary rounded-pill">
+                                        <i class="bi bi-star-fill me-1"></i> @item.Rating.ToString("0.0")
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">@item.Name</h5>
+                                <p class="card-text text-muted">@(item.Description?.Length > 80 ? item.Description.Substring(0, 80) + "..." : item.Description)</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-primary">$@item.Price.ToString("0.00")</span>
+                                    <a asp-controller="MenuItems" asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary rounded-pill">
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@section Styles {
+    <style>
+        :root {
+            --primary-color: #FF642E;
+            --secondary-color: #1A2942;
+            --accent-color: #4CAF50;
+            --light-color: #F8F9FA;
+            --dark-color: #212529;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-dark-bg: rgba(52, 58, 64, 0.95);
+            --transition-speed: 0.3s;
+        }
+
+        [data-theme="dark"] {
+            --light-color: #1A2942;
+            --dark-color: #F8F9FA;
+            --glass-bg: rgba(52, 58, 64, 0.95);
+        }
+
+        /* Hero Section */
+        .menu-item-hero {
+            min-height: 300px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            filter: blur(20px) brightness(0.6);
+            transform: scale(1.1);
+            z-index: 0;
+        }
+
+        .breadcrumb.glassmorphic {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+        }
+
+        [data-theme="dark"] .breadcrumb.glassmorphic {
+            background: var(--glass-dark-bg);
+            color: var(--light-color);
+        }
+
+        .breadcrumb-item a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--dark-color);
+        }
+
+        [data-theme="dark"] .breadcrumb-item.active {
+            color: var(--light-color);
+        }
+
+        /* Menu Item Details */
+        .menu-item-details.glassmorphic {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .menu-item-details.glassmorphic {
+            background: var(--glass-dark-bg);
+            color: var(--light-color);
+        }
+
+        .menu-item-details h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        [data-theme="dark"] .section-title {
+            color: var(--light-color);
+        }
+
+        /* Image Container */
+        .menu-item-image-container {
+            cursor: pointer;
+            transition: transform var(--transition-speed);
+        }
+
+            .menu-item-image-container:hover {
+                transform: translateY(-8px);
+            }
+
+            .menu-item-image-container img {
+                transition: transform 0.5s ease;
+            }
+
+            .menu-item-image-container:hover img {
+                transform: scale(1.05);
+            }
+
+        .zoom-icon {
+            opacity: 0;
+            transition: opacity var(--transition-speed);
+        }
+
+        .menu-item-image-container:hover .zoom-icon {
+            opacity: 1;
+        }
+
+        /* Price Display */
+        .price-display.glassmorphic {
+            background: var(--glass-bg);
+            backdrop-filter: blur(5px);
+        }
+
+        [data-theme="dark"] .price-display.glassmorphic {
+            background: var(--glass-dark-bg);
+        }
+
+        /* Customization Options */
+        .accordion-item.glassmorphic {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+        }
+
+        [data-theme="dark"] .accordion-item.glassmorphic {
+            background: var(--glass-dark-bg);
+            color: var(--light-color);
+        }
+
+        .accordion-button:not(.collapsed) {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        .accordion-button:focus {
+            box-shadow: none;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* Quantity Selector */
+        .quantity-selector .form-control {
+            background: var(--glass-bg);
+            color: var(--dark-color);
+        }
+
+        [data-theme="dark"] .quantity-selector .form-control {
+            background: var(--glass-dark-bg);
+            color: var(--light-color);
+        }
+
+        /* Sticky Cart Bar */
+        .sticky-cart-bar.glassmorphic {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+        }
+
+        [data-theme="dark"] .sticky-cart-bar.glassmorphic {
+            background: var(--glass-dark-bg);
+            color: var(--light-color);
+        }
+
+        /* Related Items */
+        .related-items .card.glassmorphic {
+            transition: transform var(--transition-speed);
+        }
+
+            .related-items .card.glassmorphic:hover {
+                transform: translateY(-8px);
+            }
+
+        .related-items .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        /* Modal */
+        .modal-content.glassmorphic {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+        }
+
+        [data-theme="dark"] .modal-content.glassmorphic {
+            background: var(--glass-dark-bg);
+            color: var(--light-color);
+        }
+
+        /* Responsive Adjustments */
+        @@media (max-width: 991.98px) {
+            .menu-item-hero
+
+        {
+            min-height: 200px;
+        }
+
+        .menu-item-details h1 {
+            font-size: 2rem;
+        }
+
+        .menu-item-image-container {
+            max-height: 400px;
+        }
+
+        }
+
+        @@media (max-width: 767.98px) {
+            .menu-item-image-container
+
+        {
+            max-height: 300px;
+            margin-bottom: 1.5rem;
+        }
+
+        .sticky-cart-bar {
+            padding: 1rem;
+        }
+
+            .sticky-cart-bar .btn {
+                font-size: 0.9rem;
+                padding: 0.5rem 1rem;
+            }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const basePrice = @Model.MenuItem.Price;
+            const quantityInput = $('#itemQuantity');
+            const totalPriceElement = $('#totalPrice');
+            const stickyTotalPriceElement = $('#stickyTotalPrice');
+            const addToCartBtn = $('#addToCartBtn');
+            const stickyAddToCartBtn = $('#stickyAddToCartBtn');
+
+            // Update total price based on quantity and customizations
+            function updateTotalPrice() {
+                const quantity = parseInt(quantityInput.val()) || 1;
+                let customizationPrice = 0;
+                $('.customization-choice:checked').each(function () {
+                    customizationPrice += parseFloat($(this).data('price') || 0);
+                });
+                const totalPrice = (basePrice + customizationPrice) * quantity;
+                totalPriceElement.text(totalPrice.toFixed(2));
+                stickyTotalPriceElement.text(totalPrice.toFixed(2));
+            }
+
+            // Quantity controls
+            $('#incrementQty').click(function () {
+                let value = parseInt(quantityInput.val());
+                if (value < 10) {
+                    quantityInput.val(value + 1);
+                    updateTotalPrice();
+                }
+            });
+
+            $('#decrementQty').click(function () {
+                let value = parseInt(quantityInput.val());
+                if (value > 1) {
+                    quantityInput.val(value - 1);
+                    updateTotalPrice();
+                }
+            });
+
+            quantityInput.on('change', function () {
+                let value = parseInt(this.value);
+                if (isNaN(value) || value < 1) {
+                    this.value = 1;
+                } else if (value > 10) {
+                    this.value = 10;
+                }
+                updateTotalPrice();
+            });
+            // Customization price updates
+            $('.customization-choice').on('change', updateTotalPrice);
+
+            // Add to cart handler
+            function handleAddToCart(btn) {
+                if (!@Model.MenuItem.IsAvailable) {
+                    showNotification('warning', 'Item Unavailable', '@Model.MenuItem.Name is currently unavailable.');
+                    return;
+                }
+
+                const quantity = parseInt(quantityInput.val()) || 1;
+                const customizations = [];
+                $('.customization-choice:checked').each(function () {
+                    customizations.push({
+                        optionId: $(this).attr('name').split('_')[1],
+                        choiceId: $(this).val(),
+                        price: parseFloat($(this).data('price') || 0)
+                    });
+                });
+
+                // Validate required customizations
+                const requiredOptions = $('.accordion-item').filter(function () {
+                    return $(this).find('.text-danger').length > 0;
+                });
+                let isValid = true;
+                requiredOptions.each(function () {
+                    if ($(this).find('.customization-choice:checked').length === 0) {
+                        isValid = false;
+                        showNotification('error', 'Customization Required', 'Please select an option for ' + $(this).find('.accordion-button').text().trim());
+                    }
+                });
+
+                if (!isValid) return;
+
+                $.ajax({
+                    url: '/cart/add',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        menuItemId: btn.data('id'),
+                        quantity: quantity,
+                        name: btn.data('name'),
+                        imageUrl: btn.data('image'),
+                        customizations: customizations
+                    }),
+                    headers: {
+                        'X-CSRF-TOKEN': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            showNotification('success', 'Added to Cart', response.message);
+                            updateCartCount();
+                            btn.html('<i class="bi bi-check-circle-fill me-2"></i> Added').removeClass('btn-primary').addClass('btn-success');
+                            setTimeout(() => {
+                                btn.html('<i class="bi bi-cart-plus me-2"></i> Add to Cart - $<span id="totalPrice">' + totalPriceElement.text() + '</span>')
+                                    .removeClass('btn-success').addClass('btn-primary');
+                            }, 2000);
+                        } else {
+                            showNotification('error', 'Cart Error', response.message || 'Failed to add item to cart.');
+                        }
+                    },
+                    error: function () {
+                        showNotification('error', 'Cart Error', 'An error occurred while adding to cart.');
+                    }
+                });
+            }
+
+            addToCartBtn.click(function () { handleAddToCart($(this)); });
+            stickyAddToCartBtn.click(function () { handleAddToCart($(this)); });
+
+            // IntersectionObserver for lazy animations
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        $(entry.target).find('[data-aos]').addClass('aos-animate');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            $('.related-items .col').each(function () {
+                observer.observe(this);
+            });
+
+            // Initialize price
+            updateTotalPrice();
+        });
+    </script>
+}

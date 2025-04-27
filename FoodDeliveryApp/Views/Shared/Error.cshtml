@@ -1,24 +1,44 @@
-﻿@model ErrorViewModel
+﻿@using FoodDeliveryApp.ViewModels
+@model ErrorViewModel
 @{
     ViewData["Title"] = "Error";
+    Layout = null;
 }
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto text-center">
+            <div class="card shadow-sm p-4">
+                <div class="card-body">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+                    <h1 class="h2 my-4">Something went wrong</h1>
+                    <p class="lead">We apologize for the inconvenience. An error occurred while processing your request.</p>
 
-@if (Model.ShowRequestId)
-{
-    <p>
-        <strong>Request ID:</strong> <code>@Model.RequestId</code>
-    </p>
-}
+                    @if (Model.ShowRequestId)
+                    {
+                        <div class="alert alert-secondary mt-4">
+                            <p class="mb-0"><strong>Request ID:</strong> <code>@Model.RequestId</code></p>
+                        </div>
+                    }
 
-<h3>Development Mode</h3>
-<p>
-    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
+                    <p class="mt-4">Please try the following:</p>
+                    <ul class="list-unstyled text-start mx-auto" style="max-width: 400px;">
+                        <li><i class="bi bi-arrow-clockwise me-2"></i> Refresh the page</li>
+                        <li><i class="bi bi-arrow-left me-2"></i> Go back to the previous page</li>
+                        <li><i class="bi bi-house me-2"></i> Return to the homepage</li>
+                        <li><i class="bi bi-clock-history me-2"></i> Try again later</li>
+                    </ul>
 
-    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
-</p>
-<p>
-    <strong>Development Mode:</strong> <code>Development</code>
-</p>
+                    <div class="mt-4">
+                        <a href="/" class="btn btn-primary me-2">Go to Homepage</a>
+                        <a href="/Contact" class="btn btn-outline-secondary">Contact Support</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <p class="text-muted small">If the problem persists, please contact our support team at support@fooddeliveryapp.com</p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,48 +1,116 @@
-﻿@model FoodDeliveryApp.ViewModels.Account.RegisterViewModel
-
+﻿@model FoodDeliveryApp.ViewModels.AccountViewModels.RegisterViewModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Create Account";
+    ViewData["SubTitle"] = "Join us to order delicious food from top restaurants";
+    Layout = "_AuthLayout";
 }
 
-<div class="container mt-5">
-    <h2 class="mb-4">Register</h2>
+<form asp-controller="Account" asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post" class="auth-form">
+    <div asp-validation-summary="ModelOnly" class="text-danger validation-summary" role="alert"></div>
 
-    <form asp-action="Register" method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-        <div class="mb-3">
-            <label asp-for="Email" class="form-label"></label>
-            <input asp-for="Email" class="form-control" />
-            <span asp-validation-for="Email" class="text-danger"></span>
+    <div class="form-group">
+        <label asp-for="Email" class="form-label">Email Address</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            <input asp-for="Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
         </div>
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
 
-        <div class="mb-3">
-            <label asp-for="Password" class="form-label"></label>
-            <input asp-for="Password" class="form-control" />
-            <span asp-validation-for="Password" class="text-danger"></span>
+    <div class="form-group">
+        <label asp-for="Password" class="form-label">Password</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input asp-for="Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="••••••••" />
+            <button type="button" class="password-toggle" tabindex="-1">
+                <i class="bi bi-eye"></i>
+            </button>
         </div>
+        <span asp-validation-for="Password" class="text-danger"></span>
+        <small class="form-text text-muted">
+            <i class="bi bi-info-circle me-1"></i>Password must be at least 6 characters with letters and numbers.
+        </small>
+    </div>
 
-        <div class="mb-3">
-            <label asp-for="ConfirmPassword" class="form-label"></label>
-            <input asp-for="ConfirmPassword" class="form-control" />
-            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+    <div class="form-group">
+        <label asp-for="ConfirmPassword" class="form-label">Confirm Password</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+            <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="••••••••" />
+            <button type="button" class="password-toggle" tabindex="-1">
+                <i class="bi bi-eye"></i>
+            </button>
         </div>
+        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+    </div>
 
-        <div class="mb-3">
-            <label asp-for="Role" class="form-label"></label>
-            <select asp-for="Role" class="form-select">
-                <option value="">Select Role</option>
-                <option value="Customer">Customer</option>
-                <option value="DeliveryPerson">Delivery Person</option>
-                <option value="RestaurantOwner">Restaurant Owner</option>
-                <option value="Admin">Admin</option>
+    <div class="form-group">
+        <label asp-for="Role" class="form-label">I want to use Food Delivery as a</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+            <select asp-for="Role" class="form-select" aria-required="true">
+                <option value="Customer">Customer - Order Food</option>
+                <option value="RestaurantOwner">Restaurant Owner - Sell Food</option>
+                <option value="DeliveryDriver">Delivery Driver - Deliver Food</option>
             </select>
-            <span asp-validation-for="Role" class="text-danger"></span>
         </div>
-        
-        <button type="submit" class="btn btn-primary">Register</button>
-        <a asp-action="Login" class="btn btn-link">Already have an account?</a>
-    </form>
+        <span asp-validation-for="Role" class="text-danger"></span>
+    </div>
+
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" id="agreeTerms" required />
+        <label class="form-check-label" for="agreeTerms">
+            I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a> and <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>
+        </label>
+    </div>
+
+    <div class="form-group">
+        <button id="register-submit" type="submit" class="btn btn-primary">
+            <i class="bi bi-person-plus me-2"></i>Create Account
+        </button>
+    </div>
+
+    <div class="auth-links">
+        <p>Already have an account? <a asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]">Sign In</a></p>
+    </div>
+</form>
+
+<!-- Terms Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms of Service</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>These Terms of Service govern your use of the Food Delivery App platform.</p>
+                <!-- More terms content here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="privacyModalLabel">Privacy Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Our Privacy Policy explains how we collect, use, and protect your personal information.</p>
+                <!-- More privacy content here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

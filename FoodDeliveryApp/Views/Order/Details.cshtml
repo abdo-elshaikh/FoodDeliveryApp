@@ -1,0 +1,121 @@
+﻿@model FoodDeliveryApp.ViewModels.OrderViewModels.OrderViewModel
+
+@{
+    ViewData["Title"] = "Order Details";
+}
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h2 class="h3 fw-bold mb-4 text-center">Order Details</h2>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="card border-0 shadow-sm rounded">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Order #@Model.Id</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Restaurant:</strong> @Model.Items.First().RestaurantName
+                    </div>
+                    <div class="mb-3">
+                        <strong>Order Date:</strong> @Model.OrderDate.ToString("MMM dd, yyyy HH:mm")
+                    </div>
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <span class="badge bg-@(Model.Status == OrderStatus.Delivered ? "success" : Model.Status == OrderStatus.Cancelled ? "danger" : "warning")">
+                            @Model.Status
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Delivery Address:</strong> @(Model.Address?.FullAddress ?? "N/A")
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.SpecialInstructions))
+                    {
+                        <div class="mb-3">
+                            <strong>Special Instructions:</strong> @Model.SpecialInstructions
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <strong>Payment Method:</strong> @Model.PaymentDetails
+                    </div>
+                    <div class="mb-3">
+                        <strong>Payment Status:</strong>
+                        <span class="badge bg-@(Model.PaymentStatus == PaymentStatus.Completed ? "success" : Model.PaymentStatus == PaymentStatus.Refunded ? "danger" : "warning")">
+                            @Model.PaymentStatus
+                        </span>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">Items</h5>
+                    @foreach (var item in Model.Items)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <img src="@item.ImageUrl" alt="@item.Name" class="rounded" style="width: 60px; height: 60px; object-fit: cover; margin-right: 15px;" />
+                                <div>
+                                    <h6 class="mb-1">@item.Name</h6>
+                                    <small class="text-muted">Quantity: @item.Quantity</small>
+                                    @if (item.Customizations.Any())
+                                    {
+                                        <small class="d-block text-muted">
+                                            Customizations: @string.Join(", ", item.Customizations.Select(c => $"Option {c.OptionId}: Choice {c.ChoiceId} (+{c.Price:C})"))
+                                        </small>
+                                    }
+                                </div>
+                            </div>
+                            <span class="fw-bold">@((item.Price * item.Quantity).ToString("C"))</span>
+                        </div>
+                    }
+
+                    <hr />
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span>@Model.Subtotal.ToString("C")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery Fee</span>
+                        <span>@Model.DeliveryFee.ToString("C")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tax</span>
+                        <span>@Model.Tax.ToString("C")</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total</span>
+                        <span>@Model.Total.ToString("C")</span>
+                    </div>
+                </div>
+                <div class="card-footer text-end">
+                    @if (Model.Status == OrderStatus.Pending)
+                    {
+                        <form asp-action="Cancel" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="submit" class="btn btn-danger rounded-pill me-2">Cancel Order</button>
+                        </form>
+                    }
+                    <a asp-action="History" class="btn btn-outline-primary rounded-pill">Back to History</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', updateCartCount);
+    </script>
+}

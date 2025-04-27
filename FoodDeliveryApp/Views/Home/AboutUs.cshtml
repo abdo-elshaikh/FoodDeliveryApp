@@ -1,0 +1,63 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script>@{
+    ViewData["Title"] = "About Us";
+}
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h1 class="fw-bold">About FoodFast</h1>
+            <p class="text-muted">Delivering joy, one meal at a time.</p>
+        </div>
+        <div class="row align-items-center mb-5">
+            <div class="col-lg-6">
+                <h3 class="fw-bold mb-3">Our Mission</h3>
+                <p class="text-muted">At FoodFast, we’re passionate about connecting people with their favorite foods. Our mission is to make food delivery fast, reliable, and delightful, supporting local restaurants and communities.</p>
+                <p class="text-muted">Founded in 2020, we’ve grown to serve thousands of customers across the country, partnering with top restaurants to bring you the best dining experience.</p>
+            </div>
+            <div class="col-lg-6">
+                <img src="https://images.pexels.com/photos/3184183/pexels-photo-3184183.jpeg" alt="FoodFast mission" class="img-fluid rounded-3 shadow-lg">
+            </div>
+        </div>
+        <div class="text-center">
+            <a href="/Contact" class="btn btn-primary rounded-pill px-4 py-2">Get in Touch</a>
+        </div>
+    </div>
+</section>

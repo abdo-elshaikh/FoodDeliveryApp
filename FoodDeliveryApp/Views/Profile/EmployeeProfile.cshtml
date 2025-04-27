@@ -1,0 +1,65 @@
+﻿@model FoodDeliveryApp.ViewModels.Profile.EmployeeProfileViewModel
+
+@{
+    ViewData["Title"] = "Employee Profile";
+    Layout = "_ProfileLayout";
+}
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2>Your Employee Profile</h2>
+                <a asp-action="EditEmployeeProfile" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-4">
+                        @if (string.IsNullOrEmpty(Model.ProfilePicturePath))
+                        {
+                            <img src="/images/profiles/default-employee.png" alt="Default Profile" class="img-thumbnail rounded-circle" style="width: 150px; height: 150px; object-fit: cover;" />
+                        }
+                        else
+                        {
+                            <img src="@Model.ProfilePicturePath" alt="Profile Picture" class="img-thumbnail rounded-circle" style="width: 150px; height: 150px; object-fit: cover;" />
+                        }
+                        <div class="mt-2">
+                            <h4>@Model.FirstName @Model.LastName</h4>
+                            <p class="text-muted">@Model.Position</p>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Email</h5>
+                                </div>
+                                <p class="mb-1">@Model.Email</p>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Phone Number</h5>
+                                </div>
+                                <p class="mb-1">@Model.PhoneNumber</p>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Position</h5>
+                                </div>
+                                <p class="mb-1">@Model.Position</p>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">Hire Date</h5>
+                                </div>
+                                <p class="mb-1">@Model.HireDate.ToString("MMM dd, yyyy")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

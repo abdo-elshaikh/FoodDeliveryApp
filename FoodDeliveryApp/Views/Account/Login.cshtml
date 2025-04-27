@@ -1,37 +1,52 @@
-﻿@model FoodDeliveryApp.ViewModels.Account.LoginViewModel
-
+﻿@model FoodDeliveryApp.ViewModels.AccountViewModels.LoginViewModel
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = "Welcome Back";
+    ViewData["SubTitle"] = "Sign in to your account to continue";
+    Layout = "_AuthLayout";
 }
 
-<div class="container mt-5">
-    <h2 class="mb-4">Login</h2>
+<form asp-controller="Account" asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post" class="auth-form">
+    <div asp-validation-summary="ModelOnly" class="text-danger validation-summary" role="alert"></div>
 
-    <form asp-action="Login" method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-        <div class="mb-3">
-            <label asp-for="Email" class="form-label"></label>
-            <input asp-for="Email" class="form-control" />
-            <span asp-validation-for="Email" class="text-danger"></span>
+    <div class="form-group">
+        <label asp-for="Email" class="form-label">Email Address</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            <input asp-for="Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
         </div>
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
 
-        <div class="mb-3">
-            <label asp-for="Password" class="form-label"></label>
-            <input asp-for="Password" class="form-control" />
-            <span asp-validation-for="Password" class="text-danger"></span>
+    <div class="form-group">
+        <div class="d-flex justify-content-between align-items-center">
+            <label asp-for="Password" class="form-label mb-0">Password</label>
+            <a asp-action="ForgotPassword" class="small text-nowrap">Forgot password?</a>
         </div>
-
-        <div class="mb-3 form-check">
-            <input asp-for="RememberMe" class="form-check-input" />
-            <label asp-for="RememberMe" class="form-check-label"></label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input asp-for="Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="••••••••" />
+            <button type="button" class="password-toggle" tabindex="-1">
+                <i class="bi bi-eye"></i>
+            </button>
         </div>
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
 
-        <button type="submit" class="btn btn-primary">Login</button>
-        <a asp-action="ForgotPassword" class="btn btn-link">Forgot Password?</a>
-        <a asp-action="Register" class="btn btn-link">Create an account</a>
-    </form>
-</div>
+    <div class="form-group form-check">
+        <input asp-for="RememberMe" class="form-check-input" />
+        <label asp-for="RememberMe" class="form-check-label">Keep me signed in</label>
+    </div>
+
+    <div class="form-group">
+        <button id="login-submit" type="submit" class="btn btn-primary">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+        </button>
+    </div>
+
+    <div class="auth-links">
+        <p>Don't have an account? <a asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]">Create Account</a></p>
+    </div>
+</form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

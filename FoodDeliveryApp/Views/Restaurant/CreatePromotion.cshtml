@@ -1,0 +1,113 @@
+﻿@model FoodDeliveryApp.ViewModels.PromotionViewModels.PromotionCreateViewModel
+
+@{
+    ViewData["Title"] = $"Create Promotion - {Model.RestaurantId}";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Create New Promotion</h3>
+        </div>
+        <div class="card-body">
+            <form asp-action="CreatePromotion" asp-route-restaurantId="@Model.RestaurantId" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <input type="hidden" asp-for="RestaurantId" />
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Code" class="form-label">Promo Code</label>
+                        <input asp-for="Code" class="form-control" placeholder="e.g. SUMMER20" />
+                        <span asp-validation-for="Code" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Description" class="form-label">Description</label>
+                        <input asp-for="Description" class="form-control" placeholder="Brief description of the promotion" />
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Discount Type</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" asp-for="IsPercentage" value="true" checked />
+                            <label class="form-check-label">Percentage</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" asp-for="IsPercentage" value="false" />
+                            <label class="form-check-label">Fixed Amount</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="DiscountValue" class="form-label">
+                            @(Model.IsPercentage ? "Discount Percentage" : "Discount Amount")
+                        </label>
+                        <div class="input-group">
+                            <input asp-for="DiscountValue" class="form-control" />
+                            <span class="input-group-text">@(Model.IsPercentage ? "%" : "$")</span>
+                        </div>
+                        <span asp-validation-for="DiscountValue" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="MinimumOrderAmount" class="form-label">Minimum Order Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="MinimumOrderAmount" class="form-control" />
+                        </div>
+                        <span asp-validation-for="MinimumOrderAmount" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="StartDate" class="form-label">Start Date</label>
+                        <input asp-for="StartDate" class="form-control" type="datetime-local" />
+                        <span asp-validation-for="StartDate" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="EndDate" class="form-label">End Date</label>
+                        <input asp-for="EndDate" class="form-control" type="datetime-local" />
+                        <span asp-validation-for="EndDate" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="UsageLimit" class="form-label">Usage Limit (per customer)</label>
+                    <input asp-for="UsageLimit" class="form-control" />
+                    <span asp-validation-for="UsageLimit" class="text-danger"></span>
+                    <small class="text-muted">Set to 0 for unlimited usage</small>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a asp-action="Promotions" asp-route-restaurantId="@Model.RestaurantId" class="btn btn-outline-secondary me-md-2">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Create Promotion
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('input[type=radio][name=IsPercentage]').change(function() {
+                var label = $('#DiscountValue').siblings('label');
+                var inputGroupText = $('#DiscountValue').parent().find('.input-group-text');
+
+                if (this.value === 'True') {
+                    label.text('Discount Percentage');
+                    inputGroupText.text('%');
+                } else {
+                    label.text('Discount Amount');
+                    inputGroupText.text('$');
+                }
+            });
+        });
+    </script>
+}

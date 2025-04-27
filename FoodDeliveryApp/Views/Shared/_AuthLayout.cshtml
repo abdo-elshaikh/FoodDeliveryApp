@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FoodFast</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="~/lib/font-awesome/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    @* <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"> *@
+    <link rel="stylesheet" href="~/css/auth.css" />
+    <!-- favicon -->
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico" sizes="16x16" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="theme-toggle">
+        <button class="btn btn-icon" id="themeToggle">
+            <i class="bi bi-sun-fill light-icon"></i>
+            <i class="bi bi-moon-fill dark-icon"></i>
+        </button>
+    </div>
+
+    <div class="auth-container">
+        <div class="row g-0">
+            <div class="col-lg-6 d-none d-lg-block auth-banner">
+                <div class="brand-container">
+                    <div class="logo">
+                        <img src="~/images/logo-light.png" alt="Food Delivery App Logo" class="img-fluid logo-light" />
+                        <img src="~/images/logo-dark.png" alt="Food Delivery App Logo" class="img-fluid logo-dark" />
+                    </div>
+                    <div class="tagline">
+                        <h2>Delicious food delivered to your doorstep</h2>
+                        <p>Fast, reliable, and convenient food delivery service.</p>
+                    </div>
+                    <div class="auth-features">
+                        <div class="feature-item">
+                            <i class="bi bi-clock"></i>
+                            <span>Quick Delivery</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Secure Payments</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-star"></i>
+                            <span>Top Restaurants</span>
+                        </div>
+                    </div>
+                    <!-- back to home -->
+                    <div class="back-to-home mt-4">
+                        <a href="@Url.Action("Index", "Home")" class="btn btn-secondary">
+                            <i class="fa fa-home"></i> Back to Home
+                        </a>
+                    </div>
+                </div>
+                <div class="banner-footer">
+                    <p>&copy; @DateTime.Now.Year Food Delivery App. All rights reserved.</p>
+                    <div class="footer-links">
+                        <a href="#">Privacy Policy</a>
+                        <a href="#">Terms of Service</a>
+                        <a href="#">Help Center</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-12 auth-form-container">
+                <div class="mobile-header d-lg-none">
+                    <div class="mobile-logo">
+                        <img src="~/images/logo-small.png" alt="Food Delivery App" height="40" />
+                    </div>
+                </div>
+
+                <div class="auth-form-wrapper">
+                    <div class="auth-header mb-4">
+                        <h1 class="auth-title">@ViewData["Title"]</h1>
+                        <p class="auth-subtitle">@ViewData["SubTitle"]</p>
+                    </div>
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle me-2"></i>
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <div class="auth-form">
+                        @RenderBody()
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/parallax-js@3.1.0/dist/parallax.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/auth.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,115 @@
+﻿@model FoodDeliveryApp.ViewModels.PromotionViewModels.PromotionViewModel
+
+@{
+    ViewData["Title"] = $"Promotion Details - {Model.Code}";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Promotion Details: @Model.Code</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Basic Information</h5>
+                    <hr />
+                    <dl class="row">
+                        <dt class="col-sm-4">Restaurant</dt>
+                        <dd class="col-sm-8">@Model.RestaurantName</dd>
+
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">@Model.Description</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">
+                                @(Model.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <h5>Discount Details</h5>
+                    <hr />
+                    <dl class="row">
+                        <dt class="col-sm-4">Discount Type</dt>
+                        <dd class="col-sm-8">@(Model.IsPercentage ? "Percentage" : "Fixed Amount")</dd>
+
+                        <dt class="col-sm-4">Discount Value</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.IsPercentage)
+                            {
+                                @Model.DiscountValue
+                            
+                                <span>%</span>
+                            }
+                            else
+                            {
+                                <span>$</span>
+                                @Model.DiscountValue
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Min. Order Amount</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.MinimumOrderAmount > 0)
+                            {
+                                <span>$@Model.MinimumOrderAmount</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">None</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">Usage Limit</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.UsageLimit > 0)
+                            {
+                                @Model.UsageLimit
+                            }
+                            else
+                            {
+                                <span>Unlimited</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Validity Period</h5>
+                    <hr />
+                    <dl class="row">
+                        <dt class="col-sm-4">Start Date</dt>
+                        <dd class="col-sm-8">@Model.StartDate.ToString("MMM dd, yyyy hh:mm tt")</dd>
+
+                        <dt class="col-sm-4">End Date</dt>
+                        <dd class="col-sm-8">@Model.EndDate.ToString("MMM dd, yyyy hh:mm tt")</dd>
+
+                        <dt class="col-sm-4">Duration</dt>
+                        <dd class="col-sm-8">@((Model.EndDate - Model.StartDate).Days) days</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <h5>Statistics</h5>
+                    <hr />
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Statistics feature coming soon!
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <a href="/restaurants/promotions/@Model?.RestaurantId" class="btn btn-outline-secondary me-md-2">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+                <a asp-action="EditPromotion" asp-route-id="@Model.Id" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Promotion
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,101 @@
+﻿@model FoodDeliveryApp.ViewModels.Profile.EmployeeProfileViewModel
+
+@{
+    ViewData["Title"] = "Edit Employee Profile";
+    Layout = "_ProfileLayout";
+}
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2>Edit Your Employee Profile</h2>
+                <a asp-action="EmployeeProfile" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Profile
+                </a>
+            </div>
+            <div class="card-body">
+                <form asp-action="EditEmployeeProfile" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="EmployeeId" />
+
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-4">
+                            @if (string.IsNullOrEmpty(Model.ProfilePicturePath))
+                            {
+                                <img src="/images/profiles/default-employee.png" alt="Default Profile" id="profilePreview" class="img-thumbnail rounded-circle" style="width: 150px; height: 150px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <img src="@Model.ProfilePicturePath" alt="Profile Picture" id="profilePreview" class="img-thumbnail rounded-circle" style="width: 150px; height: 150px; object-fit: cover;" />
+                            }
+                            <div class="form-group mt-3">
+                                <div class="custom-file">
+                                    <input asp-for="ProfilePicture" class="custom-file-input" id="profilePictureInput" />
+                                    <label class="custom-file-label">Choose file...</label>
+                                </div>
+                                <span asp-validation-for="ProfilePicture" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label asp-for="FirstName" class="control-label"></label>
+                                <input asp-for="FirstName" class="form-control" />
+                                <span asp-validation-for="FirstName" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label asp-for="LastName" class="control-label"></label>
+                                <input asp-for="LastName" class="form-control" />
+                                <span asp-validation-for="LastName" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label asp-for="Email" class="control-label"></label>
+                                <input asp-for="Email" class="form-control" readonly />
+                            </div>
+
+                            <div class="form-group">
+                                <label asp-for="PhoneNumber" class="control-label"></label>
+                                <input asp-for="PhoneNumber" class="form-control" />
+                                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label asp-for="Position" class="control-label"></label>
+                                <input asp-for="Position" class="form-control" readonly />
+                                <span asp-validation-for="Position" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group text-right">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Custom file input display
+        $(".custom-file-input").on("change", function () {
+            var fileName = $(this).val().split("\\").pop();
+            $(this).next('.custom-file-label').html(fileName);
+
+            // Preview the image
+            if (this.files && this.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#profilePreview').attr('src', e.target.result);
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    </script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,243 +1,582 @@
-﻿using Microsoft.EntityFrameworkCore;
-using FoodDeliveryApp.Models;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using FoodDeliveryApp.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace FoodDeliveryApp.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<User>
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
         {
         }
 
-        public DbSet<Customer> Customers { get; set; }
+        // DbSets for all entities
+        public DbSet<CustomerProfile> CustomerProfiles { get; set; }
+        public DbSet<EmployeeProfile> EmployeeProfiles { get; set; }
         public DbSet<Address> Addresses { get; set; }
-        public DbSet<Employee> Employees { get; set; }
-        public DbSet<Category> Categories { get; set; }
-        public DbSet<Item> Items { get; set; }
+        public DbSet<RestaurantCategory> RestaurantCategories { get; set; }
+        public DbSet<Restaurant> Restaurants { get; set; }
+        public DbSet<MenuItem> MenuItems { get; set; }
+        public DbSet<CustomizationOption> CustomizationOptions { get; set; }
+        public DbSet<CustomizationChoice> CustomizationChoices { get; set; }
         public DbSet<Order> Orders { get; set; }
-        public DbSet<OrderDetail> OrderDetails { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<OrderCustomization> OrderCustomizations { get; set; }
+        public DbSet<PaymentMethod> PaymentMethods { get; set; }
+        public DbSet<Payment> Payments { get; set; }
+        public DbSet<Promotion> Promotions { get; set; }
+        public DbSet<PromotionUsage> PromotionUsages { get; set; }
+        public DbSet<Review> Reviews { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<Customization> Customizations { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-            base.OnModelCreating(modelBuilder);
+            base.OnModelCreating(builder);
 
-            // Configure Table Names (Optional, but good practice for clarity)
-            modelBuilder.Entity<Customer>().ToTable("Customers");
-            modelBuilder.Entity<Address>().ToTable("Addresses");
-            modelBuilder.Entity<Employee>().ToTable("Employees");
-            modelBuilder.Entity<Category>().ToTable("Categories");
-            modelBuilder.Entity<Item>().ToTable("Items");
-            modelBuilder.Entity<Order>().ToTable("Orders");
-            modelBuilder.Entity<OrderDetail>().ToTable("OrderDetails");
+            // Configure relationships and constraints
+            builder.Entity<ApplicationUser>()
+                .HasOne(u => u.CustomerProfile)
+                .WithOne(c => c.User)
+                .HasForeignKey<CustomerProfile>(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // Configure Primary Key Properties (Explicitly, though often inferred by convention)
-            modelBuilder.Entity<Customer>().HasKey(c => c.CustomerId);
-            modelBuilder.Entity<Address>().HasKey(a => a.AddressId);
-            modelBuilder.Entity<Employee>().HasKey(e => e.EmployeeId);
-            modelBuilder.Entity<Category>().HasKey(c => c.CategoryId);
-            modelBuilder.Entity<Item>().HasKey(i => i.ItemId);
-            modelBuilder.Entity<Order>().HasKey(o => o.OrdId);
-            modelBuilder.Entity<OrderDetail>().HasKey(od => od.OrdDetId);
+            builder.Entity<ApplicationUser>()
+                .HasOne(u => u.EmployeeProfile)
+                .WithOne(e => e.User)
+                .HasForeignKey<EmployeeProfile>(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // Configure Relationships
-
-            //// Employee - User (One-to-One)
-            //modelBuilder.Entity<Employee>()
-            //    .HasOne(e => e.User)
-            //    .WithOne() // User doesn't have a direct navigation property back to Employee
-            //    .HasForeignKey<Employee>(e => e.UserId)
-            //    .HasPrincipalKey<User>(u => u.Id) // Assuming Id is the primary key of User
-            //    .OnDelete(DeleteBehavior.Cascade); // Consider if Cascade is appropriate here
-
-            //// Customer - User (One-to-One)
-            //modelBuilder.Entity<Customer>()
-            //    .HasOne(c => c.User)
-            //    .WithOne()
-            //    .HasForeignKey<Customer>(c => c.UserId)
-            //    .HasPrincipalKey<User>(u => u.Id)
-            //    .OnDelete(DeleteBehavior.Cascade); // Consider if Cascade is appropriate here
-
-            //// Employee - Order (One-to-Many)
-            //modelBuilder.Entity<Employee>()
-            //    .HasMany(e => e.Orders)
-            //    .WithOne(o => o.Employee)
-            //    .HasForeignKey(o => o.EmployeeId)
-            //    .OnDelete(DeleteBehavior.SetNull);
-
-            //// Customer - Order (One-to-Many)
-            //modelBuilder.Entity<Customer>()
-            //    .HasMany(c => c.Orders)
-            //    .WithOne(o => o.Customer)
-            //    .HasForeignKey(o => o.CustomerId)
-            //    .OnDelete(DeleteBehavior.Cascade); // Consider if Cascade is appropriate here
-
-            // Customer - Address (One-to-Many)
-            modelBuilder.Entity<Customer>()
+            builder.Entity<CustomerProfile>()
                 .HasMany(c => c.Addresses)
-                .WithOne(a => a.Customer)
-                .HasForeignKey(a => a.CustomerId)
+                .WithOne(a => a.CustomerProfile)
+                .HasForeignKey(a => a.CustomerProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Category - Item (One-to-Many)
-            modelBuilder.Entity<Category>()
+            builder.Entity<Restaurant>()
+                .HasMany(r => r.MenuItems)
+                .WithOne(m => m.Restaurant)
+                .HasForeignKey(m => m.RestaurantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            builder.Entity<Order>()
+                .HasMany(o => o.OrderItems)
+                .WithOne(oi => oi.Order)
+                .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Restaurant>()
+                .HasOne(r => r.Owner)
+                .WithMany(u => u.Restaurants)
+                .HasForeignKey(r => r.OwnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<RestaurantCategory>()
+                .HasMany(c => c.Restaurants)
+                .WithOne(r => r.Category)
+                .HasForeignKey(r => r.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            // Configure relationships for Promotions and PromotionUsages
+            builder.Entity<Promotion>()
+                .HasMany(p => p.PromotionUsages)
+                .WithOne(u => u.Promotion)
+                .HasForeignKey(u => u.PromotionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Cart configuration
+            builder.Entity<Cart>()
                 .HasMany(c => c.Items)
-                .WithOne(i => i.Category)
-                .HasForeignKey(i => i.CateqId)
+                .WithOne(ci => ci.Cart)
+                .HasForeignKey(ci => ci.CartId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Order - OrderDetail (One-to-Many)
-            modelBuilder.Entity<Order>()
-                .HasMany(o => o.OrderDetails)
-                .WithOne(od => od.Order)
-                .HasForeignKey(od => od.OrdId)
+            // CartItem configuration
+            builder.Entity<CartItem>()
+                .HasOne(ci => ci.MenuItem)
+                .WithMany()
+                .HasForeignKey(ci => ci.MenuItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<CartItem>()
+                .HasMany(ci => ci.Customizations)
+                .WithOne(c => c.CartItem)
+                .HasForeignKey(c => c.CartItemId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Item - OrderDetail (One-to-Many)
-            modelBuilder.Entity<Item>()
-                .HasMany(i => i.OrderDetails)
-                .WithOne(od => od.Item)
-                .HasForeignKey(od => od.ItemId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // Seed data
+            SeedData(builder);
+        }
 
-            // Seed Sample Data
+        private void SeedData(ModelBuilder builder)
+        {
+            var hasher = new PasswordHasher<ApplicationUser>();
+            var now = DateTime.UtcNow;
+
             // Seed Roles
-            modelBuilder.Entity<IdentityRole>().HasData(
-                new IdentityRole { Id = "1", Name = "Customer", NormalizedName = "CUSTOMER" },
-                new IdentityRole { Id = "2", Name = "Employee", NormalizedName = "EMPLOYEE" },
-                new IdentityRole { Id = "3", Name = "Admin", NormalizedName = "ADMIN" }
-            );
+            var roles = new List<IdentityRole>
+            {
+                new IdentityRole { Id = "1", Name = "Admin", NormalizedName = "ADMIN", ConcurrencyStamp = Guid.NewGuid().ToString() },
+                new IdentityRole { Id = "2", Name = "Customer", NormalizedName = "CUSTOMER", ConcurrencyStamp = Guid.NewGuid().ToString() },
+                new IdentityRole { Id = "3", Name = "Employee", NormalizedName = "EMPLOYEE", ConcurrencyStamp = Guid.NewGuid().ToString() },
+                new IdentityRole { Id = "4", Name = "Owner", NormalizedName = "OWNER", ConcurrencyStamp = Guid.NewGuid().ToString() }
+            };
+            builder.Entity<IdentityRole>().HasData(roles);
 
-            // Seed Admin User
-            var hasher = new PasswordHasher<User>();
-            modelBuilder.Entity<User>().HasData(
-                new User
-                {
+            // Seed Users
+            var users = new List<ApplicationUser>
+            {
+                new ApplicationUser {
                     Id = "1",
-                    UserName = "admin@fooddelivery.com",
-                    NormalizedUserName = "ADMIN@FOODDELIVERY.COM",
-                    Email = "admin@fooddelivery.com",
-                    NormalizedEmail = "ADMIN@FOODDELIVERY.COM",
-                    EmailConfirmed = true,
-                    PasswordHash = hasher.HashPassword(null, "Admin123!"),
+                    Email = "admin@foodfast.com",
+                    UserName = "admin@foodfast.com",
+                    PasswordHash = hasher.HashPassword(null, "Admin@123"),
                     Role = UserRole.Admin,
-                    SecurityStamp = Guid.NewGuid().ToString()
+                    NormalizedUserName = "ADMIN@FOODFAST.COM",
+                    NormalizedEmail = "ADMIN@FOODFAST.COM",
+                    ConcurrencyStamp = Guid.NewGuid().ToString(),
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    CreatedAt = now,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    PhoneNumber = "555-000-0000",
+                    PhoneNumberConfirmed = true
                 },
-                new User
-                {
+                new ApplicationUser {
                     Id = "2",
-                    Email = "employee@fooddelivery.com",
-                    UserName = "employee",
-                    NormalizedUserName = "EMPLOYEE",
-                    NormalizedEmail = "EMPLOYEE@FOODDELIVERY.COM",
-                    EmailConfirmed = true,
-                    PasswordHash = hasher.HashPassword(null, "Employee123!"),
-                    AccessFailedCount = 0,
-                    Role = UserRole.Employee,
-                    SecurityStamp = Guid.NewGuid().ToString()
-                },
-                new User
-                {
-                    Id = "3",
-                    Email = "customer@fooddelivery.com",
-                    UserName = "customer",
-                    NormalizedUserName = "CUSTOMER",
-                    EmailConfirmed = true,
-                    NormalizedEmail = "CUSTOMER@FOODDELIVERY.COM",
-                    PasswordHash = hasher.HashPassword(null, "Customer123!"),
-                    AccessFailedCount = 0,
+                    Email = "customer@foodfast.com",
+                    UserName = "customer@foodfast.com",
+                    PasswordHash = hasher.HashPassword(null, "Customer@123"),
                     Role = UserRole.Customer,
-                    SecurityStamp = Guid.NewGuid().ToString()
-                }
-            );
-
-            // Seed Admin Role Assignment
-            modelBuilder.Entity<IdentityUserRole<string>>().HasData(
-                new IdentityUserRole<string>
-                {
-                    UserId = "1",
-                    RoleId = "3" // Admin role
+                    NormalizedEmail = "CUSTOMER@FOODFAST.COM",
+                    NormalizedUserName = "CUSTOMER@FOODFAST.COM",
+                    ConcurrencyStamp = Guid.NewGuid().ToString(),
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    CreatedAt = now,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    PhoneNumber = "555-111-1111",
+                    PhoneNumberConfirmed = true
                 },
-                new IdentityUserRole<string>
-                {
-                    UserId = "2",
-                    RoleId = "2" // Employee role
+                new ApplicationUser {
+                    Id = "3",
+                    Email = "employee@foodfast.com",
+                    UserName = "employee@foodfast.com",
+                    PasswordHash = hasher.HashPassword(null, "Employee@123"),
+                    Role = UserRole.Employee,
+                    NormalizedEmail = "EMPLOYEE@FOODFAST.COM",
+                    NormalizedUserName = "EMPLOYEE@FOODFAST.COM",
+                    ConcurrencyStamp = Guid.NewGuid().ToString(),
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    CreatedAt = now,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    PhoneNumber = "555-222-2222",
+                    PhoneNumberConfirmed = true
                 },
-                new IdentityUserRole<string>
-                {
-                    UserId = "3",
-                    RoleId = "1" // Customer role
+                new ApplicationUser {
+                    Id = "4",
+                    Email = "owner@foodfast.com",
+                    UserName = "owner@foodfast.com",
+                    PasswordHash = hasher.HashPassword(null, "Owner@123"),
+                    Role = UserRole.Owner,
+                    NormalizedEmail = "OWNER@FOODFAST.COM",
+                    NormalizedUserName = "OWNER@FOODFAST.COM",
+                    ConcurrencyStamp = Guid.NewGuid().ToString(),
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    CreatedAt = now,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    PhoneNumber = "555-333-3333",
+                    PhoneNumberConfirmed = true
                 }
-            );
+            };
+            builder.Entity<ApplicationUser>().HasData(users);
 
-            // Seed Categories
-            modelBuilder.Entity<Category>().HasData(
-                new Category { CategoryId = 1, CategoryName = "Beverages", CategoryDescription = "Drinks and refreshments" },
-                new Category { CategoryId = 2, CategoryName = "Snacks", CategoryDescription = "Light bites" },
-                new Category { CategoryId = 3, CategoryName = "Desserts", CategoryDescription = "Sweet treats" }
-            );
+            // Seed User Roles
+            var userRoles = new List<IdentityUserRole<string>>
+            {
+                new IdentityUserRole<string> { UserId = "1", RoleId = "1" },
+                new IdentityUserRole<string> { UserId = "2", RoleId = "2" },
+                new IdentityUserRole<string> { UserId = "3", RoleId = "3" },
+                new IdentityUserRole<string> { UserId = "4", RoleId = "4" }
+            };
+            builder.Entity<IdentityUserRole<string>>().HasData(userRoles);
 
-            // Seed Employee
-            modelBuilder.Entity<Employee>().HasData(
-                new Employee
-                {
-                    EmployeeId = 1,
-                    FirstName = "John",
-                    LastName = "Doe",
+            // Seed Customer Profile
+            var customer = new CustomerProfile
+            {
+                Id = 1,
+                UserId = "2",
+                FirstName = "John",
+                LastName = "Doe",
+                PhoneNumber = "555-111-1111",
+                DateOfBirth = new DateTime(1990, 1, 1),
+                IsActive = true,
+                ProfilePictureUrl = "/images/users/user2.jpg",
+                CreatedAt = now.AddDays(-30),
+                UpdatedAt = now
+            };
+            builder.Entity<CustomerProfile>().HasData(customer);
+
+            // Seed Employee Profile
+            var employee = new EmployeeProfile
+            {
+                Id = 1,
+                UserId = "3",
+                FirstName = "Jane",
+                LastName = "Smith",
+                PhoneNumber = "555-222-2222",
+                Position = EmployeePosition.DeliveryDriver,
+                HireDate = now.AddMonths(-6),
+                IsActive = true,
+                CreatedAt = now.AddMonths(-6),
+                UpdatedAt = now
+            };
+            builder.Entity<EmployeeProfile>().HasData(employee);
+
+            // Seed Addresses
+            var addresses = new List<Address>
+            {
+                new Address {
+                    Id = 1,
+                    CustomerProfileId = 1,
+                    Street = "123 Main St",
+                    City = "New York",
+                    State = "NY",
+                    PostalCode = "10001",
+                    IsDefault = true,
+                    CreatedAt = now.AddDays(-29)
+                },
+                new Address {
+                    Id = 2,
+                    CustomerProfileId = 1,
+                    Street = "456 Work Ave",
+                    City = "New York",
+                    State = "NY",
+                    PostalCode = "10002",
+                    IsDefault = false,
+                    CreatedAt = now.AddDays(-20)
+                }
+            };
+            builder.Entity<Address>().HasData(addresses);
+
+            // Seed Payment Methods
+            var paymentMethods = new List<PaymentMethod>
+            {
+                new PaymentMethod {
+                    Id = 1,
                     UserId = "2",
-                    EmpCategory = EmployeeCategory.Delivery,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsActive = true
+                    Type = PaymentMethodType.CreditCard,
+                    AccountNumberMasked = "************1234",
+                    Payments = null,
+                    Provider = "Visa",
+                    IsDefault = true,
+                    CreatedAt = now.AddDays(-28)
+                },
+                new PaymentMethod {
+                    Id = 2,
+                    UserId = "2",
+                    Type = PaymentMethodType.PayPal,
+                    AccountNumberMasked = "********@paypal.com",
+                    Payments = null,
+                    Provider = "PayPal",
+                    IsDefault = false,
+                    CreatedAt = now.AddDays(-14)
                 }
-            );
+            };
+            builder.Entity<PaymentMethod>().HasData(paymentMethods);
 
-            // Seed Customer
-            modelBuilder.Entity<Customer>().HasData(
-                new Customer
-                {
-                    CustomerId = 1,
-                    FirstName = "Jane",
-                    LastName = "Smith",
-                    PhoneNumber = "123-456-7890",
-                    UserId = "3",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsActive = true
+            // Seed Restaurant Categories
+            var categories = new List<RestaurantCategory>
+            {
+                new RestaurantCategory { Id = 1, Name = "Italian", Description = "Authentic Italian cuisine" },
+                new RestaurantCategory { Id = 2, Name = "Mexican", Description = "Traditional Mexican food" },
+                new RestaurantCategory { Id = 3, Name = "Asian", Description = "Various Asian cuisines"  },
+                new RestaurantCategory { Id = 4, Name = "American", Description = "Classic American dishes" },
+                new RestaurantCategory { Id = 5, Name = "Vegetarian", Description = "Plant-based meals" }
+            };
+            builder.Entity<RestaurantCategory>().HasData(categories);
+
+            // Seed Restaurants
+            var restaurants = new List<Restaurant>
+            {
+                new Restaurant {
+                    Id = 1,
+                    Name = "Mama Mia Italian",
+                    Description = "Authentic Italian restaurant since 1985",
+                    PhoneNumber = "555-123-4567",
+                    CategoryId = 1,
+                    Address = "123 Pasta Street",
+                    City = "New York",
+                    State = "NY",
+                    PostalCode = "10001",
+                    OpeningTime = new TimeSpan(11, 0, 0),
+                    ClosingTime = new TimeSpan(22, 0, 0),
+                    IsActive = true,
+                    ImageUrl = "/images/restaurants/italian.jpg",
+                    OwnerId = "4",
+                    CreatedAt = now.AddDays(-30)
+                },
+                new Restaurant {
+                    Id = 2,
+                    Name = "Taco Fiesta",
+                    Description = "The best Mexican food in town",
+                    PhoneNumber = "555-234-5678",
+                    CategoryId = 2,
+                    Address = "456 Salsa Avenue",
+                    City = "Los Angeles",
+                    State = "CA",
+                    PostalCode = "90001",
+                    OpeningTime = new TimeSpan(10, 0, 0),
+                    ClosingTime = new TimeSpan(23, 0, 0),
+                    IsActive = true,
+                    ImageUrl = "/images/restaurants/mexican.jpg",
+                    OwnerId = "4",
+                    CreatedAt = now.AddDays(-25)
+                },
+                new Restaurant {
+                    Id = 3,
+                    Name = "Golden Wok",
+                    Description = "Authentic Chinese cuisine",
+                    PhoneNumber = "555-345-6789",
+                    CategoryId = 3,
+                    Address = "789 Noodle Road",
+                    City = "Chicago",
+                    State = "IL",
+                    PostalCode = "60601",
+                    OpeningTime = new TimeSpan(10, 30, 0),
+                    ClosingTime = new TimeSpan(21, 30, 0),
+                    IsActive = true,
+                    ImageUrl = "/images/restaurants/asian.jpg",
+                    OwnerId = "4",
+                    CreatedAt = now.AddDays(-20)
                 }
-            );
+            };
+            builder.Entity<Restaurant>().HasData(restaurants);
 
-            // Seed Address
-            modelBuilder.Entity<Address>().HasData(
-                new Address { AddressId = 1, Street = "123 Main St", City = "Springfield", State = "IL", ZipCode = "62701", CustomerId = 1 },
-                new Address { AddressId = 2, Street = "456 Elm St", City = "Springfield", State = "IL", ZipCode = "62702", CustomerId = 1 }
-            );
+            // Seed Menu Items
+            var menuItems = new List<MenuItem>
+            {
+                // Italian restaurant items
+                new MenuItem {
+                    Id = 1,
+                    Name = "Spaghetti Carbonara",
+                    Description = "Classic pasta with eggs, cheese, pancetta, and pepper",
+                    Price = 14.99m,
+                    ImageUrl = "/images/menu/carbonara.jpg",
+                    IsAvailable = true,
+                    RestaurantId = 1,
+                    CreatedAt = now.AddDays(-29)
+                },
+                new MenuItem {
+                    Id = 2,
+                    Name = "Margherita Pizza",
+                    Description = "Traditional pizza with tomato sauce, mozzarella, and basil",
+                    Price = 12.99m,
+                    ImageUrl = "/images/menu/pizza.jpg",
+                    IsAvailable = true,
+                    RestaurantId = 1,
+                    CreatedAt = now.AddDays(-29)
+                },
+                
+                // Mexican restaurant items
+                new MenuItem {
+                    Id = 3,
+                    Name = "Chicken Quesadilla",
+                    Description = "Grilled tortilla filled with cheese and chicken",
+                    Price = 9.99m,
+                    ImageUrl = "/images/menu/quesadilla.jpg",
+                    IsAvailable = true,
+                    RestaurantId = 2,
+                    CreatedAt = now.AddDays(-24)
+                },
+                new MenuItem {
+                    Id = 4,
+                    Name = "Beef Burrito",
+                    Description = "Large flour tortilla with beef, rice, and beans",
+                    Price = 11.99m,
+                    ImageUrl = "/images/menu/burrito.jpg",
+                    IsAvailable = true,
+                    RestaurantId = 2,
+                    CreatedAt = now.AddDays(-24)
+                },
+                
+                // Asian restaurant items
+                new MenuItem {
+                    Id = 5,
+                    Name = "General Tso's Chicken",
+                    Description = "Crispy chicken in a sweet and spicy sauce",
+                    Price = 13.99m,
+                    ImageUrl = "/images/menu/general-tsos.jpg",
+                    IsAvailable = true,
+                    RestaurantId = 3,
+                    CreatedAt = now.AddDays(-19)
+                },
+                new MenuItem {
+                    Id = 6,
+                    Name = "Vegetable Lo Mein",
+                    Description = "Stir-fried noodles with mixed vegetables",
+                    Price = 10.99m,
+                    ImageUrl = "/images/menu/lo-mein.jpg",
+                    IsAvailable = true,
+                    RestaurantId = 3,
+                    CreatedAt = now.AddDays(-19)
+                }
+            };
+            builder.Entity<MenuItem>().HasData(menuItems);
 
-            // Seed Items
-            modelBuilder.Entity<Item>().HasData(
-                new Item { ItemId = 1, ItemName = "Cola", ItemPrice = 2.50m, CateqId = 1 },
-                new Item { ItemId = 2, ItemName = "Chips", ItemPrice = 1.75m, CateqId = 2 },
-                new Item { ItemId = 3, ItemName = "Cake", ItemPrice = 3.00m, CateqId = 3 },
-                new Item { ItemId = 4, ItemName = "Water", ItemPrice = 1.00m, CateqId = 1 },
-                new Item { ItemId = 5, ItemName = "Cookies", ItemPrice = 2.00m, CateqId = 3 },
-                new Item { ItemId = 6, ItemName = "Candy", ItemPrice = 0.50m, CateqId = 2 },
-                new Item { ItemId = 7, ItemName = "Juice", ItemPrice = 2.00m, CateqId = 1 },
-                new Item { ItemId = 8, ItemName = "Brownie", ItemPrice = 2.50m, CateqId = 3 },
-                new Item { ItemId = 9, ItemName = "Soda", ItemPrice = 1.50m, CateqId = 1 },
-                new Item { ItemId = 10, ItemName = "Granola Bar", ItemPrice = 1.25m, CateqId = 2 }
-            );
+            // Seed Order Items
+            var orderItems = new List<OrderItem>
+            {
+                new OrderItem {
+                    Id = 1,
+                    OrderId = 1,
+                    MenuItemId = 1,
+                    Quantity = 1,
+                    Price = 14.99m,
+                    RestaurantId = 1,
+                    SpecialInstructions = "No cheese"
+                },
+                new OrderItem {
+                    Id = 2,
+                    OrderId = 2,
+                    MenuItemId = 3,
+                    Quantity = 2,
+                    Price = 9.99m,
+                    RestaurantId = 2,
+                    SpecialInstructions = "Extra cheese, no beans"
+                }
+            };
+            builder.Entity<OrderItem>().HasData(orderItems);
 
-            // Seed Order
-            modelBuilder.Entity<Order>().HasData(
-                new Order { OrdId = 1, CustomerId = 1, EmployeeId = 1, OrdDate = DateTime.Now, OrdSum = 6.25m, OrdStatus = OrderStatus.Pending }
-            );
+            // Seed Payments
+            var payments = new List<Payment>
+            {
+                new Payment {
+                    Id = 1,
+                    OrderId = 1,
+                    PaymentMethodId = 1,
+                    Amount = 22.48m,
+                    PaymentDate = now.AddDays(-10).AddHours(1),
+                    Status = PaymentStatus.Completed,
+                    TransactionId = "PAY-123456789"
+                },
+                new Payment {
+                    Id = 2,
+                    OrderId = 2,
+                    PaymentMethodId = 1,
+                    Amount = 17.78m,
+                    PaymentDate = now.AddDays(-5).AddHours(1),
+                    Status = PaymentStatus.Completed,
+                    TransactionId = "PAY-987654321"
+                }
+            };
+            builder.Entity<Payment>().HasData(payments);
 
-            // Seed OrderDetail
-            modelBuilder.Entity<OrderDetail>().HasData(
-                new OrderDetail { OrdDetId = 1, OrdId = 1, ItemId = 1, OrdQuantity = 1, OrdAmount = 2.50m },
-                new OrderDetail { OrdDetId = 2, OrdId = 1, ItemId = 2, OrdQuantity = 2, OrdAmount = 1.75m }
-            );
+            // Seed Promotions
+            var promotions = new List<Promotion>
+            {
+                new Promotion {
+                    Id = 1,
+                    Code = "WELCOME20",
+                    Description = "20% off your first order",
+                    DiscountValue = 20,
+                    IsPercentage = true,
+                    StartDate = now.AddDays(-10),
+                    EndDate = now.AddDays(30),
+                    UsageLimit = 1000,
+                    MinimumOrderAmount = 15,
+                    IsActive = true,
+                },
+                new Promotion {
+                    Id = 2,
+                    Code = "ITALIAN10",
+                    Description = "10% off all Italian restaurants",
+                    DiscountValue = 10,
+                    IsPercentage = true,
+                    StartDate = now.AddDays(-5),
+                    EndDate = now.AddDays(15),
+                    RestaurantId = 1,
+                    IsActive = true,
+                }
+            };
+            builder.Entity<Promotion>().HasData(promotions);
+
+            // Seed Reviews
+            var reviews = new List<Review>
+            {
+                new Review {
+                    Id = 1,
+                    RestaurantId = 1,
+                    CustomerProfileId = 1,
+                    Rating = 5.0M,
+                    Comment = "Best Italian food I've ever had!",
+                    CreatedAt = now.AddDays(-9)
+                },
+                new Review {
+                    Id = 2,
+                    RestaurantId = 2,
+                    CustomerProfileId = 1,
+                    Rating = 4.5M,
+                    Comment = "Great tacos, but a bit spicy for my taste.",
+                    CreatedAt = now.AddDays(-4)
+                },
+                new Review {
+                    Id = 3,
+                    RestaurantId = 3,
+                    CustomerProfileId = 1,
+                    Rating = 4.0M,
+                    Comment = "Good Chinese food, but the service was slow.",
+                    CreatedAt = now.AddDays(-2)
+                },
+                new Review {
+                    Id = 4,
+                    RestaurantId = 1,
+                    CustomerProfileId = 1,
+                    Rating = 3.5M,
+                    Comment = "Decent food, but not as good as I expected.",
+                    CreatedAt = now.AddDays(-1)
+                },
+                new Review {
+                    Id = 5,
+                    RestaurantId = 2,
+                    CustomerProfileId = 1,
+                    Rating = 4.0M,
+                    Comment = "Loved the burrito, will order again!",
+                    CreatedAt = now.AddDays(-3)
+                },
+                new Review {
+                    Id = 6,
+                    RestaurantId = 3,
+                    CustomerProfileId = 1,
+                    Rating = 5.0M,
+                    Comment = "The best General Tso's chicken in town!",
+                    CreatedAt = now.AddDays(-2)
+                },
+                new Review {
+                    Id = 7,
+                    RestaurantId = 1,
+                    CustomerProfileId = 1,
+                    Rating = 4.5M,
+                    Comment = "Great pizza, but a bit overpriced.",
+                    CreatedAt = now.AddDays(-1)
+                },
+                new Review {
+                    Id = 8,
+                    RestaurantId = 2,
+                    CustomerProfileId = 1,
+                    Rating = 4.0M,
+                    Comment = "Good food, but the delivery was late.",
+                    CreatedAt = now.AddDays(-3)
+                },
+            };
+            builder.Entity<Review>().HasData(reviews);
         }
     }
 }

@@ -1,0 +1,62 @@
+﻿@model FoodDeliveryApp.Models.Restaurant
+@{
+    ViewData["Title"] = "Delete Restaurant";
+}
+
+<div class="container my-4">
+    <div class="card shadow border-danger">
+        <div class="card-header bg-danger text-white">
+            <h3 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Delete Restaurant</h3>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-circle"></i> <strong>Warning:</strong> This action cannot be undone. Deleting this restaurant will also remove all associated menu items, orders, and reviews.
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                    {
+                        <img src="@Model.ImageUrl" class="img-fluid rounded" alt="@Model.Name">
+                    }
+                    else
+                    {
+                        <img src="/images/default-restaurant.jpg" class="img-fluid rounded" alt="@Model.Name">
+                    }
+                </div>
+                <div class="col-md-8">
+                    <h4>@Model.Name</h4>
+                    <p>@Model.Description</p>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <p><strong>Category:</strong> @(Model.Category?.Name ?? "Uncategorized")</p>
+                            <p><strong>Address:</strong> @Model.Address, @Model.City, @Model.State @Model.PostalCode</p>
+                            <p><strong>Phone:</strong> @Model.PhoneNumber</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> <span class="badge @(Model.IsActive ? "bg-success" : "bg-danger")">@(Model.IsActive ? "Active" : "Inactive")</span></p>
+                            <p><strong>Created:</strong> @Model.CreatedAt.ToString("MM/dd/yyyy")</p>
+                            @if (Model.UpdatedAt.HasValue)
+                            {
+                                <p><strong>Last Updated:</strong> @Model.UpdatedAt.Value.ToString("MM/dd/yyyy")</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <form asp-action="Delete" method="post" class="mt-4">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you absolutely sure you want to permanently delete this restaurant?');">
+                        <i class="bi bi-trash"></i> Delete Restaurant
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

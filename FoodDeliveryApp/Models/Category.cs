@@ -1,18 +1,23 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FoodDeliveryApp.Models
 {
-    public class Category
+    public class RestaurantCategory
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int CategoryId { get; set; }
-        [Required]
-        public string CategoryName { get; set; }
-        public string? CategoryDescription { get; set; }
-        public byte[]? CategoryImage { get; set; }
+        public int Id { get; set; }
 
-        public virtual ICollection<Item> Items { get; set; }
+        [Required]
+        [StringLength(50)]
+        public string Name { get; set; }
+
+        [StringLength(255)]
+        public string? Description { get; set; }
+
+        [StringLength(255)]
+        public string? ImageUrl { get; set; }
+
+        public virtual ICollection<Restaurant> Restaurants { get; set; } = new HashSet<Restaurant>();
+        public virtual ICollection<MenuItem> MenuItems { get; set; } = new HashSet<MenuItem>();
     }
 }

@@ -1,22 +1,310 @@
-html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+:root {
+    --primary: #0d6efd;
+    --primary-dark: #0a58ca;
+    --primary-light: #0d6efd20;
+    --bs-font-sans-serif: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --primary: #ff5733;
+    --secondary: #6c757d;
+    --light: #f8f9fa;
+    --dark: #343a40;
 }
 
 body {
-  margin-bottom: 60px;
+    font-family: var(--bs-font-sans-serif);
+    padding-top: 56px;
+/*    color: #333;
+    font-family: 'Inter', sans-serif;*/
+    color: var(--dark);
+}
+
+/* Layout & Common Elements */
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+.shadow-hover {
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+    .shadow-hover:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        transform: translateY(-3px);
+    }
+
+.hover-highlight:hover {
+    color: var(--primary) !important;
+    opacity: 0.9;
+}
+
+/* Header & Navigation */
+#mainHeader {
+    transition: box-shadow 0.3s ease;
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+.nav-link {
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: color 0.2s ease;
+}
+
+    .nav-link:hover,
+    .nav-link.active {
+        color: var(--primary) !important;
+    }
+
+.dropdown-menu {
+    border-radius: 0.75rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    border: none;
+    padding: 0.75rem 0;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+    .dropdown-item:hover {
+        background-color: var(--primary-light);
+        color: var(--primary);
+    }
+
+#searchSuggestions {
+    border-radius: 0 0 1rem 1rem;
+}
+
+/* Social Icons */
+.social-icon {
+    transition: all 0.2s ease;
+}
+
+    .social-icon:hover {
+        color: var(--primary) !important;
+        transform: translateY(-2px);
+    }
+
+/* Filter Bar */
+.filter-bar {
+    background-color: #fff;
+    z-index: 990;
+    top: 56px;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa;
+    border-radius: 2rem;
+    padding: 0.25rem 0.75rem;
+}
+
+.filter-label {
+    margin-bottom: 0;
+    margin-right: 0.5rem;
+}
+
+.filter-select {
+    border: none;
+    background-color: transparent;
+    font-size: 0.9rem;
+    outline: none;
+    cursor: pointer;
+}
+
+/* Cards & Items */
+.category-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    text-align: center;
+    height: 100%;
+}
+
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    }
+
+.category-icon {
+    font-size: 2rem;
+    color: var(--primary);
+    margin-bottom: 0.75rem;
+}
+
+.restaurant-item {
+    background-color: #fff;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+    .restaurant-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    }
+
+.restaurant-image-container {
+    position: relative;
+    padding-top: 60%;
+    overflow: hidden;
+}
+
+.restaurant-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.top-rated-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: var(--primary);
+    color: #fff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.delivery-time-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: #fff;
+    color: #333;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.restaurant-details {
+    padding: 1rem;
+    flex-grow: 1;
+}
+
+.restaurant-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #333;
+}
+
+.restaurant-category {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 0.75rem;
+}
+
+.restaurant-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.rating-badge {
+    background-color: var(--primary-light);
+    color: var(--primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.restaurant-action {
+    padding: 0 1rem 1rem;
+}
+
+/* Feature badges */
+.feature-badge {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--primary-light);
+    color: var(--primary);
+    padding: 0.35rem 0.85rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.feature-icon {
+    margin-right: 0.5rem;
+}
+
+/* Footer */
+footer {
+    background-color: #212529;
+    color: #fff;
+}
+
+.social-icon {
+    opacity: 0.8;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+    .social-icon:hover {
+        opacity: 1;
+        transform: translateY(-3px);
+    }
+
+/* Mobile menu */
+#mobileMenu .nav-link {
+    transition: all 0.2s ease;
+}
+
+    #mobileMenu .nav-link:hover,
+    #mobileMenu .nav-link.active {
+        background-color: var(--primary-light);
+        color: var(--primary);
+    }
+
+/* Form elements */
+.form-control:focus,
+.btn:focus {
+    box-shadow: 0 0 0 0.25rem var(--primary-light);
+}
+
+/* Media queries */
+@media (max-width: 992px) {
+    .filter-bar {
+        position: relative;
+        top: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .filter-group {
+        flex-basis: 48%;
+    }
+}
+
+@media (max-width: 576px) {
+    .filter-group {
+        flex-basis: 100%;
+    }
 }

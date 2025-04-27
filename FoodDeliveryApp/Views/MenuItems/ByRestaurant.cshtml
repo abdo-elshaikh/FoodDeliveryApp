@@ -1,0 +1,423 @@
+﻿<!-- Views/Menu/ByRestaurant.cshtml -->
+@model FoodDeliveryApp.ViewModels.MenuItems.MenuItemListViewModel
+@{
+    ViewData["Title"] = $"Menu - {Model.RestaurantName}";
+    ViewData["ActiveMenu"] = "Restaurants";
+}
+
+<div class="container mt-5">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb glassmorphic p-3 rounded-3">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Restaurants" asp-action="Details" asp-route-id="@Model.RestaurantId">@Model.RestaurantName</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Menu</li>
+        </ol>
+    </nav>
+
+    <!-- Header and Actions -->
+    <div class="row align-items-center mb-5">
+        <div class="col-md-8">
+            <h1 class="display-4 fw-bold">@Model.RestaurantName</h1>
+            <p class="lead text-muted">Explore our delicious menu offerings</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            @if (User.IsInRole("Owner") || User.IsInRole("Admin"))
+            {
+                <a asp-action="Create" asp-route-restaurantId="@Model.RestaurantId" class="btn btn-primary btn-lg me-2">
+                    <i class="fas fa-plus me-1"></i> Add Item
+                </a>
+            }
+            <a asp-controller="Restaurants" asp-action="Details" asp-route-id="@Model.RestaurantId" class="btn btn-outline-secondary btn-lg">
+                <i class="fas fa-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Success Notification -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show glassmorphic" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Menu Content -->
+    <div class="row">
+        <!-- Category Filter Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="category-filter glassmorphic p-4 rounded-3 sticky-top" style="top: 100px;">
+                <h5 class="mb-3">Filter Menu</h5>
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="menuSearch" placeholder="Search menu items..." aria-label="Search menu items">
+                </div>
+                <h6 class="mb-2">Categories</h6>
+                <div class="category-list" role="tablist">
+                    <button class="btn btn-filter w-100 text-start mb-2 active" data-category="all" role="tab" aria-selected="true">All Items</button>
+                    @* @foreach (var category in Model.Categories) *@
+                    @* { *@
+                    @*     <button class="btn btn-filter w-100 text-start mb-2" data-category="@category.Id" role="tab" aria-selected="false">@category.Name</button> *@
+                    @* } *@
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Items -->
+        <div class="col-lg-9">
+            @if (!Model.MenuItems.Any())
+            {
+                <div class="alert alert-info glassmorphic p-4 rounded-3">
+                    No menu items available for this restaurant.
+                </div>
+            }
+            else
+            {
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 menu-items" data-aos="fade-up">
+                    @foreach (var item in Model.MenuItems)
+                    {
+                        <div class="col menu-item"  data-name="@item.Name.ToLower()">
+                            <div class="card h-100 glassmorphic shadow-sm" data-aos="zoom-in">
+                                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" class="card-img-top" alt="@item.Name" style="height: 200px; object-fit: cover;" loading="lazy">
+                                }
+                                else
+                                {
+                                    <div class="bg-light text-center" style="height: 200px;">
+                                        <i class="fas fa-utensils fa-4x text-muted d-flex justify-content-center align-items-center h-100"></i>
+                                    </div>
+                                }
+                                <div class="card-body">
+                                    <h5 class="card-title">@item.Name</h5>
+                                    <p class="card-text text-muted small">@(item.Description?.Length > 80 ? item.Description.Substring(0, 80) + "..." : item.Description)</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-primary fw-bold">$@item.Price.ToString("F2")</span>
+                                        @if (!item.IsAvailable)
+                                        {
+                                            <span class="badge bg-warning text-dark">Unavailable</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-top-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-info-circle me-1"></i> Details
+                                        </a>
+                                        @if (User.IsInRole("Owner") || User.IsInRole("Admin"))
+                                        {
+                                            <div>
+                                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-edit me-1"></i> Edit
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger ms-1">
+                                                    <i class="fas fa-trash me-1"></i>
+                                                </a>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-primary add-to-cart" data-id="@item.Id" data-name="@item.Name" data-price="@item.Price" data-available="@item.IsAvailable" data-bs-toggle="modal" data-bs-target="#cartModal">
+                                                <i class="fas fa-cart-plus me-1"></i> Add
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Cart Modal -->
+<div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glassmorphic">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cartModalLabel">Add to Cart</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center mb-3">
+                    <img id="cartItemImage" src="" alt="" class="me-3 rounded" style="width: 80px; height: 80px; object-fit: cover;">
+                    <div>
+                        <h6 id="cartItemName"></h6>
+                        <p class="text-muted mb-0" id="cartItemPrice"></p>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="cartItemQuantity" class="form-label">Quantity</label>
+                    <div class="input-group w-50">
+                        <button class="btn btn-outline-secondary" type="button" id="decreaseQuantity">-</button>
+                        <input type="number" class="form-control text-center" id="cartItemQuantity" value="1" min="1" aria-label="Quantity">
+                        <button class="btn btn-outline-secondary" type="button" id="increaseQuantity">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmAddToCart">Add to Cart</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        :root {
+            --primary-color: #FF642E;
+            --secondary-color: #1A2942;
+            --accent-color: #4CAF50;
+            --light-color: #F8F9FA;
+            --dark-color: #212529;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-dark-bg: rgba(52, 58, 64, 0.95);
+            --transition-speed: 0.3s;
+        }
+
+        [data-theme="dark"] {
+            --light-color: #1A2942;
+            --dark-color: #F8F9FA;
+            --glass-bg: rgba(52, 58, 64, 0.95);
+        }
+
+        .glassmorphic {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            border-radius: 1rem;
+            color: var(--dark-color);
+        }
+
+        [data-theme="dark"] .glassmorphic {
+            background: var(--glass-dark-bg);
+            color: var(--light-color);
+        }
+
+        .breadcrumb {
+            background: transparent;
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb-item a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--dark-color);
+        }
+
+        [data-theme="dark"] .breadcrumb-item.active {
+            color: var(--light-color);
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .category-filter {
+            transition: all var(--transition-speed);
+        }
+
+            .category-filter .form-control {
+                border-radius: 2rem;
+                background: rgba(255, 255, 255, 0.8);
+                border: 1px solid rgba(0, 0, 0, 0.1);
+            }
+
+        [data-theme="dark"] .category-filter .form-control {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light-color);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-filter {
+            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            color: var(--dark-color);
+            background: var(--gray-100);
+            transition: all var(--transition-speed);
+        }
+
+        [data-theme="dark"] .btn-filter {
+            background: var(--gray-900);
+            color: var(--light-color);
+        }
+
+        .btn-filter.active,
+        .btn-filter:hover {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        .card.glassmorphic {
+            border: none;
+            transition: transform var(--transition-speed);
+        }
+
+            .card.glassmorphic:hover {
+                transform: translateY(-8px);
+            }
+
+        .card-img-top {
+            border-top-left-radius: 1rem;
+            border-top-right-radius: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .card-text {
+            font-size: 0.9rem;
+        }
+
+        .card-footer .btn {
+            border-radius: 2rem;
+            padding: 0.4rem 1rem;
+        }
+
+        .modal-content.glassmorphic {
+            border: none;
+        }
+
+        .modal-body img {
+            border: 2px solid var(--primary-color);
+        }
+
+        .input-group .btn {
+            border-radius: 0;
+        }
+
+        .input-group .form-control {
+            border-radius: 0;
+        }
+
+        @@media (max-width: 991.98px) {
+            .category-filter
+
+        {
+            position: static;
+        }
+
+        .menu-items .col {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+
+        }
+
+        @@media (max-width: 767.98px) {
+            .menu-items .col
+
+        {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Menu Search and Filter
+        function filterMenuItems() {
+            const searchQuery = $('#menuSearch').val().toLowerCase();
+            const selectedCategory = $('.btn-filter.active').data('category');
+            $('.menu-item').each(function () {
+                const itemName = $(this).data('name');
+                const itemCategory = $(this).data('category');
+                const matchesSearch = itemName.includes(searchQuery);
+                const matchesCategory = selectedCategory === 'all' || itemCategory === selectedCategory;
+                $(this).toggle(matchesSearch && matchesCategory);
+            });
+        }
+
+        $('#menuSearch').on('input', debounce(filterMenuItems, 300));
+
+        $('.btn-filter').click(function () {
+            $('.btn-filter').removeClass('active').attr('aria-selected', 'false');
+            $(this).addClass('active').attr('aria-selected', 'true');
+            filterMenuItems();
+        });
+
+        // Cart Modal
+        let currentItemId;
+        $('.add-to-cart').click(function () {
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            const price = $(this).data('price');
+            const available = $(this).data('available');
+            const image = $(this).closest('.card').find('.card-img-top').attr('src') || '/images/default-food.webp';
+
+            if (!available) {
+                showNotification('warning', 'Item Unavailable', `${name} is currently unavailable.`);
+                return;
+            }
+
+            currentItemId = id;
+            $('#cartItemName').text(name);
+            $('#cartItemPrice').text(`$${price.toFixed(2)}`);
+            $('#cartItemImage').attr('src', image);
+            $('#cartItemQuantity').val(1);
+        });
+
+        $('#increaseQuantity').click(function () {
+            const input = $('#cartItemQuantity');
+            input.val(parseInt(input.val()) + 1);
+        });
+
+        $('#decreaseQuantity').click(function () {
+            const input = $('#cartItemQuantity');
+            if (parseInt(input.val()) > 1) {
+                input.val(parseInt(input.val()) - 1);
+            }
+        });
+
+        $('#confirmAddToCart').click(function () {
+            const quantity = parseInt($('#cartItemQuantity').val());
+            if (quantity < 1) {
+                showNotification('error', 'Invalid Quantity', 'Please select at least one item.');
+                return;
+            }
+
+            $.post('/Menu/AddToCart', { id: currentItemId, quantity: quantity }, function (response) {
+                if (response.success) {
+                    showNotification('success', 'Added to Cart', `${$('#cartItemName').text()} has been added to your cart.`);
+                    updateCartCount();
+                    $('#cartModal').modal('hide');
+                } else {
+                    showNotification('error', 'Cart Error', response.message || 'Failed to add item to cart.');
+                }
+            }).fail(() => {
+                showNotification('error', 'Cart Error', 'An error occurred while adding to cart.');
+            });
+        });
+
+        // IntersectionObserver for Lazy Animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    $(entry.target).find('[data-aos]').addClass('aos-animate');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        $('.menu-item').each(function () {
+            observer.observe(this);
+        });
+
+        // Initialize
+        $(document).ready(function () {
+            $('.btn-filter').first().click(); // Default to 'All' filter
+        });
+    </script>
+}
