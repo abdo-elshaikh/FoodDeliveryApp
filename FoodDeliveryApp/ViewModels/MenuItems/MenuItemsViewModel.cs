@@ -6,18 +6,41 @@ namespace FoodDeliveryApp.ViewModels.MenuItems
     public class MenuItemListViewModel
     {
         public IEnumerable<MenuItemViewModel> MenuItems { get; set; } = new List<MenuItemViewModel>();
+        public IEnumerable<MenuItemCategoryViewModel> Categories { get; set; } = new List<MenuItemCategoryViewModel>();
+        public IEnumerable<MenuItemRestaurantViewModel> Restaurants { get; set; } = new List<MenuItemRestaurantViewModel>(); 
         public int RestaurantId { get; set; }
-        public string RestaurantName { get; set; }
-        public string RestaurantImageUrl { get; set; }
+        public string RestaurantName { get; set; } = string.Empty;
+        public string RestaurantImageUrl { get; set; } = string.Empty;
+        public string SearchQuery { get; set; } = string.Empty;
+        public int PageNumber { get; set; } = 1; // Current page
+        public int PageSize { get; set; } = 12; // Items per page
+        public int TotalItems { get; set; } // Total matching items
+        public int? SelectedCategoryId { get; set; } // Optional category filter
+        public int? SelectedRestaurantId { get; set; } // Optional restaurant filter
+    }
+
+    public class MenuItemCategoryViewModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class MenuItemRestaurantViewModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;
+        public decimal Rating { get; set; }
+        public int MenuItemCount { get; set; }
     }
 
     public class MenuItemsByCategoryViewModel
     {
-        public IEnumerable<MenuItemViewModel> MenuItems { get; set; } = new List<MenuItemViewModel>();
         public int CategoryId { get; set; }
         public string CategoryName { get; set; }
         // restaurants
         public IEnumerable<RestaurantViewModel> Restaurants { get; set; } = new List<RestaurantViewModel>();
+        public IEnumerable<MenuItemViewModel> MenuItems { get; set; } = new List<MenuItemViewModel>();
     }
 
     public class MenuItemDetailsViewModel
@@ -41,6 +64,8 @@ namespace FoodDeliveryApp.ViewModels.MenuItems
         public bool IsAvailable { get; set; }
         public bool IsVegetarian { get; set; }
         public bool IsVegan { get; set; }
+        public int? CategoryId { get; set; }
+        public MenuItemCategoryViewModel Category { get; set; } = new MenuItemCategoryViewModel();
 
     }
     public class RelatedItemViewModel

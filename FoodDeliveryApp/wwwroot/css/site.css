@@ -1,8 +1,4 @@
 :root {
-    --primary: #0d6efd;
-    --primary-dark: #0a58ca;
-    --primary-light: #0d6efd20;
-    --bs-font-sans-serif: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --primary: #ff5733;
     --secondary: #6c757d;
     --light: #f8f9fa;
@@ -10,301 +6,467 @@
 }
 
 body {
-    font-family: var(--bs-font-sans-serif);
-    padding-top: 56px;
-/*    color: #333;
-    font-family: 'Inter', sans-serif;*/
+    font-family: 'Inter', sans-serif;
     color: var(--dark);
 }
 
-/* Layout & Common Elements */
-.wrapper {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-}
-
-main {
-    flex: 1 0 auto;
-}
-
-.shadow-hover {
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
-}
-
-    .shadow-hover:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        transform: translateY(-3px);
-    }
-
-.hover-highlight:hover {
+.text-primary {
     color: var(--primary) !important;
-    opacity: 0.9;
 }
 
-/* Header & Navigation */
-#mainHeader {
-    transition: box-shadow 0.3s ease;
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    transition: background-color 0.3s, transform 0.2s;
 }
 
-.navbar-brand {
-    font-weight: 700;
-}
-
-.nav-link {
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-    transition: color 0.2s ease;
-}
-
-    .nav-link:hover,
-    .nav-link.active {
-        color: var(--primary) !important;
-    }
-
-.dropdown-menu {
-    border-radius: 0.75rem;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-    border: none;
-    padding: 0.75rem 0;
-}
-
-.dropdown-item {
-    padding: 0.5rem 1.25rem;
-    transition: all 0.2s ease;
-}
-
-    .dropdown-item:hover {
-        background-color: var(--primary-light);
-        color: var(--primary);
-    }
-
-#searchSuggestions {
-    border-radius: 0 0 1rem 1rem;
-}
-
-/* Social Icons */
-.social-icon {
-    transition: all 0.2s ease;
-}
-
-    .social-icon:hover {
-        color: var(--primary) !important;
+    .btn-primary:hover {
+        background-color: #e64d2e;
+        border-color: #e64d2e;
         transform: translateY(-2px);
     }
 
+.bg-primary {
+    background-color: var(--primary) !important;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, var(--primary), #e64d2e);
+}
+
+.bg-gradient-hero {
+    background: linear-gradient(135deg, rgba(255, 87, 51, 0.05), rgba(255, 255, 255, 0.95));
+}
+
+/* Hero Section */
+.hero-section {
+    min-height: 600px;
+}
+
+.hero-image-container img {
+    max-height: 500px;
+    object-fit: cover;
+}
+
+.hero-rating-badge {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Feature Badges */
+.feature-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+    transition: transform 0.3s;
+}
+
+    .feature-badge:hover {
+        transform: translateY(-2px);
+    }
+
+/* How It Works Section */
+.how-it-works-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+    .how-it-works-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+.how-it-works-icon {
+    width: 64px;
+    height: 64px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s;
+}
+
+.how-it-works-card:hover .how-it-works-icon {
+    transform: scale(1.1);
+}
+
+/* Category Cards */
+.category-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    }
+
+        .category-card:hover .category-image {
+            transform: scale(1.05);
+        }
+
+.category-icon {
+    width: 56px;
+    height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.category-card:hover .category-icon {
+    transform: scale(1.1);
+}
+
+.category-image {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.category-overlay {
+    transition: background-color 0.3s;
+}
+
 /* Filter Bar */
 .filter-bar {
-    background-color: #fff;
-    z-index: 990;
-    top: 56px;
+    z-index: 1000;
 }
 
 .filter-group {
     display: flex;
     align-items: center;
-    background-color: #f8f9fa;
-    border-radius: 2rem;
-    padding: 0.25rem 0.75rem;
+    gap: 8px;
 }
 
 .filter-label {
-    margin-bottom: 0;
-    margin-right: 0.5rem;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .filter-select {
-    border: none;
-    background-color: transparent;
-    font-size: 0.9rem;
-    outline: none;
-    cursor: pointer;
+    border: 1px solid #dee2e6;
+    padding: 8px 16px;
+    font-size: 14px;
+    transition: border-color 0.3s;
 }
 
-/* Cards & Items */
-.category-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    background-color: #fff;
-    border-radius: 1rem;
-    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-    text-align: center;
-    height: 100%;
-}
-
-    .category-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    .filter-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(255, 87, 51, 0.1);
     }
 
-.category-icon {
-    font-size: 2rem;
-    color: var(--primary);
-    margin-bottom: 0.75rem;
-}
-
+/* Restaurant Cards */
 .restaurant-item {
-    background-color: #fff;
-    border-radius: 1rem;
-    overflow: hidden;
-    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
     .restaurant-item:hover {
         transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
     }
 
-.restaurant-image-container {
-    position: relative;
-    padding-top: 60%;
-    overflow: hidden;
-}
-
 .restaurant-image {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
-    height: 100%;
+    height: 200px;
     object-fit: cover;
 }
 
 .top-rated-badge {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    background-color: var(--primary);
-    color: #fff;
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
+    top: 12px;
+    left: 12px;
+    font-size: 12px;
     font-weight: 500;
 }
 
 .delivery-time-badge {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background-color: #fff;
-    color: #333;
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
+    bottom: 12px;
+    right: 12px;
+    font-size: 12px;
     font-weight: 500;
-}
-
-.restaurant-details {
-    padding: 1rem;
-    flex-grow: 1;
 }
 
 .restaurant-name {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    color: #333;
-}
-
-.restaurant-category {
-    font-size: 0.85rem;
-    color: #666;
-    margin-bottom: 0.75rem;
-}
-
-.restaurant-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    color: #666;
+    font-size: 20px;
 }
 
 .rating-badge {
-    background-color: var(--primary-light);
-    color: var(--primary);
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.5rem;
-    font-size: 0.85rem;
+    font-size: 14px;
     font-weight: 500;
 }
 
-.restaurant-action {
-    padding: 0 1rem 1rem;
+/* Dish Cards */
+.dish-card {
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
-/* Feature badges */
-.feature-badge {
-    display: inline-flex;
-    align-items: center;
-    background-color: var(--primary-light);
-    color: var(--primary);
-    padding: 0.35rem 0.85rem;
-    border-radius: 1rem;
-    font-size: 0.85rem;
+    .dish-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+.dish-image {
+    height: 160px;
+}
+
+.dish-price-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 14px;
     font-weight: 500;
 }
 
-.feature-icon {
-    margin-right: 0.5rem;
+/* Offer Cards */
+.offer-card {
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
-/* Footer */
-footer {
-    background-color: #212529;
-    color: #fff;
-}
-
-.social-icon {
-    opacity: 0.8;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-    .social-icon:hover {
-        opacity: 1;
-        transform: translateY(-3px);
+    .offer-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
     }
 
-/* Mobile menu */
-#mobileMenu .nav-link {
-    transition: all 0.2s ease;
+.offer-title {
+    font-size: 20px;
 }
 
-    #mobileMenu .nav-link:hover,
-    #mobileMenu .nav-link.active {
-        background-color: var(--primary-light);
-        color: var(--primary);
+.offer-description {
+    font-size: 15px;
+}
+
+/* Partner Section */
+.partner-image-container img {
+    max-height: 400px;
+}
+
+.partner-stats-container {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.partner-stats-value {
+    font-size: 22px;
+}
+
+.partner-benefit-icon {
+    transition: transform 0.3s;
+}
+
+.partner-benefit:hover .partner-benefit-icon {
+    transform: scale(1.1);
+}
+
+/* App Features */
+.app-feature-icon {
+    transition: transform 0.3s;
+}
+
+.app-feature:hover .app-feature-icon {
+    transform: scale(1.1);
+}
+
+/* Testimonials */
+.testimonial-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+    .testimonial-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
     }
 
-/* Form elements */
-.form-control:focus,
-.btn:focus {
-    box-shadow: 0 0 0 0.25rem var(--primary-light);
+/* Subscribe Section */
+.subscribe-section {
+    background: linear-gradient(135deg, var(--primary), #e64d2e);
+    border: dashed 2px rgba(255, 255, 255, 0.5);
+    padding: 40px 20px;
 }
 
-/* Media queries */
-@media (max-width: 992px) {
-    .filter-bar {
-        position: relative;
-        top: 0;
+    .subscribe-section .input-group {
+        transition: box-shadow 0.3s;
+    }
+
+        .subscribe-section .input-group:focus-within {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+        }
+
+    .subscribe-section .form-control {
+        border-radius: 50rem 0 0 50rem;
+        padding: 12px 20px;
+        font-size: 16px;
+    }
+
+    .subscribe-section .btn {
+        border-radius: 0 50rem 50rem 0;
+        padding: 12px 24px;
+        font-size: 16px;
+        transition: transform 0.2s;
+    }
+
+        .subscribe-section .btn:hover {
+            transform: translateY(-2px);
+        }
+
+/* CTA Section */
+.app-download-btn {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+    .app-download-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+/* Rounded Pill Fix for Bootstrap */
+.rounded-start-pill {
+    border-top-left-radius: 50rem !important;
+    border-bottom-left-radius: 50rem !important;
+}
+
+.rounded-end-pill {
+    border-top-right-radius: 50rem !important;
+    border-bottom-right-radius: 50rem !important;
+}
+
+.rounded-pill-start {
+    border-radius: 50rem 0 0 50rem !important;
+}
+
+.rounded-pill-end {
+    border-radius: 0 50rem 50rem 0 !important;
+}
+
+/* Spinning animation for loading states */
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
     }
 }
 
+/* Pulse animation for filter button */
+.btn-pulse {
+    animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Smooth transitions for grid/list view */
+.transition-all {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Search suggestions */
+#searchSuggestions .dropdown-item {
+    padding: 10px 15px;
+    font-size: 15px;
+    transition: background-color 0.2s;
+}
+
+    #searchSuggestions .dropdown-item:hover {
+        background-color: rgba(255, 87, 51, 0.1);
+    }
+
+/* Toast adjustments */
+.toast {
+    max-width: 350px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast-header {
+    border-radius: 8px 8px 0 0;
+}
+
+/* Responsive Adjustments */
 @media (max-width: 768px) {
+    .hero-section {
+        min-height: 400px;
+    }
+
+    .hero-image-container img,
+    .partner-image-container img,
+    .app-mockup-container img {
+        max-height: 300px;
+    }
+
     .filter-group {
-        flex-basis: 48%;
+        flex: 1 1 45%;
+    }
+
+    .filter-select {
+        width: 100%;
+    }
+
+    .restaurant-image,
+    .dish-image,
+    .category-image {
+        height: 140px;
+    }
+
+    .how-it-works-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .subscribe-section .input-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .subscribe-section .form-control,
+    .subscribe-section .btn {
+        border-radius: 50rem !important;
+        width: 100%;
     }
 }
 
 @media (max-width: 576px) {
+    .hero-section {
+        padding: 3rem 0;
+    }
+
+    .hero-image-container img {
+        max-height: 200px;
+    }
+
     .filter-group {
-        flex-basis: 100%;
+        flex: 1 1 100%;
+    }
+
+    .how-it-works-card {
+        padding: 3rem;
+    }
+
+    .category-image {
+        height: 120px;
+    }
+
+    .subscribe-section .h2 {
+        font-size: 1.75rem;
+    }
+
+    .subscribe-section .lead {
+        font-size: 1rem;
     }
 }

@@ -1,0 +1,35 @@
+﻿@model FoodDeliveryApp.ViewModels.Account.UserEditViewModel
+@{
+    ViewData["Title"] = "Edit User";
+    ViewData["SubTitle"] = "Update user account details.";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+<form asp-action="EditUser" method="post" asp-antiforgery="true">
+    <input type="hidden" name="Id" value="@Model.Id" />
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="Email" value="@Model.Email" required />
+        <div class="invalid-feedback">
+            @Html.ValidationMessageFor(m => m.Email)
+        </div>
+    </div>
+    <div class="mb-3">
+        <label for="role" class="form-label">Role</label>
+        <select class="form-select" id="role" name="Role" required>
+            <option value="Customer" selected="@(Model.Role == UserRole.Customer)">Customer</option>
+            <option value="Admin" selected="@(Model.Role == UserRole.Admin)">Admin</option>
+        </select>
+        <div class="invalid-feedback">
+            @Html.ValidationMessageFor(m => m.Role)
+        </div>
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="isActive" name="IsActive" checked="@Model.IsActive" />
+        <label class="form-check-label" for="isActive">Active</label>
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+    <div class="text-center mt-3">
+        <a href="@Url.Action("ManageUsers", "Account")" class="text-muted small">Back to Manage Users</a>
+    </div>
+</form>

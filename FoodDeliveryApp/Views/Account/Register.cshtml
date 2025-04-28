@@ -1,118 +1,74 @@
 ﻿@model FoodDeliveryApp.ViewModels.AccountViewModels.RegisterViewModel
 @{
-    ViewData["Title"] = "Create Account";
-    ViewData["SubTitle"] = "Join us to order delicious food from top restaurants";
-    Layout = "_AuthLayout";
+    ViewData["Title"] = "Create Your Account";
+    ViewData["SubTitle"] = "Join FoodFast to enjoy fast and reliable food delivery.";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
 }
 
-<form asp-controller="Account" asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post" class="auth-form">
-    <div asp-validation-summary="ModelOnly" class="text-danger validation-summary" role="alert"></div>
-
-    <div class="form-group">
-        <label asp-for="Email" class="form-label">Email Address</label>
-        <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-            <input asp-for="Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+<form asp-action="Register" method="post" asp-antiforgery="true" class="">
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="Email" value="@Model.Email" required />
+        <div class="invalid-feedback">
+            @Html.ValidationMessageFor(m => m.Email)
         </div>
-        <span asp-validation-for="Email" class="text-danger"></span>
     </div>
-
-    <div class="form-group">
-        <label asp-for="Password" class="form-label">Password</label>
-        <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-lock"></i></span>
-            <input asp-for="Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="••••••••" />
-            <button type="button" class="password-toggle" tabindex="-1">
-                <i class="bi bi-eye"></i>
-            </button>
+    <div class="mb-3 position-relative">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="Password" required />
+        <span class="password-toggle" aria-label="Show password"><i class="bi bi-eye"></i></span>
+        <div class="password-strength mt-1"></div>
+        <div class="invalid-feedback">
+            @Html.ValidationMessageFor(m => m.Password)
         </div>
-        <span asp-validation-for="Password" class="text-danger"></span>
-        <small class="form-text text-muted">
-            <i class="bi bi-info-circle me-1"></i>Password must be at least 6 characters with letters and numbers.
-        </small>
     </div>
-
-    <div class="form-group">
-        <label asp-for="ConfirmPassword" class="form-label">Confirm Password</label>
-        <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-            <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="••••••••" />
-            <button type="button" class="password-toggle" tabindex="-1">
-                <i class="bi bi-eye"></i>
-            </button>
+    <div class="mb-3">
+        <label for="confirmPassword" class="form-label">Confirm Password</label>
+        <input type="password" class="form-control" id="confirmPassword" name="ConfirmPassword" required />
+        <div class="invalid-feedback">
+            @Html.ValidationMessageFor(m => m.ConfirmPassword)
         </div>
-        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
     </div>
-
-    <div class="form-group">
-        <label asp-for="Role" class="form-label">I want to use Food Delivery as a</label>
-        <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
-            <select asp-for="Role" class="form-select" aria-required="true">
-                <option value="Customer">Customer - Order Food</option>
-                <option value="RestaurantOwner">Restaurant Owner - Sell Food</option>
-                <option value="DeliveryDriver">Delivery Driver - Deliver Food</option>
-            </select>
+    <div class="mb-3">
+        <label for="role" class="form-label">Role</label>
+        <select class="form-select" id="role" name="Role" required>
+            <option value="">Select a role</option>
+            <option value="Customer">Customer</option>
+            <option value="Admin">Admin</option>
+        </select>
+        <div class="invalid-feedback">
+            @Html.ValidationMessageFor(m => m.Role)
         </div>
-        <span asp-validation-for="Role" class="text-danger"></span>
     </div>
-
-    <div class="form-group form-check">
-        <input type="checkbox" class="form-check-input" id="agreeTerms" required />
-        <label class="form-check-label" for="agreeTerms">
-            I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a> and <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>
-        </label>
-    </div>
-
-    <div class="form-group">
-        <button id="register-submit" type="submit" class="btn btn-primary">
-            <i class="bi bi-person-plus me-2"></i>Create Account
-        </button>
-    </div>
-
-    <div class="auth-links">
-        <p>Already have an account? <a asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]">Sign In</a></p>
-    </div>
+    <input type="hidden" name="ReturnUrl" value="@ViewData["ReturnUrl"]" />
+    <button type="submit" class="btn btn-primary w-100">Sign Up</button>
 </form>
 
-<!-- Terms Modal -->
-<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="termsModalLabel">Terms of Service</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>These Terms of Service govern your use of the Food Delivery App platform.</p>
-                <!-- More terms content here -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Privacy Modal -->
-<div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="privacyModalLabel">Privacy Policy</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Our Privacy Policy explains how we collect, use, and protect your personal information.</p>
-                <!-- More privacy content here -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/auth.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const passwordInput = document.getElementById("password");
+            const passwordToggle = document.querySelector(".password-toggle");
+            const passwordStrength = document.querySelector(".password-strength");
+            passwordToggle.addEventListener("click", function () {
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    passwordToggle.innerHTML = '<i class="bi bi-eye-slash"></i>';
+                } else {
+                    passwordInput.type = "password";
+                    passwordToggle.innerHTML = '<i class="bi bi-eye"></i>';
+                }
+            });
+            passwordInput.addEventListener("input", function () {
+                const strength = checkPasswordStrength(passwordInput.value);
+                passwordStrength.textContent = strength;
+            });
+        });
+        function checkPasswordStrength(password) {
+            if (password.length < 6) return "Weak";
+            if (password.match(/[A-Z]/) && password.match(/[0-9]/)) return "Strong";
+            return "Medium";
+        }
+    </script>
 }

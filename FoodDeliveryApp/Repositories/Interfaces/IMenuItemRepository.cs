@@ -11,7 +11,8 @@ namespace FoodDeliveryApp.Repositories.Interfaces
 
         Task<List<MenuItem>> GetRelatedItemsAsync(int menuItemId, int restaurantId, int take);
         Task<List<CustomizationOption>> GetCustomizationOptionsAsync(int menuItemId);
-        //GetPopularDishesAsync
+        
+        Task<IEnumerable<MenuItem>> SearchMenuItemsAsync(string searchQuery, int? restaurantId, int? categoryId, int pageNumber, int pageSize);
         Task<IEnumerable<MenuItem>> GetPopularDishesAsync(int count);
     }
 }

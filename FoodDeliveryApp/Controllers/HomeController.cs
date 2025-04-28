@@ -64,7 +64,7 @@ namespace FoodDeliveryApp.Controllers
                     {
                         Id = c.Id,
                         Name = c.Name,
-                        ImageUrl = c.ImageUrl ?? "/images/placeholder-category.jpg",
+                        ImageUrl = c.ImageUrl ?? "/images/category.jpg",
                         Description = c.Description
                     }).ToList(),
                     PopularRestaurants = topRatedRestaurants.Select(r => new RestaurantHomeViewModel

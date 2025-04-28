@@ -1,53 +1,34 @@
 ﻿@model FoodDeliveryApp.ViewModels.AccountViewModels.LoginViewModel
 @{
-    ViewData["Title"] = "Welcome Back";
-    ViewData["SubTitle"] = "Sign in to your account to continue";
-    Layout = "_AuthLayout";
+    ViewData["Title"] = "Sign In";
+    ViewData["SubTitle"] = "Access your FoodFast account to order delicious meals.";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
 }
 
-<form asp-controller="Account" asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post" class="auth-form">
-    <div asp-validation-summary="ModelOnly" class="text-danger validation-summary" role="alert"></div>
-
-    <div class="form-group">
-        <label asp-for="Email" class="form-label">Email Address</label>
-        <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-            <input asp-for="Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+<form asp-action="Login" method="post" asp-antiforgery="true">
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="Email" value="@Model.Email" required />
+        <div class="invalid-feedback">
+            @Html.ValidationMessageFor(m => m.Email)
         </div>
-        <span asp-validation-for="Email" class="text-danger"></span>
     </div>
-
-    <div class="form-group">
-        <div class="d-flex justify-content-between align-items-center">
-            <label asp-for="Password" class="form-label mb-0">Password</label>
-            <a asp-action="ForgotPassword" class="small text-nowrap">Forgot password?</a>
+    <div class="mb-3 position-relative">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="Password" required />
+        <span class="password-toggle" aria-label="Show password"><i class="bi bi-eye"></i></span>
+        <div class="password-strength mt-1"></div>
+        <div class="invalid-feedback">
+            @Html.ValidationMessageFor(m => m.Password)
         </div>
-        <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-lock"></i></span>
-            <input asp-for="Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="••••••••" />
-            <button type="button" class="password-toggle" tabindex="-1">
-                <i class="bi bi-eye"></i>
-            </button>
-        </div>
-        <span asp-validation-for="Password" class="text-danger"></span>
     </div>
-
-    <div class="form-group form-check">
-        <input asp-for="RememberMe" class="form-check-input" />
-        <label asp-for="RememberMe" class="form-check-label">Keep me signed in</label>
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="rememberMe" name="RememberMe" checked="@Model.RememberMe" />
+        <label class="form-check-label" for="rememberMe">Remember Me</label>
     </div>
-
-    <div class="form-group">
-        <button id="login-submit" type="submit" class="btn btn-primary">
-            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
-        </button>
-    </div>
-
-    <div class="auth-links">
-        <p>Don't have an account? <a asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]">Create Account</a></p>
+    <input type="hidden" name="ReturnUrl" value="@ViewData["ReturnUrl"]" />
+    <button type="submit" class="btn btn-primary w-100">Sign In</button>
+    <div class="text-center mt-3">
+        <a href="@Url.Action("ForgotPassword", "Account")" class="text-muted small">Forgot Password?</a>
     </div>
 </form>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

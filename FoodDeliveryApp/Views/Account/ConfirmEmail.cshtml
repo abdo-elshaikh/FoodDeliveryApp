@@ -1,23 +1,10 @@
 ﻿@{
-    ViewData["Title"] = "Confirm Email";
+    ViewData["Title"] = "Email Confirmed";
+    ViewData["SubTitle"] = "Your email has been verified.";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
 }
 
-<div class="container mt-5">
-    <h2 class="mb-4">Confirm Email</h2>
-
-    @if (TempData["Success"] != null)
-    {
-        <div class="alert alert-success">
-            @TempData["Success"]
-        </div>
-        <p>You can now <a asp-action="Login">login</a> to your account.</p>
-    }
-    else
-    {
-        <div class="alert alert-danger">
-            @TempData["Error"]
-        </div>
-        <p>Please try again or contact support.</p>
-    }
-    <a asp-action="Index" asp-controller="Home" class="btn btn-primary">Return to Home</a>
+<div class="text-center">
+    <p class="lead">Thank you for confirming your email. You can now sign in.</p>
+    <a href="@Url.Action("Login", "Account")" class="btn btn-primary rounded-pill px-4">Sign In</a>
 </div>

@@ -75,5 +75,27 @@ namespace FoodDeliveryApp.Repositories.Implementations
                 .Take(count)
                 .ToListAsync();
         }
+
+        //SearchMenuItemsAsync
+        public async Task<IEnumerable<MenuItem>> SearchMenuItemsAsync(string searchQuery, int? restaurantId, int? categoryId, int pageNumber, int pageSize)
+        {
+            var query = _context.MenuItems.AsQueryable();
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                query = query.Where(m => m.Name.Contains(searchQuery) || m.Description.Contains(searchQuery));
+            }
+            if (restaurantId.HasValue)
+            {
+                query = query.Where(m => m.RestaurantId == restaurantId.Value);
+            }
+            if (categoryId.HasValue)
+            {
+                query = query.Where(m => m.Restaurant.CategoryId == categoryId.Value);
+            }
+            return await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
     }
 }

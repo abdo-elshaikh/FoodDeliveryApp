@@ -1,0 +1,10 @@
+﻿@{
+    ViewData["Title"] = "Account Locked";
+    ViewData["SubTitle"] = "Your account has been locked due to multiple failed login attempts.";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+<div class="text-center">
+    <p class="lead">Your account is temporarily locked. Please try again later or contact support.</p>
+    <a href="@Url.Action("Index", "Home")" class="btn btn-primary rounded-pill px-4">Return to Home</a>
+</div>

@@ -1,4 +1,4 @@
-﻿@model FoodDeliveryApp.ViewModels.CartItemViewModels.CartViewModel
+﻿@model FoodDeliveryApp.ViewModels.Cart.CartViewModel
 
 @{
     ViewData["Title"] = "Your Cart";
@@ -41,9 +41,9 @@
                                             }
                                             <div>
                                                 <h5>@item.Name</h5>
-                                                @if (!string.IsNullOrEmpty(item.SpecialInstructions))
+                                                @if (!string.IsNullOrEmpty(item.RestaurantName))
                                                 {
-                                                    <p class="text-muted small">@item.SpecialInstructions</p>
+                                                    <p class="text-muted small">@item.RestaurantName</p>
                                                 }
                                             </div>
                                         </div>
@@ -72,7 +72,7 @@
                 </div>
 
                 <div class="d-flex justify-content-between">
-                    <a href="@Url.Action("Index", "Menu")" class="btn btn-outline-secondary">Continue Shopping</a>
+                    <a href="@Url.Action("Index", "MenuItems")" class="btn btn-outline-secondary">Continue Shopping</a>
                     <form asp-action="ClearCart" method="post">
                         <button type="submit" class="btn btn-outline-danger"
                                 onclick="return confirm('Are you sure you want to clear your cart?')">
