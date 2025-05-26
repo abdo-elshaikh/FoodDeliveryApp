@@ -17,11 +17,11 @@
     <div class="mb-3">
         <label for="role" class="form-label">Role</label>
         <select class="form-select" id="role" name="Role" required>
-            <option value="Customer" selected="@(Model.Role == UserRole.Customer)">Customer</option>
-            <option value="Admin" selected="@(Model.Role == UserRole.Admin)">Admin</option>
+            <option value="Customer" selected="@(Model.UserType == UserType.Customer)">Customer</option>
+            <option value="Admin" selected="@(Model.UserType == UserType.Admin)">Admin</option>
         </select>
         <div class="invalid-feedback">
-            @Html.ValidationMessageFor(m => m.Role)
+            @Html.ValidationMessageFor(m => m.UserType)
         </div>
     </div>
     <div class="mb-3 form-check">

@@ -1,296 +1,196 @@
-﻿$(document).ready(function () {
-    // Update cart count with error handling
-    function updateCartCount() {
-        $.ajax({
-            url: '/Order/GetCartCount',
-            method: 'GET',
-            success: function (response) {
-                const count = response.count || 0;
-                $('.cart-count').text(count).attr('aria-label', `Cart contains ${count} items`);
-                if (count > 0) {
-                    $('.cart-count').addClass('badge bg-primary rounded-pill').removeClass('bg-secondary');
+﻿document.addEventListener('DOMContentLoaded', () => {
+    // Predictive search
+    const searchInput = document.querySelector('.search-input');
+    const searchSuggestions = document.querySelector('.search-suggestions');
+    const popularSearches = @Json.Serialize(Model.PopularSearches);
+
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase();
+        const suggestions = popularSearches.filter(s => s.toLowerCase().includes(query));
+        searchSuggestions.innerHTML = suggestions.length ?
+            suggestions.map(s => `<div class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" data-suggestion="${s}">${s}</div>`).join('') :
+            '<div class="p-2 text-gray-500">No suggestions</div>';
+        searchSuggestions.classList.toggle('hidden', !query || !suggestions.length);
+        gsap.from(searchSuggestions.children, { y: 10, opacity: 0, stagger: 0.1, duration: 0.3 });
+    });
+
+    searchSuggestions.addEventListener('click', (e) => {
+        if (e.target.dataset.suggestion) {
+            searchInput.value = e.target.dataset.suggestion;
+            searchSuggestions.classList.add('hidden');
+        }
+    });
+
+    // 3D tilt effect for cards
+    VanillaTilt.init(document.querySelectorAll('.category-card, .dish-card, .restaurant-card, .promotion-card'), {
+        max: 20,
+        speed: 600,
+        glare: true,
+        'max-glare': 0.4,
+        perspective: 1000
+    });
+
+    // Add to cart
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', async () => {
+            const dishId = button.getAttribute('data-dish-id');
+            try {
+                const response = await fetch('/api/cart/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dishId })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    updateCartCount(data.cartCount);
+                    showToast('Item added to cart!', 'success');
                 } else {
-                    $('.cart-count').addClass('badge bg-secondary rounded-pill').removeClass('bg-primary');
+                    showToast('Failed to add item to cart.', 'danger');
                 }
-            },
-            error: function () {
-                $('.cart-count').text(0).attr('aria-label', 'Cart is empty').addClass('badge bg-secondary rounded-pill');
-            }
-        });
-    }
-    updateCartCount();
-
-    // Search suggestions with debouncing and loading state
-    let searchTimeout;
-    const $searchInput = $('#search-input, #mainSearch');
-    const $suggestions = $('#searchSuggestions');
-    $searchInput.on('input', function () {
-        clearTimeout(searchTimeout);
-        const query = $(this).val().trim();
-        $suggestions.removeClass('border border-primary');
-
-        if (query.length < 3) {
-            $suggestions.hide().empty();
-            return;
-        }
-
-        searchTimeout = setTimeout(() => {
-            $suggestions.html('<div class="dropdown-item text-muted"><i class="bi bi-hourglass-split me-2"></i>Loading...</div>').show();
-            $.ajax({
-                url: '/Restaurants/SearchSuggestions',
-                method: 'GET',
-                data: { query: query },
-                success: function (response) {
-                    $suggestions.empty().addClass('border border-primary');
-                    if (response.length === 0) {
-                        $suggestions.append('<div class="dropdown-item text-muted"><i class="bi bi-info-circle me-2"></i>No results found</div>').show();
-                        return;
-                    }
-                    response.forEach(item => {
-                        $suggestions.append(
-                            `<a class="dropdown-item d-flex align-items-center" href="/Restaurants/Details/${item.id}">
-                                <i class="bi bi-shop me-2 text-primary"></i>
-                                <span>${item.name}</span>
-                            </a>`
-                        );
-                    });
-                    $suggestions.show();
-                },
-                error: function () {
-                    $suggestions.empty().append('<div class="dropdown-item text-muted"><i class="bi bi-exclamation-triangle me-2"></i>Error fetching suggestions</div>').show();
-                }
-            });
-        }, 300);
-    });
-
-    // Hide suggestions on click outside or ESC key
-    $(document).on('click', function (e) {
-        if (!$(e.target).closest('#searchSuggestions, #search-input, #mainSearch').length) {
-            $suggestions.hide().removeClass('border border-primary');
-        }
-    });
-    $(document).on('keydown', function (e) {
-        if (e.key === 'Escape') {
-            $suggestions.hide().removeClass('border border-primary');
-        }
-    });
-
-    // Geolocation with visual feedback
-    $('#geoLocateBtn').on('click', function () {
-        const $btn = $(this);
-        const originalText = $btn.html();
-        if (navigator.geolocation) {
-            $btn.html('<i class="bi bi-arrow-repeat spin me-1"></i> Locating...').prop('disabled', true);
-            navigator.geolocation.getCurrentPosition(
-                position => {
-                    const { latitude, longitude } = position.coords;
-                    $.ajax({
-                        url: '/Home/UpdateLocation',
-                        method: 'POST',
-                        data: { latitude, longitude },
-                        success: function () {
-                            window.location.reload();
-                        },
-                        error: function () {
-                            $btn.html(originalText).prop('disabled', false);
-                            showToast('Failed to update location.', 'error');
-                        }
-                    });
-                },
-                error => {
-                    $btn.html(originalText).prop('disabled', false);
-                    showToast('Geolocation not supported or permission denied.', 'error');
-                }
-            );
-        } else {
-            showToast('Geolocation is not supported by your browser.', 'error');
-        }
-    });
-
-    // Restaurant filters with smooth transitions
-    function applyFilters() {
-        const category = $('#categoryFilter').val();
-        const rating = parseFloat($('#ratingFilter').val()) || 0;
-        const distance = parseFloat($('#distanceFilter').val()) || Infinity;
-        const price = parseInt($('#priceFilter').val()) || Infinity;
-
-        $('.restaurant-card').each(function () {
-            const $card = $(this);
-            const cardCategory = $card.data('category')?.toString();
-            const cardRating = parseFloat($card.data('rating')) || 0;
-            const cardDistance = parseFloat($card.data('distance')) || Infinity;
-            const cardPrice = parseInt($card.data('price')) || Infinity;
-
-            const matchesCategory = !category || cardCategory === category;
-            const matchesRating = cardRating >= rating;
-            const matchesDistance = cardDistance <= distance;
-            const matchesPrice = cardPrice <= price;
-
-            if (matchesCategory && matchesRating && matchesDistance && matchesPrice) {
-                $card.fadeIn(300).css('display', 'block');
-            } else {
-                $card.fadeOut(300);
-            }
-        });
-    }
-
-    $('#applyFilters').on('click', function () {
-        $(this).addClass('btn-pulse').text('Filtering...');
-        setTimeout(() => {
-            $(this).removeClass('btn-pulse').text('Apply Filters');
-            applyFilters();
-        }, 500);
-    });
-    $('.filter-select').on('change', applyFilters);
-
-    // Toggle grid/list view with animation
-    let isGridView = true;
-    $('#toggleViewBtn').on('click', function () {
-        isGridView = !isGridView;
-        const $grid = $('#restaurantGrid');
-        const $icon = $(this).find('i');
-        $grid.addClass('transition-all');
-        $grid.toggleClass('row-cols-1 row-cols-md-2 row-cols-lg-3', !isGridView);
-        $('.restaurant-item').toggleClass('flex-row align-items-center', !isGridView);
-        $icon.toggleClass('bi-grid bi-list');
-        setTimeout(() => $grid.removeClass('transition-all'), 300);
-    });
-
-    // Initialize Swiper with lazy loading
-    new Swiper('.dish-swiper', {
-        slidesPerView: 1,
-        spaceBetween: 20,
-        lazy: true,
-        navigation: {
-            nextEl: '.dish-swiper-next',
-            prevEl: '.dish-swiper-prev',
-        },
-        breakpoints: {
-            576: { slidesPerView: 2 },
-            768: { slidesPerView: 3 },
-            992: { slidesPerView: 4 }
-        }
-    });
-
-    new Swiper('.category-swiper', {
-        slidesPerView: 1,
-        spaceBetween: 20,
-        lazy: true,
-        navigation: {
-            nextEl: '.category-swiper-prev',
-            prevEl: '.category-swiper-next',
-        },
-        breakpoints: {
-            576: { slidesPerView: 2 },
-            768: { slidesPerView: 3 },
-            992: { slidesPerView: 4 }
-        }
-    });
-
-    new Swiper('.testimonial-swiper', {
-        slidesPerView: 1,
-        spaceBetween: 20,
-        lazy: true,
-        pagination: {
-            el: '.testimonial-pagination',
-            clickable: true,
-            bulletClass: 'swiper-pagination-bullet bg-primary',
-        },
-        autoplay: {
-            delay: 5000,
-            disableOnInteraction: false,
-        }
-    });
-
-    new Swiper('.offer-swiper', {
-        slidesPerView: 1,
-        spaceBetween: 20,
-        lazy: true,
-        navigation: {
-            nextEl: '.offer-swiper-next',
-            prevEl: '.offer-swiper-prev',
-        },
-        breakpoints: {
-            576: { slidesPerView: 2 },
-            768: { slidesPerView: 3 },
-            992: { slidesPerView: 4 }
-        }
-    });
-
-    // Copy offer code with toast feedback
-    $('.copy-offer-code').on('click', function () {
-        const $btn = $(this);
-        const code = $btn.data('code');
-        navigator.clipboard.writeText(code).then(() => {
-            $btn.html('<i class="bi bi-check-circle me-1"></i> Copied!').addClass('btn-success').removeClass('btn-primary');
-            showToast(`Offer code "${code}" copied!`, 'success');
-            setTimeout(() => {
-                $btn.html('<i class="bi bi-clipboard me-1"></i> Copy Code').removeClass('btn-success').addClass('btn-primary');
-            }, 2000);
-        }).catch(() => {
-            showToast('Failed to copy code.', 'error');
-        });
-    });
-
-    // Newsletter form submission
-    $('#newsletterForm').on('submit', function (e) {
-        e.preventDefault();
-        const $form = $(this);
-        const email = $form.find('input[name="email"]').val();
-        $form.find('button').prop('disabled', true).html('<i class="bi bi-arrow-repeat spin me-1"></i> Subscribing...');
-        $.ajax({
-            url: $form.attr('action'),
-            method: 'POST',
-            data: { email: email },
-            success: function () {
-                showToast('Subscribed successfully!', 'success');
-                $form[0].reset();
-                $form.find('button').prop('disabled', false).html('Subscribe');
-            },
-            error: function () {
-                showToast('Failed to subscribe. Please try again.', 'error');
-                $form.find('button').prop('disabled', false).html('Subscribe');
+            } catch (error) {
+                showToast('An error occurred.', 'danger');
             }
         });
     });
 
-    // Toast notification utility
-    function showToast(message, type = 'success') {
-        const toastId = `toast-${Date.now()}`;
-        const bgClass = type === 'success' ? 'bg-success text-white' : 'bg-danger text-white';
-        const toastHtml = `
-            <div id="${toastId}" class="toast position-fixed top-0 end-0 m-3" role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1050;">
-                <div class="toast-header ${bgClass}">
-                    <i class="bi ${type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'} me-2"></i>
-                    <strong class="me-auto">${type === 'success' ? 'Success' : 'Error'}</strong>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-                <div class="toast-body bg-white">${message}</div>
-            </div>
-        `;
-        $('body').append(toastHtml);
-        const $toast = $(`#${toastId}`);
-        $toast.toast({ delay: 3000 }).toast('show');
-        $toast.on('hidden.bs.toast', function () {
-            $(this).remove();
-        });
-    }
-
-    // Add hover effects for cards
-    $('.restaurant-card, .dish-card, .offer-card, .testimonial-card, .how-it-works-card, .category-card').on('mouseenter', function () {
-        $(this).addClass('shadow-lg').css('transform', 'translateY(-5px)');
-    }).on('mouseleave', function () {
-        $(this).removeClass('shadow-lg').css('transform', 'translateY(0)');
-    });
-
-    // Smooth scroll for anchor links
-    $('a[href*="#"]').on('click', function (e) {
-        if (this.hash !== '') {
+    // Newsletter form
+    const newsletterForm = document.querySelector('.newsletter-form');
+    if (newsletterForm) {
+        newsletterForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const hash = this.hash;
-            $('html, body').animate({
-                scrollTop: $(hash).offset().top
-            }, 800);
+            const emailInput = newsletterForm.querySelector('input[type="email"]');
+            const email = emailInput.value;
+
+            try {
+                const response = await fetch('/api/newsletter/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                if (response.ok) {
+                    showToast('Subscribed successfully!', 'success');
+                    gsap.to(emailInput, { value: '', duration: 0.5, ease: 'power2.out' });
+                } else {
+                    showToast('Subscription failed. Please try again.', 'danger');
+                }
+            } catch (error) {
+                showToast('An error occurred.', 'danger');
+            }
+        });
+    });
+
+// Load more dishes
+const loadMoreDishes = document.getElementById('load-more-dishes');
+if (loadMoreDishes) {
+    let dishOffset = 6;
+    loadMoreDishes.addEventListener('click', async () => {
+        try {
+            const response = await fetch(`/api/dishes?offset=${dishOffset}&limit=6`);
+            if (response.ok) {
+                const dishes = await response.json();
+                const container = document.getElementById('dishes-container');
+                dishes.forEach(dish => {
+                    const dishHtml = `
+                            <div class="dish-card group relative rounded-xl shadow-lg overflow-hidden bg-white/10 dark:bg-gray-800/10 backdrop-blur-lg" data-dish-id="${dish.id}" data-aos="fade-up">
+                                <img src="${dish.imageUrl || 'https://source.unsplash.com/400x300/?' + dish.name}" alt="${dish.name}" class="w-full h-48 object-cover lazy-load" loading="lazy">
+                                <div class="p-4">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h5 class="text-lg font-semibold">${dish.name}</h5>
+                                        <span class="bg-primary text-white text-sm px-3 py-1 rounded-full">$${dish.price.toFixed(2)}</span>
+                                    </div>
+                                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-3">${dish.description}</p>
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="text-gray-500 dark:text-gray-400 text-sm">From ${dish.restaurantName}</p>
+                                            <div class="flex items-center text-yellow-500">
+                                                ${Array(Math.floor(dish.rating)).fill('<i class="bi bi-star-fill"></i>').join('')}
+                                                ${dish.rating % 1 !== 0 ? '<i class="bi bi-star-half"></i>' : ''}
+                                            </div>
+                                        </div>
+                                        ${dish.isAvailable ? `<button class="add-to-cart btn bg-primary text-white hover:bg-primary-dark" data-dish-id="${dish.id}" aria-label="Add ${dish.name} to cart"><i class="bi bi-cart-plus"></i> Add</button>` : '<span class="text-gray-500 dark:text-gray-400 text-sm">Unavailable</span>'}
+                                    </div>
+                                </div>
+                            </div>`;
+                    container.insertAdjacentHTML('beforeend', dishHtml);
+                });
+                dishOffset += 6;
+                if (dishOffset >= @Model.FeaturedDishes.Count) {
+                    loadMoreDishes.classList.add('hidden');
+                }
+                AOS.refresh();
+                VanillaTilt.init(document.querySelectorAll('.dish-card'), {
+                    max: 20,
+                    speed: 600,
+                    glare: true,
+                    'max-glare': 0.4
+                });
+            }
+        } catch (error) {
+            showToast('Error loading more dishes.', 'danger');
         }
     });
+}
+
+// Load more restaurants
+const loadMoreRestaurants = document.getElementById('load-more-restaurants');
+if (loadMoreRestaurants) {
+    let restaurantOffset = 6;
+    loadMoreRestaurants.addEventListener('click', async () => {
+        try {
+            const response = await fetch(`/api/restaurants?offset=${restaurantOffset}&limit=6`);
+            if (response.ok) {
+                const restaurants = await response.json();
+                const container = document.getElementById('restaurants-container');
+                restaurants.forEach(restaurant => {
+                    const restaurantHtml = `
+                            <a href="/restaurants/${restaurant.id}" class="restaurant-card group relative rounded-xl shadow-lg overflow-hidden bg-white/10 dark:bg-gray-800/10 backdrop-blur-lg" data-restaurant-id="${restaurant.id}" data-aos="fade-up">
+                                <img src="${restaurant.imageUrl || 'https://source.unsplash.com/400x300/?restaurant'}" alt="${restaurant.name}" class="w-full h-48 object-cover lazy-load" loading="lazy">
+                                <div class="p-4">
+                                    <h5 class="text-lg font-semibold mb-2">${restaurant.name}</h5>
+                                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-3">${restaurant.description}</p>
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="text-gray-500 dark:text-gray-400 text-sm">${restaurant.categoryName}</p>
+                                            <div class="flex items-center text-yellow-500">
+                                                ${Array(Math.floor(restaurant.rating)).fill('<i class="bi bi-star-fill"></i>').join('')}
+                                                ${restaurant.rating % 1 !== 0 ? '<i class="bi bi-star-half"></i>' : ''}
+                                                <span class="text-gray-500 dark:text-gray-400 text-sm ml-1">(${restaurant.reviewCount} reviews)</span>
+                                            </div>
+                                        </div>
+                                        <p class="text-gray-500 dark:text-gray-400 text-sm">Delivery: $${restaurant.deliveryFee.toFixed(2)}</p>
+                                    </div>
+                                </div>
+                            </a>`;
+                    container.insertAdjacentHTML('beforeend', restaurantHtml);
+                });
+                restaurantOffset += 6;
+                if (restaurantOffset >= @Model.TopRatedRestaurants.Count) {
+                    loadMoreRestaurants.classList.add('hidden');
+                }
+                AOS.refresh();
+                VanillaTilt.init(document.querySelectorAll('.restaurant-card'), {
+                    max: 20,
+                    speed: 600,
+                    glare: true,
+                    'max-glare': 0.4
+                });
+            }
+        } catch (error) {
+            showToast('Error loading more restaurants.', 'danger');
+        }
+    });
+}
+
+// Lazy load images
+const lazyImages = document.querySelectorAll('.lazy-load');
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.src = entry.target.dataset.src || entry.target.src;
+            observer.unobserve(entry.target);
+        }
+    });
+}, { rootMargin: '0px 0px 200px 0px' });
+
+lazyImages.forEach(image => observer.observe(image));
 });

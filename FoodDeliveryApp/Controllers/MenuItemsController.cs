@@ -1,762 +1,625 @@
 ﻿using FoodDeliveryApp.Models;
 using FoodDeliveryApp.Repositories.Interfaces;
 using FoodDeliveryApp.Services;
-using FoodDeliveryApp.ViewModels;
-using FoodDeliveryApp.ViewModels.Cart;
 using FoodDeliveryApp.ViewModels.MenuItems;
-using FoodDeliveryApp.ViewModels.RestaurantViewModels;
+using FoodDeliveryApp.ViewModels.Restaurant;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Stripe;
-using System.Diagnostics;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using FoodDeliveryApp.ViewModels.Review;
 
 namespace FoodDeliveryApp.Controllers
 {
-    [Route("menu-items")]
+    
     public class MenuItemsController : Controller
     {
-        private readonly IMenuItemRepository _menuItemRepository;
-        private readonly IRestaurantRepository _restaurantRepository;
-        private readonly IOrderRepository _orderRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICartService _cartService;
-        private readonly IRepository<RestaurantCategory> _categoryRepository;
+        private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly ILogger<MenuItemsController> _logger;
 
         public MenuItemsController(
-            IMenuItemRepository menuItemRepository,
-            IRestaurantRepository restaurantRepository,
-            IOrderRepository orderRepository,
-            ICartService cartService,
+            IUnitOfWork unitOfWork,
             UserManager<ApplicationUser> userManager,
-            IRepository<RestaurantCategory> categoryRepository,
+            ICartService cartService,
+            IWebHostEnvironment webHostEnvironment,
             ILogger<MenuItemsController> logger)
         {
-            _menuItemRepository = menuItemRepository;
-            _restaurantRepository = restaurantRepository;
-            _orderRepository = orderRepository;
-            _cartService = cartService;
+            _unitOfWork = unitOfWork;
             _userManager = userManager;
+            _cartService = cartService;
+            _webHostEnvironment = webHostEnvironment;
             _logger = logger;
-            _categoryRepository = categoryRepository;
         }
 
-        // GET: Index (Get All Items)
+        // GET: MenuItems
         [HttpGet]
-        [Route("")] // Default route for menu items
-        public async Task<IActionResult> Index(int? restaurantId , int? categoryId, int pageNumber = 1, int pageSize = 12)
+        public async Task<IActionResult> Index(string searchTerm = "", int? restaurantId = null, int? categoryId = null, 
+            string sortBy = "Name", string sortOrder = "asc", int page = 1, int pageSize = 12)
         {
             try
             {
-                IEnumerable<MenuItem> menuItems;
-                if (categoryId != null)
+                var menuItemsQuery = _unitOfWork.MenuItems.GetAllAsync(
+                    m => m.Restaurant, 
+                    m => m.Reviews.AsQueryable().Include(r => r.CustomerProfile).AsEnumerable(),
+                    m => m.Category,
+                    m => m.CustomizationOptions.AsQueryable().Include(co => co.Choices).AsEnumerable()
+                );
+                var menuItems = await menuItemsQuery;
+                
+                if (!string.IsNullOrEmpty(searchTerm))
                 {
-                    menuItems = await _menuItemRepository.GetByRestaurantCategoryAsync(categoryId.Value);
+                    menuItems = menuItems.Where(m => 
+                        m.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || 
+                        (m.Description != null && m.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                    );
                 }
-                else if (restaurantId != null)
+                
+                if (restaurantId.HasValue)
                 {
-                    menuItems = await _menuItemRepository.GetByRestaurantAsync(restaurantId.Value);
+                    menuItems = menuItems.Where(m => m.RestaurantId == restaurantId.Value);
                 }
-                else
+                
+                if (categoryId.HasValue)
                 {
-                    menuItems = await _menuItemRepository.GetAllAsync();
+                    menuItems = menuItems.Where(m => m.CategoryId == categoryId.Value);
                 }
-
-                if (menuItems == null || !menuItems.Any())
+                
+                menuItems = ApplySorting(menuItems, sortBy, sortOrder);
+                
+                var totalCount = menuItems.Count();
+                
+                var pagedMenuItems = menuItems
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+                
+                var categories = await _unitOfWork.RestaurantCategories.GetAllAsync();
+                var restaurants = await _unitOfWork.Restaurants.GetAllAsync();
+                
+                var viewModel = new MenuItemListViewModel
                 {
-                    _logger.LogWarning("No menu items found");
-                    return NotFound("No menu items found.");
-                }
-                var categories = await _categoryRepository.GetAllAsync();
-                var restaurants = await _restaurantRepository.GetAllAsync();
-                var model = new MenuItemListViewModel
-                {
-                    MenuItems = menuItems.Select(m => new MenuItemViewModel
-                    {
-                        Id = m.Id,
-                        RestaurantId = m.RestaurantId,
-                        Name = m.Name ?? "Unnamed Item",
-                        Description = m.Description ?? "",
-                        Price = m.Price,
-                        ImageUrl = m.ImageUrl ?? "/images/food-placeholder.jpg",
-                        CreatedAt = m.CreatedAt,
-                        UpdatedAt = m.UpdatedAt,
-                        IsAvailable = m.IsAvailable
-                    }).ToList(),
-                    Categories = categories.Select(c => new MenuItemCategoryViewModel
-                    {
-                        Id = c.Id,
-                        Name = c.Name ?? "Unknown Category",
-                        
-                    }).ToList(),
-                    Restaurants = restaurants.Select(r => new MenuItemRestaurantViewModel
-                    {
-                        Id = r.Id,
-                        Name = r.Name ?? "Unknown Restaurant",
-                        ImageUrl = r.ImageUrl ?? "/images/restaurant-placeholder.jpg",
-                        Rating = r.Rating,
-                        MenuItemCount = r.MenuItems.Count(m => m.IsAvailable),
-                    }).ToList(),
-                    PageNumber = pageNumber,
+                    MenuItems = pagedMenuItems.Select(m => MapToViewModel(m)).ToList(),
+                    SearchQuery = searchTerm,
+                    SelectedRestaurantId = restaurantId,
+                    SelectedCategoryId = categoryId,
+                    SortBy = sortBy,
+                    SortOrder = sortOrder,
+                    TotalItems = totalCount,
+                    PageNumber = page,
                     PageSize = pageSize,
-                    TotalItems = menuItems.Count()
+                    RestaurantOptions = restaurants.Select(r => new SelectListItem 
+                    { 
+                        Value = r.Id.ToString(), 
+                        Text = r.Name,
+                        Selected = restaurantId.HasValue && r.Id == restaurantId.Value
+                    }).ToList(),
+                    CategoryOptions = categories.Select(c => new SelectListItem 
+                    { 
+                        Value = c.Id.ToString(), 
+                        Text = c.Name,
+                        Selected = categoryId.HasValue && c.Id == categoryId.Value
+                    }).ToList()
                 };
-                return View(model);
+                
+                return View(viewModel);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading menu items");
-                return View("Error", new ErrorViewModel
-                {
-                    RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
-                    ErrorMessage = "An error occurred while loading menu items. Please try again later."
-                });
+                TempData["ErrorMessage"] = "An error occurred while loading menu items. Please try again later.";
+                return View(new MenuItemListViewModel());
             }
         }
 
-        // GET: MenuItems By Restaurant
+        // GET: MenuItems/Details/5
         [HttpGet]
-        [Route("restaurants/{restaurantId}/menu-items")]
-        public async Task<IActionResult> ByRestaurant(int restaurantId)
-        {
-            try
-            {
-                var menuItems = await _menuItemRepository.GetAvailableItemsByRestaurantAsync(restaurantId);
-                if (menuItems == null || !menuItems.Any())
-                {
-                    _logger.LogWarning("No menu items found for restaurant ID {RestaurantId}", restaurantId);
-                    return NotFound("No menu items found for this restaurant.");
-                }
-
-                var restaurant = await _restaurantRepository.GetRestaurantByIdAsync(restaurantId);
-                if (restaurant == null)
-                {
-                    _logger.LogWarning("Restaurant ID {RestaurantId} not found", restaurantId);
-                    return NotFound("Restaurant not found.");
-                }
-
-                var categories = await _categoryRepository.GetAllAsync();
-
-                var model = new MenuItemListViewModel
-                {
-                    MenuItems = menuItems.Select(m => new MenuItemViewModel
-                    {
-                        Id = m.Id,
-                        RestaurantId = m.RestaurantId,
-                        Name = m.Name ?? "Unnamed Item",
-                        Description = m.Description ?? "",
-                        Price = m.Price,
-                        ImageUrl = m.ImageUrl ?? "/images/food-placeholder.jpg",
-                        CreatedAt = m.CreatedAt,
-                        UpdatedAt = m.UpdatedAt,
-                        IsAvailable = m.IsAvailable
-                    }).ToList(),
-                    Categories = categories.Select(c => new MenuItemCategoryViewModel
-                    {
-                        Id = c.Id,
-                        Name = c.Name ?? "Unknown Category"
-                    }).ToList(),
-                    RestaurantId = restaurant.Id,
-                    RestaurantName = restaurant.Name ?? "Unknown Restaurant",
-                    RestaurantImageUrl = restaurant.ImageUrl ?? "/images/restaurant-placeholder.jpg"
-                };
-
-                return View(model);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading menu items for restaurant ID {RestaurantId}", restaurantId);
-                return View("Error", new ErrorViewModel
-                {
-                    RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
-                    ErrorMessage = "An error occurred while loading menu items. Please try again later."
-                });
-            }
-        }
-
-        // GET: MenuItem Details
-        [HttpGet]
-        [Route("menu-items/{id}")]
         public async Task<IActionResult> Details(int id)
         {
             try
             {
-                var menuItem = await _menuItemRepository.GetByIdAsync(id);
+                var menuItem = await _unitOfWork.MenuItems.FirstOrDefaultAsync(
+                                                          m => m.Id == id,
+                                                          m => m.Restaurant,
+                                                          m => m.Category,
+                                                          m => m.Reviews.AsQueryable().Include(r => r.CustomerProfile).AsEnumerable(),
+                                                          m => m.CustomizationOptions.AsQueryable().Include(co => co.Choices).AsEnumerable()
+                                                          );
+
                 if (menuItem == null)
                 {
-                    _logger.LogWarning("Menu item ID {MenuItemId} not found", id);
-                    return NotFound("Menu item not found.");
+                    _logger.LogWarning("Menu item with ID {MenuItemId} not found.", id);
+                    return NotFound();
                 }
 
-                var relatedItems = await _menuItemRepository.GetRelatedItemsAsync(menuItem.Id, menuItem.RestaurantId, 5);
-                var customizationOptions = await _menuItemRepository.GetCustomizationOptionsAsync(menuItem.Id);
-                var restaurant = await _restaurantRepository.GetRestaurantByIdAsync(menuItem.RestaurantId);
-                if (restaurant == null)
+                if (menuItem.Restaurant == null)
                 {
-                    _logger.LogWarning("Restaurant ID {RestaurantId} not found for menu item ID {MenuItemId}", menuItem.RestaurantId, id);
-                    return NotFound("Restaurant not found.");
+                    _logger.LogError("Restaurant not found for menu item ID: {MenuItemId}, RestaurantId: {RestaurantId}", id, menuItem.RestaurantId);
+                     TempData["ErrorMessage"] = "Restaurant data for this menu item is missing.";
                 }
+                
+                var relatedItems = await _unitOfWork.MenuItems.GetRelatedItemsAsync(menuItem.Id, menuItem.RestaurantId, 5);
+                
+                var reviews = menuItem.Restaurant.Reviews
+                    .Where(r => r.MenuItemId == id)
+                    .OrderByDescending(r => r.CreatedAt)
+                    .ToList();
 
-                var model = new MenuItemDetailsViewModel
+                bool isInUserCart = false;
+                int? cartItemQuantity = null;
+                
+                if (User.Identity?.IsAuthenticated == true)
                 {
-                    MenuItem = new MenuItemViewModel
+                    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (!string.IsNullOrEmpty(userId))
                     {
-                        Id = menuItem.Id,
-                        RestaurantId = menuItem.RestaurantId,
-                        Name = menuItem.Name ?? "Unnamed Item",
-                        Description = menuItem.Description ?? "",
-                        Price = menuItem.Price,
-                        ImageUrl = menuItem.ImageUrl ?? "/images/food-placeholder.jpg",
-                        CreatedAt = menuItem.CreatedAt,
-                        UpdatedAt = menuItem.UpdatedAt,
-                        IsAvailable = menuItem.IsAvailable
-                    },
-                    RelatedItems = relatedItems.Select(r => new RelatedItemViewModel
+                        var cart = await _cartService.GetCartAsync(userId);
+                        var cartItem = cart?.Items?.FirstOrDefault(i => i.MenuItemId == id);
+                        isInUserCart = cartItem != null;
+                        cartItemQuantity = cartItem?.Quantity;
+                    }
+                }
+                
+                var viewModel = new MenuItemDetailsViewModel
+                {
+                    MenuItem = MapToViewModel(menuItem),
+                    RelatedItems = relatedItems.Select(ri => new RelatedItemViewModel {
+                        Id = ri.Id,
+                        Name = ri.Name,
+                        Description = ri.Description ?? string.Empty,
+                        Price = ri.Price,
+                        ImageUrl = ri.ImageUrl,
+                        RestaurantId = ri.RestaurantId
+                    }).ToList(),
+                    Restaurant = menuItem.Restaurant != null ? new RestaurantViewModel { 
+                        Id = menuItem.Restaurant.Id, 
+                        Name = menuItem.Restaurant.Name,
+                        CoverImageUrl = menuItem.Restaurant.ImageUrl,
+                    } : new RestaurantViewModel { Name = "N/A" },
+                    CustomizationOptions = menuItem.CustomizationOptions?.Select(co => new CustomizationOptionViewModel {
+                        Id = co.Id,
+                        Name = co.Name,
+                        IsRequired = co.IsRequired,
+                        AllowMultiple = co.AllowMultiple,
+                        Choices = co.Choices?.Select(ch => new CustomizationChoiceViewModel {
+                            Id = ch.Id,
+                            Name = ch.Name,
+                            Price = ch.Price,
+                            IsDefault = ch.IsDefault
+                        }).ToList() ?? new List<CustomizationChoiceViewModel>()
+                    }).ToList() ?? new List<CustomizationOptionViewModel>(),
+                    Reviews = reviews.Select(r => new ReviewViewModel
                     {
                         Id = r.Id,
-                        RestaurantId = r.RestaurantId,
-                        Name = r.Name ?? "Unnamed Item",
-                        Description = r.Description ?? "",
-                        Price = r.Price,
-                        ImageUrl = r.ImageUrl ?? "/images/food-placeholder.jpg"
+                        Rating = (int)r.Rating,
+                        Comment = r.Comment ?? string.Empty,
+                        CustomerName = (r.CustomerProfile?.FirstName ?? "") + " " + (r.CustomerProfile?.LastName ?? "").Trim(),
+                        CreatedAt = r.CreatedAt,
+                        MenuItemId = r.MenuItemId ?? 0,
                     }).ToList(),
-                    CustomizationOptions = customizationOptions.Select(o => new CustomizationOptionViewModel
-                    {
-                        Id = o.Id,
-                        Name = o.Name ?? "Option",
-                        Choices = o.Choices.Select(c => new CustomizationChoiceViewModel
-                        {
-                            Id = c.Id,
-                            Name = c.Name ?? "Choice",
-                            Price = c.Price
-                        }).ToList()
-                    }).ToList(),
-                    Restaurant = new RestaurantViewModel
-                    {
-                        Id = restaurant.Id,
-                        Name = restaurant.Name ?? "Unknown Restaurant",
-                        ImageUrl = restaurant.ImageUrl ?? "/images/restaurant-placeholder.jpg",
-                        Address = restaurant.Address ?? "Address not available",
-                        City = restaurant.City ?? "",
-                        State = restaurant.State ?? "",
-                        PostalCode = restaurant.PostalCode ?? "",
-                        OpeningTime = restaurant.OpeningTime,
-                        ClosingTime = restaurant.ClosingTime
-                    }
+                    IsInUserCart = isInUserCart,
+                    CartItemQuantity = cartItemQuantity
                 };
-
-                return View(model);
+                
+                return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading details for menu item ID {MenuItemId}", id);
-                return View("Error", new ErrorViewModel
-                {
-                    RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
-                    ErrorMessage = "An error occurred while loading menu item details. Please try again later."
-                });
+                _logger.LogError(ex, "Error retrieving menu item details for ID: {MenuItemId}", id);
+                TempData["ErrorMessage"] = "An error occurred while retrieving menu item details.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
-        // POST: Add to Cart
-        [HttpPost]
-        [Route("menu-items/{id}/add-to-cart")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddToCart(int id, AddToCartViewModel model)
-        {
-            if (model.Quantity <= 0)
-            {
-                _logger.LogWarning("Invalid quantity {Quantity} for menu item ID {MenuItemId}", model.Quantity, id);
-                TempData["ErrorMessage"] = "Quantity must be at least 1.";
-                return RedirectToAction("Details", new { id });
-            }
-
-            try
-            {
-                var menuItem = await _menuItemRepository.GetByIdAsync(id);
-                if (menuItem == null)
-                {
-                    _logger.LogWarning("Menu item ID {MenuItemId} not found", id);
-                    TempData["ErrorMessage"] = "Menu item not found.";
-                    return RedirectToAction("ByRestaurant", new { restaurantId = model.RestaurantId });
-                }
-
-                if (!menuItem.IsAvailable)
-                {
-                    _logger.LogWarning("Attempted to add unavailable item {MenuItemId}: {MenuItemName}", id, menuItem.Name);
-                    TempData["ErrorMessage"] = $"{menuItem.Name} is currently unavailable.";
-                    return RedirectToAction("Details", new { id });
-                }
-
-                // Validate customizations
-                if (model.Customizations?.Any() == true)
-                {
-                    var validOptions = await _menuItemRepository.GetCustomizationOptionsAsync(id);
-                    var validOptionIds = validOptions.Select(o => o.Id).ToHashSet();
-                    var validChoices = validOptions
-                        .SelectMany(o => o.Choices)
-                        .ToDictionary(c => c.Id, c => c.Price);
-
-                    foreach (var customization in model.Customizations)
-                    {
-                        if (!validOptionIds.Contains(customization.OptionId) || !validChoices.ContainsKey(customization.ChoiceId))
-                        {
-                            _logger.LogWarning("Invalid customization for item {MenuItemId}: OptionId={OptionId}, ChoiceId={ChoiceId}",
-                                id, customization.OptionId, customization.ChoiceId);
-                            TempData["ErrorMessage"] = "Invalid customization selected.";
-                            return RedirectToAction("Details", new { id });
-                        }
-                        customization.Price = validChoices[customization.ChoiceId];
-                    }
-                }
-
-                var cartItem = new CartItemViewModel
-                {
-                    MenuItemId = id,
-                    Quantity = model.Quantity,
-                    Name = menuItem.Name ?? "Unnamed Item",
-                    ImageUrl = menuItem.ImageUrl ?? "/images/food-placeholder.jpg",
-                    Price = menuItem.Price,
-                    RestaurantId = menuItem.RestaurantId,
-                    RestaurantName = menuItem.Restaurant?.Name ?? "Unknown Restaurant",
-                    Customizations = model.Customizations ?? new List<CustomizationViewModel>()
-                };
-
-                var user = await _userManager.GetUserAsync(User);
-                await _cartService.AddItemToCartAsync(user.Id, cartItem);
-                _logger.LogInformation("Added {Quantity} of {MenuItemName} to cart for user {UserId}", model.Quantity, menuItem.Name, user.Id);
-
-                TempData["SuccessMessage"] = $"{model.Quantity} {menuItem.Name} added to cart.";
-                return RedirectToAction("Details", new { id });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error adding menu item ID {MenuItemId} to cart", id);
-                TempData["ErrorMessage"] = "Failed to add item to cart.";
-                return RedirectToAction("Details", new { id });
-            }
-        }
-
-        // GET: Create MenuItem
+        // GET: MenuItems/Create
         [HttpGet]
-        [Route("restaurants/{restaurantId}/menu-items/create")]
-        [Authorize(Roles = "Owner,Admin")]
-        public async Task<IActionResult> Create(int restaurantId)
+        [Authorize(Roles = "Admin,Owner")]
+        public async Task<IActionResult> Create(int? restaurantId = null)
         {
             try
             {
-                var restaurant = await _restaurantRepository.GetRestaurantByIdAsync(restaurantId);
-                if (restaurant == null)
+                var restaurants = await _unitOfWork.Restaurants.GetAllAsync();
+                var categories = await _unitOfWork.RestaurantCategories.GetAllAsync();
+                
+                var viewModel = new MenuItemCreateViewModel
                 {
-                    _logger.LogWarning("Restaurant ID {RestaurantId} not found", restaurantId);
-                    return NotFound("Restaurant not found.");
-                }
-
-                var model = new MenuItemCreateViewModel
-                {
-                    RestaurantId = restaurant.Id,
-                    IsAvailable = true
+                    RestaurantId = restaurantId ?? 0,
+                    IsAvailable = true,
+                    RestaurantOptions = restaurants.Select(r => new SelectListItem 
+                    { 
+                        Value = r.Id.ToString(), 
+                        Text = r.Name,
+                        Selected = restaurantId.HasValue && r.Id == restaurantId.Value
+                    }).ToList(),
+                    CategoryOptions = categories.Select(c => new SelectListItem 
+                    { 
+                        Value = c.Id.ToString(), 
+                        Text = c.Name 
+                    }).ToList()
                 };
-                return View(model);
+                return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading create page for restaurant ID {RestaurantId}", restaurantId);
-                return View("Error", new ErrorViewModel
-                {
-                    RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
-                    ErrorMessage = "An error occurred while loading the create page. Please try again later."
-                });
+                _logger.LogError(ex, "Error loading create menu item form");
+                TempData["ErrorMessage"] = "An error occurred while loading the form.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
-        // POST: Create MenuItem
+        // POST: MenuItems/Create
         [HttpPost]
-        [Route("restaurants/{restaurantId}/menu-items/create")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Owner,Admin")]
-        public async Task<IActionResult> Create(int restaurantId, MenuItemCreateViewModel model)
+        [Authorize(Roles = "Admin,Owner")]
+        public async Task<IActionResult> Create(MenuItemCreateViewModel viewModel)
         {
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Invalid model state for creating menu item for restaurant ID {RestaurantId}", restaurantId);
-                return View(model);
+                await PopulateDropdowns(viewModel);
+                return View(viewModel);
             }
 
             try
             {
-                var restaurant = await _restaurantRepository.GetRestaurantByIdAsync(restaurantId);
-                if (restaurant == null)
+                if (!await HasMenuItemAccess(viewModel.RestaurantId))
                 {
-                    _logger.LogWarning("Restaurant ID {RestaurantId} not found", restaurantId);
-                    return NotFound("Restaurant not found.");
+                    TempData["ErrorMessage"] = "You do not have permission to add menu items to this restaurant.";
+                    await PopulateDropdowns(viewModel);
+                    return View(viewModel);
+                }
+
+                string? uniqueFileName = null;
+                if (viewModel.ImageFile != null)
+                {
+                    uniqueFileName = await SaveImageAsync(viewModel.ImageFile);
                 }
 
                 var menuItem = new MenuItem
                 {
-                    RestaurantId = restaurantId,
-                    Name = model.Name?.Trim(),
-                    Description = model.Description?.Trim(),
-                    Price = model.Price,
-                    ImageUrl = model.ImageUrl,
-                    CreatedAt = DateTime.UtcNow,
-                    IsAvailable = model.IsAvailable,
-                    UpdatedAt = DateTime.UtcNow
+                    Name = viewModel.Name,
+                    Description = viewModel.Description,
+                    Price = viewModel.Price,
+                    ImageUrl = uniqueFileName ?? viewModel.ImageUrl,
+                    IsAvailable = viewModel.IsAvailable,
+                    RestaurantId = viewModel.RestaurantId,
+                    CategoryId = viewModel.CategoryId,
+                    CreatedAt = DateTime.UtcNow
                 };
 
-                if (model.ImageFile != null && model.ImageFile.Length > 0)
-                {
-                    menuItem.ImageUrl = SaveImage(model.ImageFile);
-                }
-
-                await _menuItemRepository.AddAsync(menuItem);
-                _logger.LogInformation("Created menu item {MenuItemName} for restaurant ID {RestaurantId}", menuItem.Name, restaurantId);
+                await _unitOfWork.MenuItems.AddAsync(menuItem);
+                await _unitOfWork.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Menu item created successfully.";
-                return RedirectToAction("ByRestaurant", new { restaurantId });
+                return RedirectToAction(nameof(Index), new { restaurantId = menuItem.RestaurantId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating menu item for restaurant ID {RestaurantId}", restaurantId);
-                ModelState.AddModelError("", "An error occurred while creating the menu item. Please try again.");
-                return View(model);
+                _logger.LogError(ex, "Error creating menu item");
+                ModelState.AddModelError(string.Empty, "An error occurred while creating the menu item.");
+                await PopulateDropdowns(viewModel);
+                return View(viewModel);
             }
         }
 
-        // GET: Edit MenuItem
+        // GET: MenuItems/Edit/5
         [HttpGet]
-        [Route("menu-items/{id}/edit")]
-        [Authorize(Roles = "Owner,Admin")]
+        [Authorize(Roles = "Admin,Owner")]
         public async Task<IActionResult> Edit(int id)
         {
             try
             {
-                var menuItem = await _menuItemRepository.GetByIdAsync(id);
+                var menuItem = await _unitOfWork.MenuItems.GetByIdAsync(id);
                 if (menuItem == null)
                 {
-                    _logger.LogWarning("Menu item ID {MenuItemId} not found", id);
-                    return NotFound("Menu item not found.");
+                    _logger.LogWarning("Menu item with ID {MenuItemId} not found for edit.", id);
+                    return NotFound();
                 }
 
-                var model = new MenuItemEditViewModel
+                if (!await HasMenuItemAccess(menuItem.RestaurantId))
+                {
+                     TempData["ErrorMessage"] = "You do not have permission to edit menu items for this restaurant.";
+                    return RedirectToAction(nameof(Index));
+                }
+                
+                var restaurants = await _unitOfWork.Restaurants.GetAllAsync();
+                var categories = await _unitOfWork.RestaurantCategories.GetAllAsync();
+
+                var viewModel = new MenuItemEditViewModel
                 {
                     Id = menuItem.Id,
-                    RestaurantId = menuItem.RestaurantId,
                     Name = menuItem.Name,
                     Description = menuItem.Description,
                     Price = menuItem.Price,
-                    ImageUrl = menuItem.ImageUrl,
-                    IsAvailable = menuItem.IsAvailable
+                    CurrentImageUrl = menuItem.ImageUrl,
+                    IsAvailable = menuItem.IsAvailable,
+                    RestaurantId = menuItem.RestaurantId,
+                    CategoryId = menuItem.CategoryId,
+                    CreatedAt = menuItem.CreatedAt,
+                    RestaurantOptions = restaurants.Select(r => new SelectListItem
+                    {
+                        Value = r.Id.ToString(),
+                        Text = r.Name,
+                        Selected = r.Id == menuItem.RestaurantId
+                    }).ToList(),
+                    CategoryOptions = categories.Select(c => new SelectListItem
+                    {
+                        Value = c.Id.ToString(),
+                        Text = c.Name,
+                        Selected = c.Id == menuItem.CategoryId
+                    }).ToList()
                 };
-                return View(model);
+                return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading edit page for menu item ID {MenuItemId}", id);
-                return View("Error", new ErrorViewModel
-                {
-                    RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
-                    ErrorMessage = "An error occurred while loading the edit page. Please try again later."
-                });
+                _logger.LogError(ex, "Error loading edit form for menu item ID: {MenuItemId}", id);
+                TempData["ErrorMessage"] = "An error occurred while loading the edit form.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
-        // POST: Edit MenuItem
+        // POST: MenuItems/Edit/5
         [HttpPost]
-        [Route("menu-items/{id}/edit")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Owner,Admin")]
-        public async Task<IActionResult> Edit(int id, MenuItemEditViewModel model)
+        [Authorize(Roles = "Admin,Owner")]
+        public async Task<IActionResult> Edit(int id, MenuItemEditViewModel viewModel)
         {
+            if (id != viewModel.Id)
+            {
+                return BadRequest();
+            }
+
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Invalid model state for editing menu item ID {MenuItemId}", id);
-                return View(model);
+                await PopulateDropdowns(viewModel);
+                return View(viewModel);
             }
 
             try
             {
-                var menuItem = await _menuItemRepository.GetByIdAsync(id);
+                var menuItem = await _unitOfWork.MenuItems.GetByIdAsync(id);
                 if (menuItem == null)
                 {
-                    _logger.LogWarning("Menu item ID {MenuItemId} not found", id);
-                    return NotFound("Menu item not found.");
+                    _logger.LogWarning("Menu item with ID {MenuItemId} not found for update.", id);
+                    return NotFound();
                 }
 
-                menuItem.Name = model.Name?.Trim();
-                menuItem.Description = model.Description?.Trim();
-                menuItem.Price = model.Price;
-                menuItem.IsAvailable = model.IsAvailable;
+                if (!await HasMenuItemAccess(menuItem.RestaurantId))
+                {
+                    TempData["ErrorMessage"] = "You do not have permission to edit this menu item.";
+                    await PopulateDropdowns(viewModel);
+                    return View(viewModel);
+                }
+
+                string? uniqueFileName = viewModel.CurrentImageUrl;
+                if (viewModel.ImageFile != null)
+                {
+                    uniqueFileName = await SaveImageAsync(viewModel.ImageFile);
+                }
+
+                menuItem.Name = viewModel.Name;
+                menuItem.Description = viewModel.Description;
+                menuItem.Price = viewModel.Price;
+                menuItem.ImageUrl = uniqueFileName;
+                menuItem.IsAvailable = viewModel.IsAvailable;
+                menuItem.RestaurantId = viewModel.RestaurantId;
+                menuItem.CategoryId = viewModel.CategoryId;
                 menuItem.UpdatedAt = DateTime.UtcNow;
 
-                if (model.ImageFile != null && model.ImageFile.Length > 0)
-                {
-                    menuItem.ImageUrl = SaveImage(model.ImageFile);
-                }
-
-                await _menuItemRepository.UpdateAsync(menuItem);
-                _logger.LogInformation("Updated menu item ID {MenuItemId}: {MenuItemName}", id, menuItem.Name);
+                await _unitOfWork.MenuItems.UpdateAsync(menuItem);
+                await _unitOfWork.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Menu item updated successfully.";
-                return RedirectToAction("Details", new { id });
+                return RedirectToAction(nameof(Details), new { id = menuItem.Id });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating menu item ID {MenuItemId}", id);
-                ModelState.AddModelError("", "An error occurred while updating the menu item. Please try again.");
-                return View(model);
+                _logger.LogError(ex, "Error updating menu item ID: {MenuItemId}", id);
+                ModelState.AddModelError(string.Empty, "An error occurred while updating the menu item.");
+                await PopulateDropdowns(viewModel);
+                return View(viewModel);
             }
         }
 
-        // GET: Delete MenuItem
+        // GET: MenuItems/Delete/5
         [HttpGet]
-        [Route("menu-items/{id}/delete")]
-        [Authorize(Roles = "Owner,Admin")]
+        [Authorize(Roles = "Admin,Owner")]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                var menuItem = await _menuItemRepository.GetByIdAsync(id);
+                var menuItem = await _unitOfWork.MenuItems.GetByIdAsync(id);
                 if (menuItem == null)
                 {
-                    _logger.LogWarning("Menu item ID {MenuItemId} not found", id);
-                    return NotFound("Menu item not found.");
+                    return NotFound();
                 }
 
-                var model = new MenuItemViewModel
+                if (!await HasMenuItemAccess(menuItem.RestaurantId))
                 {
-                    Id = menuItem.Id,
-                    Name = menuItem.Name ?? "Unnamed Item",
-                    Description = menuItem.Description ?? "",
-                    Price = menuItem.Price,
-                    ImageUrl = menuItem.ImageUrl ?? "/images/food-placeholder.jpg",
-                    IsAvailable = menuItem.IsAvailable
-                };
-                return View(model);
+                    return Forbid();
+                }
+                
+                var viewModel = MapToViewModel(menuItem);
+                return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading delete page for menu item ID {MenuItemId}", id);
-                return View("Error", new ErrorViewModel
-                {
-                    RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
-                    ErrorMessage = "An error occurred while loading the delete page. Please try again later."
-                });
+                _logger.LogError(ex, "Error loading delete confirmation for menu item ID: {MenuItemId}", id);
+                TempData["ErrorMessage"] = "An error occurred while loading the delete confirmation.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
-        // POST: Delete MenuItem
+        // POST: MenuItems/Delete/5
         [HttpPost, ActionName("Delete")]
-        [Route("menu-items/{id}/delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Owner,Admin")]
+        [Authorize(Roles = "Admin,Owner")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             try
             {
-                var menuItem = await _menuItemRepository.GetByIdAsync(id);
+                var menuItem = await _unitOfWork.MenuItems.GetByIdAsync(id);
                 if (menuItem == null)
                 {
-                    _logger.LogWarning("Menu item ID {MenuItemId} not found", id);
-                    return NotFound("Menu item not found.");
+                    _logger.LogWarning("Menu item with ID {MenuItemId} not found for deletion.", id);
+                    return NotFound();
                 }
 
-                await _menuItemRepository.RemoveAsync(menuItem);
-                _logger.LogInformation("Deleted menu item ID {MenuItemId}: {MenuItemName}", id, menuItem.Name);
+                if (!await HasMenuItemAccess(menuItem.RestaurantId))
+                {
+                    TempData["ErrorMessage"] = "You do not have permission to delete this menu item.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                await _unitOfWork.MenuItems.RemoveAsync(menuItem);
+                await _unitOfWork.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Menu item deleted successfully.";
-                return RedirectToAction("ByRestaurant", new { restaurantId = menuItem.RestaurantId });
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting menu item ID {MenuItemId}", id);
-                TempData["ErrorMessage"] = "Failed to delete menu item.";
-                return RedirectToAction("ByRestaurant", new { restaurantId = (await _menuItemRepository.GetByIdAsync(id))?.RestaurantId });
+                _logger.LogError(ex, "Error deleting menu item ID: {MenuItemId}", id);
+                TempData["ErrorMessage"] = "An error occurred while deleting the menu item.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
-        // GET: MenuItems By Category
-        [HttpGet]
-        [Route("menu-items/category/{categoryId:int}")]
-        public async Task<IActionResult> ByCategory(int categoryId)
+        // Helper methods
+        private async Task<bool> HasMenuItemAccess(int restaurantId)
         {
-            try
+            if (User.IsInRole("Admin"))
             {
-                var menuItems = await _menuItemRepository.GetByRestaurantCategoryAsync(categoryId);
-                if (menuItems == null || !menuItems.Any())
+                return true;
+            }
+            
+            if (User.IsInRole("Owner"))
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
                 {
-                    _logger.LogWarning("No menu items found for category ID {CategoryId}", categoryId);
-                    return NotFound("No menu items found for this category.");
+                    return false;
                 }
-
-                var restaurants = await _restaurantRepository.GetRestaurantsByCategoryAsync(categoryId);
-                if (restaurants == null || !restaurants.Any())
-                {
-                    _logger.LogWarning("No restaurants found for category ID {CategoryId}", categoryId);
-                    return NotFound("No restaurants found for this category.");
-                }
-
-                var category = await _categoryRepository.GetByIdAsync(categoryId);
-
-                var model = new MenuItemsByCategoryViewModel
-                {
-                    CategoryId = categoryId,
-                    CategoryName = category.Name,
-                    Restaurants = restaurants.Select(r => new RestaurantViewModel
-                    {
-                        Id = r.Id,
-                        Name = r.Name ?? "Unknown Restaurant",
-                        ImageUrl = r.ImageUrl ?? "/images/restaurant-placeholder.jpg",
-                        Address = r.Address ?? "Address not available",
-                        City = r.City ?? "",
-                        State = r.State ?? "",
-                        PostalCode = r.PostalCode ?? "",
-                        OpeningTime = r.OpeningTime,
-                        ClosingTime = r.ClosingTime
-                    }).ToList(),
-                    MenuItems = menuItems.Select(m => new MenuItemViewModel
-                    {
-                        Id = m.Id,
-                        RestaurantId = m.RestaurantId,
-                        Name = m.Name ?? "Unnamed Item",
-                        Description = m.Description ?? "",
-                        Price = m.Price,
-                        ImageUrl = m.ImageUrl ?? "/images/food-placeholder.jpg",
-                        CreatedAt = m.CreatedAt,
-                        UpdatedAt = m.UpdatedAt,
-                        IsAvailable = m.IsAvailable
-                    }).ToList()
-                };
-
-                return View(model);
+                
+                var restaurant = await _unitOfWork.Restaurants.GetByIdAsync(restaurantId);
+                return restaurant != null && restaurant.OwnerId == userId;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading menu items for category ID {CategoryId}", categoryId);
-                return View("Error", new ErrorViewModel
-                {
-                    RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
-                    ErrorMessage = "An error occurred while loading menu items for the selected category. Please try again later."
-                });
-            }
+            
+            return false;
         }
-
-        [HttpGet]
-        [Route("menu-items/{id}/customizations")]
-        public async Task<IActionResult> GetCustomizations(int id)
+        
+        private MenuItemViewModel MapToViewModel(FoodDeliveryApp.Models.MenuItem menuItem)
         {
-            try
+            if (menuItem == null) 
             {
-                var customizationOptions = await _menuItemRepository.GetCustomizationOptionsAsync(id);
-                var model = customizationOptions.Select(o => new CustomizationOptionViewModel
+                _logger.LogWarning("Attempted to map a null MenuItem to MenuItemViewModel.");
+                return new MenuItemViewModel();
+            }
+
+            var viewModel = new MenuItemViewModel
+            {
+                Id = menuItem.Id,
+                Name = menuItem.Name,
+                Description = menuItem.Description,
+                Price = menuItem.Price,
+                ImageUrl = menuItem.ImageUrl,
+                IsAvailable = menuItem.IsAvailable,
+                RestaurantId = menuItem.RestaurantId,
+                RestaurantName = menuItem.Restaurant?.Name ?? "N/A",
+                CategoryId = menuItem.CategoryId,
+                Category = menuItem.Category != null ? new MenuItemCategoryViewModel { Id = menuItem.Category.Id, Name = menuItem.Category.Name } : new MenuItemCategoryViewModel { Name = "N/A"},
+                CreatedAt = menuItem.CreatedAt,
+                UpdatedAt = menuItem.UpdatedAt,
+                Rating = menuItem.Reviews != null && menuItem.Reviews.Any() ? menuItem.Reviews.Average(r => r.Rating) : 0,
+                ReviewCount = menuItem.Reviews?.Count ?? 0,
+                Reviews = menuItem.Reviews?.Select(r => new ReviewViewModel
                 {
-                    Id = o.Id,
-                    Name = o.Name ?? "Option",
-                    Choices = o.Choices.Select(c => new CustomizationChoiceViewModel
+                    Id = r.Id,
+                    Rating = (int)r.Rating,
+                    Comment = r.Comment ?? string.Empty,
+                    CustomerName = (r.CustomerProfile?.FirstName ?? "") + " " + (r.CustomerProfile?.LastName ?? "").Trim(),
+                    CreatedAt = r.CreatedAt,
+                    MenuItemId = r.MenuItemId ?? 0,
+                }).ToList() ?? new List<ReviewViewModel>(),
+                CustomizationOptions = menuItem.CustomizationOptions?.Select(co => new CustomizationOptionViewModel
+                {
+                    Id = co.Id,
+                    Name = co.Name,
+                    IsRequired = co.IsRequired,
+                    AllowMultiple = co.AllowMultiple,
+                    Choices = co.Choices?.Select(ch => new CustomizationChoiceViewModel
                     {
-                        Id = c.Id,
-                        Name = c.Name ?? "Choice",
-                        Price = c.Price
-                    }).ToList()
-                }).ToList();
-                return PartialView("_Customizations", model);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading customizations for menu item ID {MenuItemId}", id);
-                return StatusCode(500, "Failed to load customizations.");
-            }
+                        Id = ch.Id,
+                        Name = ch.Name,
+                        Price = ch.Price,
+                        IsDefault = ch.IsDefault
+                    }).ToList() ?? new List<CustomizationChoiceViewModel>()
+                }).ToList() ?? new List<CustomizationOptionViewModel>()
+            };
+            return viewModel;
         }
-
-        // GET: Search Menu Items
-        [HttpGet]
-        [Route("search")]
-        public async Task<IActionResult> Search(string query, int? restaurantId, int? categoryId, int pageNumber = 1, int pageSize = 12)
+        
+        private async Task PopulateDropdowns(MenuItemCreateViewModel viewModel)
         {
-            try
+            var restaurants = await _unitOfWork.Restaurants.GetAllAsync();
+            var categories = await _unitOfWork.RestaurantCategories.GetAllAsync();
+            
+            viewModel.RestaurantOptions = restaurants.Select(r => new SelectListItem
             {
-                query = query?.Trim() ?? string.Empty;
-                pageNumber = Math.Max(1, pageNumber);
-                pageSize = Math.Clamp(pageSize, 1, 100);
-
-                var searchResults = await _menuItemRepository.SearchMenuItemsAsync(query, restaurantId, categoryId, pageNumber, pageSize);
-                var categories = await _menuItemRepository.GetByRestaurantCategoryAsync(restaurantId ?? 0);
-                var restaurants = await _restaurantRepository.GetAllAsync();
-
-                var model = new MenuItemListViewModel
-                {
-                    MenuItems = searchResults.Select(m => new MenuItemViewModel
-                    {
-                        Id = m.Id,
-                        RestaurantId = m.RestaurantId,
-                        Name = m.Name ?? "Unnamed Item",
-                        Description = m.Description ?? "",
-                        Price = m.Price,
-                        ImageUrl = m.ImageUrl ?? "/images/food-placeholder.jpg",
-                        CreatedAt = m.CreatedAt,
-                        UpdatedAt = m.UpdatedAt,
-                        IsAvailable = m.IsAvailable,
-                        CategoryId = m.Restaurant.Category.Id
-                    }).ToList(),
-                    Categories = categories.Select(c => new MenuItemCategoryViewModel
-                    {
-                        Id = c.Id,
-                        Name = c.Name ?? "Unnamed Category"
-                    }).ToList(),
-                    Restaurants = restaurants.Select(r => new MenuItemRestaurantViewModel
-                    {
-                        Id = r.Id,
-                        Name = r.Name ?? "Unknown Restaurant"
-                    }).ToList(),
-                    SearchQuery = query,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize,
-                    TotalItems = searchResults.Count(),
-                    SelectedCategoryId = categoryId,
-                    SelectedRestaurantId = restaurantId,
-                    RestaurantId = restaurantId ?? 0,
-                    RestaurantName = restaurantId.HasValue ? (await _restaurantRepository.GetRestaurantByIdAsync(restaurantId.Value))?.Name ?? "All Restaurants" : "All Restaurants"
-                };
-
-                if (!model.MenuItems.Any() && !string.IsNullOrEmpty(query))
-                {
-                    _logger.LogInformation("No menu items found for search query '{Query}'", query);
-                    TempData["InfoMessage"] = "No items found matching your search.";
-                }
-
-                return View(model);
-            }
-            catch (Exception ex)
+                Value = r.Id.ToString(),
+                Text = r.Name,
+                Selected = r.Id == viewModel.RestaurantId
+            }).ToList();
+            
+            viewModel.CategoryOptions = categories.Select(c => new SelectListItem
             {
-                _logger.LogError(ex, "Error searching menu items with query '{Query}'", query);
-                return View("Error", new ErrorViewModel
-                {
-                    RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
-                    ErrorMessage = "An error occurred while searching menu items. Please try again later."
-                });
-            }
+                Value = c.Id.ToString(),
+                Text = c.Name,
+                Selected = c.Id == viewModel.CategoryId
+            }).ToList();
         }
-        // Save image to server
-        private string SaveImage(IFormFile imageFile)
+        
+        private IEnumerable<FoodDeliveryApp.Models.MenuItem> ApplySorting(IEnumerable<FoodDeliveryApp.Models.MenuItem> menuItems, string sortBy, string sortOrder)
         {
-            if (imageFile == null || imageFile.Length == 0)
+            if (menuItems == null)
             {
-                return "/images/food-placeholder.jpg";
+                return Enumerable.Empty<FoodDeliveryApp.Models.MenuItem>();
             }
 
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "menu-items");
+            switch (sortBy?.ToLower())
+            {
+                case "price":
+                    menuItems = sortOrder?.ToLower() == "desc" ? menuItems.OrderByDescending(m => m.Price) : menuItems.OrderBy(m => m.Price);
+                    break;
+                case "createdat":
+                    menuItems = sortOrder?.ToLower() == "desc" ? menuItems.OrderByDescending(m => m.CreatedAt) : menuItems.OrderBy(m => m.CreatedAt);
+                    break;
+                default:
+                    menuItems = sortOrder?.ToLower() == "desc" ? menuItems.OrderByDescending(m => m.Name) : menuItems.OrderBy(m => m.Name);
+                    break;
+            }
+            return menuItems;
+        }
+        
+        private async Task<string> SaveImageAsync(IFormFile file)
+        {
+            var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "menu-items");
+            
             if (!Directory.Exists(uploadsFolder))
             {
                 Directory.CreateDirectory(uploadsFolder);
             }
 
-            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
-            var filePath = Path.Combine(uploadsFolder, fileName);
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(file.FileName);
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                imageFile.CopyTo(stream);
+                await file.CopyToAsync(stream);
             }
 
-            return "/images/menu-items/" + fileName;
+            return $"/images/menu-items/{uniqueFileName}";
         }
     }
 }

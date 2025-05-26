@@ -1,4 +1,4 @@
-﻿@model FoodDeliveryApp.ViewModels.PromotionViewModels.PromotionViewModel
+﻿@model FoodDeliveryApp.ViewModels.Promotion.PromotionViewModel
 
 @{
     ViewData["Title"] = $"Promotion Details - {Model.Code}";
@@ -24,7 +24,7 @@
                         <dt class="col-sm-4">Status</dt>
                         <dd class="col-sm-8">
                             <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">
-                                @(Model.IsActive ? "Active" : "Inactive")
+                                @Model.EndDate > DateTime.Now ? "Active" : "Inactive"
                             </span>
                         </dd>
                     </dl>
@@ -37,43 +37,16 @@
                         <dd class="col-sm-8">@(Model.IsPercentage ? "Percentage" : "Fixed Amount")</dd>
 
                         <dt class="col-sm-4">Discount Value</dt>
-                        <dd class="col-sm-8">
-                            @if (Model.IsPercentage)
-                            {
-                                @Model.DiscountValue
-                            
-                                <span>%</span>
-                            }
-                            else
-                            {
-                                <span>$</span>
-                                @Model.DiscountValue
-                            }
-                        </dd>
+                        <dd class="col-sm-8">@Model.DiscountValue</dd>
 
-                        <dt class="col-sm-4">Min. Order Amount</dt>
-                        <dd class="col-sm-8">
-                            @if (Model.MinimumOrderAmount > 0)
-                            {
-                                <span>$@Model.MinimumOrderAmount</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">None</span>
-                            }
-                        </dd>
+                        <dt class="col-sm-4">Valid Period</dt>
+                        <dd class="col-sm-8">@Model.FormattedDiscount</dd>
+
+                        <dt class="col-sm-4">Minimum Order</dt>
+                        <dd class="col-sm-8">$@Model.MinimumOrderAmount.ToString()</dd>
 
                         <dt class="col-sm-4">Usage Limit</dt>
-                        <dd class="col-sm-8">
-                            @if (Model.UsageLimit > 0)
-                            {
-                                @Model.UsageLimit
-                            }
-                            else
-                            {
-                                <span>Unlimited</span>
-                            }
-                        </dd>
+                        <dd class="col-sm-8">@Model.UsageLimit</dd>
                     </dl>
                 </div>
             </div>
@@ -103,11 +76,11 @@
             </div>
 
             <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                <a href="/restaurants/promotions/@Model?.RestaurantId" class="btn btn-outline-secondary me-md-2">
-                    <i class="fas fa-arrow-left"></i> Back to List
-                </a>
                 <a asp-action="EditPromotion" asp-route-id="@Model.Id" class="btn btn-primary">
-                    <i class="fas fa-edit"></i> Edit Promotion
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <a asp-action="Promotions" asp-route-restaurantId="@Model.RestaurantId" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
                 </a>
             </div>
         </div>

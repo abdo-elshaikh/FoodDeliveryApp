@@ -5,32 +5,85 @@
 }
 
 <div class="container py-5">
+    <h1 class="h2 fw-bold mb-4 text-center">Checkout</h1>
+
+    <!-- Alerts -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div class="row">
         <div class="col-lg-8">
-            <h1 class="display-6 mb-4">Review Your Order</h1>
-
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Delivery Information</h5>
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-primary text-white rounded-top">
+                    <h5 class="mb-0">Delivery & Payment Information</h5>
                 </div>
-                <div class="card-body">
-                    <form asp-action="Create" method="post">
-                        <input type="hidden" asp-for="UserId" />
+                <div class="card-body p-4">
+                    <form asp-action="Checkout" method="post" id="checkout-form">
+                        <input type="hidden" asp-for="RestaurantId" />
+                        <input type="hidden" asp-for="RestaurantName" />
+                        <input type="hidden" asp-for="Subtotal" />
+                        <input type="hidden" asp-for="Tax" />
+                        <input type="hidden" asp-for="DeliveryFee" />
+                        <input type="hidden" asp-for="Discount" />
+                        <input type="hidden" asp-for="Total" />
 
                         <div class="mb-3">
-                            <label class="form-label">Delivery Address</label>
-                            <!-- Address selection would go here -->
+                            <label asp-for="AddressId" class="form-label fw-semibold">Delivery Address</label>
+                            <select asp-for="AddressId" class="form-select" asp-items="Model.AddressOptions" aria-describedby="addressHelp">
+                                <option value="">Select an address</option>
+                            </select>
+                            <small id="addressHelp" class="form-text text-muted">Choose your delivery address or add a new one.</small>
+                            <span asp-validation-for="AddressId" class="text-danger"></span>
                         </div>
 
-                        @* <div class="mb-3"> *@
-                        @*     <label asp-for="DeliveryInstructions" class="form-label">Special Instructions</label> *@
-                        @*     <textarea asp-for="DeliveryInstructions" class="form-control" rows="3"></textarea> *@
-                        @* </div> *@
+                        <div class="mb-3">
+                            <label asp-for="DeliveryInstructions" class="form-label fw-semibold">Delivery Instructions</label>
+                            <textarea asp-for="DeliveryInstructions" class="form-control" rows="3" placeholder="e.g., Leave at front door" aria-describedby="instructionsHelp"></textarea>
+                            <small id="instructionsHelp" class="form-text text-muted">Optional instructions for the delivery driver.</small>
+                            <span asp-validation-for="DeliveryInstructions" class="text-danger"></span>
+                        </div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                Place Order
-                            </button>
+                        <div class="mb-3">
+                            <label asp-for="PaymentMethodId" class="form-label fw-semibold">Payment Method</label>
+                            <select asp-for="PaymentMethodId" class="form-select" asp-items="Model.PaymentMethodOptions" aria-describedby="paymentHelp">
+                                <option value="">Select a payment method</option>
+                            </select>
+                            <small id="paymentHelp" class="form-text text-muted">Choose your preferred payment method.</small>
+                            <span asp-validation-for="PaymentMethodId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="SpecialRequests" class="form-label fw-semibold">Special Requests</label>
+                            <textarea asp-for="SpecialRequests" class="form-control" rows="3" placeholder="e.g., No onions, extra sauce" aria-describedby="requestsHelp"></textarea>
+                            <small id="requestsHelp" class="form-text text-muted">Optional requests for the restaurant.</small>
+                            <span asp-validation-for="SpecialRequests" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PromoCode" class="form-label fw-semibold">Promo Code</label>
+                            <div class="input-group">
+                                <input asp-for="PromoCode" class="form-control" placeholder="Enter promo code" aria-describedby="promoHelp" />
+                                <button type="button" class="btn btn-outline-secondary" id="apply-promo">Apply</button>
+                            </div>
+                            <small id="promoHelp" class="form-text text-muted">Enter a valid promo code for discounts.</small>
+                            <span asp-validation-for="PromoCode" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a asp-controller="Cart" asp-action="Index" class="btn btn-outline-secondary rounded-pill">Back to Cart</a>
+                            <button type="submit" class="btn btn-primary rounded-pill">Place Order</button>
                         </div>
                     </form>
                 </div>
@@ -38,49 +91,74 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm sticky-top" style="top: 20px;">
-                <div class="card-header bg-white">
+            <div class="card border-0 shadow-sm sticky-top rounded-3" style="top: 20px;">
+                <div class="card-header bg-primary text-white rounded-top">
                     <h5 class="mb-0">Order Summary</h5>
                 </div>
-                <div class="card-body">
-                    @foreach (var restaurantGroup in Model.Items.GroupBy(i => i.RestaurantId))
+                <div class="card-body p-4">
+                    @if (Model.CartItems.Any())
                     {
-                        <h6 class="mt-3">@restaurantGroup.First().RestaurantName</h6>
-                        <ul class="list-group mb-3">
-                            @foreach (var item in restaurantGroup)
-                            {
-                                <li class="list-group-item">
-                                    @item.Name × @item.Quantity - @((item.Price * item.Quantity).ToString("C"))
-                                </li>
-                            }
-                        </ul>
+                        @foreach (var restaurantGroup in Model.CartItems.GroupBy(i => i.RestaurantId))
+                        {
+                            var restaurant = restaurantGroup.First().Restaurant;
+                            <h6 class="mt-3 fw-semibold">@(restaurant?.Name ?? Model.RestaurantName)</h6>
+                            <ul class="list-group list-group-flush mb-3">
+                                @foreach (var item in restaurantGroup)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-start py-3">
+                                        <div>
+                                            <span class="fw-medium">@item.Name</span>
+                                            <small class="d-block text-muted">× @item.Quantity</small>
+                                            @if (item.Customizations.Any())
+                                            {
+                                                <small class="d-block text-muted">
+                                                    Customizations: @string.Join(", ", item.Customizations.Select(c => $"{c.Name}: {c.Choice} (+{c.Price:C})"))
+                                                </small>
+                                            }
+                                            @if (!string.IsNullOrEmpty(item.SpecialInstructions))
+                                            {
+                                                <small class="d-block text-muted">Instructions: @item.SpecialInstructions</small>
+                                            }
+                                        </div>
+                                        <span class="fw-bold">@item.Subtotal.ToString("C")</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center">Your cart is empty.</p>
                     }
 
-                    <hr>
-                    <div class="d-flex justify-content-between">
-                        <span>Subtotal:</span>
-                        <span>@Model.Items.Sum(i => i.Price * i.Quantity).ToString("C")</span>
+                    <hr class="my-4" />
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span>@Model.Subtotal.ToString("C")</span>
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Delivery Fee:</span>
-                        <span>@CalculateDeliveryFee(Model.Items.GroupBy(i => i.RestaurantId).Count()).ToString("C")</span>
+                    <div class="d-flex justify-content-between mb-2">
+                        <div class="d-flex align-items-center">
+                            <span>Delivery Fee</span>
+                            <span class="ms-2" data-bs-toggle="tooltip" title="Delivery fee charged by the restaurant">
+                                <i class="bi bi-info-circle"></i>
+                            </span>
+                        </div>
+                        <span>@Model.DeliveryFee.ToString("C")</span>
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Tax:</span>
-                        <span>@((Model.Items.Sum(i => i.Price * i.Quantity) * 0.1m).ToString("C"))</span>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tax</span>
+                        <span>@Model.Tax.ToString("C")</span>
                     </div>
-                    <hr>
+                    @if (Model.Discount > 0)
+                    {
+                        <div class="d-flex justify-content-between mb-2 text-success">
+                            <span>Discount</span>
+                            <span>-@Model.Discount.ToString("C")</span>
+                        </div>
+                    }
                     <div class="d-flex justify-content-between fw-bold fs-5">
-                        <span>Total:</span>
-                        <span>
-                            @{
-                                var subtotal = Model.Items.Sum(i => i.Price * i.Quantity);
-                                var deliveryFee = CalculateDeliveryFee(Model.Items.GroupBy(i => i.RestaurantId).Count());
-                                var tax = subtotal * 0.1m;
-                                var total = subtotal + deliveryFee + tax;
-                            }
-                            @total.ToString("C")
-                        </span>
+                        <span>Total</span>
+                        <span>@Model.Total.ToString("C")</span>
                     </div>
                 </div>
             </div>
@@ -88,9 +166,30 @@
     </div>
 </div>
 
-@functions {
-    private decimal CalculateDeliveryFee(int restaurantCount)
-    {
-        return 3m + (Math.Max(0, restaurantCount - 1) * 2m);
-    }
+@section Scripts {
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Enable tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Promo code button (placeholder for future implementation)
+            document.getElementById('apply-promo').addEventListener('click', function () {
+                alert('Promo code application not yet implemented.');
+            });
+
+            // Update cart count
+            fetch('/Order/GetCartCount')
+                .then(response => response.json())
+                .then(data => {
+                    const cartBadge = document.querySelector('#cart-count');
+                    if (cartBadge) cartBadge.textContent = data;
+                })
+                .catch(error => console.error('Error fetching cart count:', error));
+        });
+    </script>
 }

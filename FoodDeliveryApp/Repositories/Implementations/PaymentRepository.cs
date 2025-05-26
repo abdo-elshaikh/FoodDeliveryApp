@@ -28,14 +28,14 @@ namespace FoodDeliveryApp.Repositories.Implementations
 
         public async Task<decimal> GetTotalRevenueByPeriodAsync(DateTime startDate, DateTime endDate)
             => await _context.Payments
-                .Where(p => p.PaymentDate >= startDate && p.PaymentDate <= endDate && p.Status == PaymentStatus.Completed)
+                .Where(p => p.PaymentDate >= startDate && p.PaymentDate <= endDate && p.Status == PaymentStatus.Paid)
                 .SumAsync(p => p.Amount);
 
         public async Task<int> GetSuccessfulPaymentCountAsync(int restaurantId)
         {
             return await _context.Payments
                 .Include(p => p.Order)
-                .Where(p => p.Order.RestaurantId == restaurantId && p.Status == PaymentStatus.Completed)
+                .Where(p => p.Order.RestaurantId == restaurantId && p.Status == PaymentStatus.Paid)
                 .CountAsync();
         }
     }

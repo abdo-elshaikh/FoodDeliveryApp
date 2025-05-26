@@ -1,74 +1,139 @@
-﻿@model FoodDeliveryApp.ViewModels.AccountViewModels.RegisterViewModel
+﻿@model FoodDeliveryApp.ViewModels.Account.RegisterViewModel
 @{
-    ViewData["Title"] = "Create Your Account";
-    ViewData["SubTitle"] = "Join FoodFast to enjoy fast and reliable food delivery.";
-    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+    ViewData["Title"] = "Register";
+    Layout = "~/Views/Shared/_LayoutAccount.cshtml";
 }
 
-<form asp-action="Register" method="post" asp-antiforgery="true" class="">
-    <div class="mb-3">
-        <label for="email" class="form-label">Email</label>
-        <input type="email" class="form-control" id="email" name="Email" value="@Model.Email" required />
-        <div class="invalid-feedback">
-            @Html.ValidationMessageFor(m => m.Email)
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0 animate__animated animate__fadeInUp">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4">
+                    <i class="fas fa-user-plus me-2 text-primary"></i>@ViewData["Title"]
+                </h2>
+
+                <form asp-action="Register" method="post" id="registerForm" class="needs-validation" novalidate>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" role="alert"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="Email" class="form-label">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-envelope"></i>
+                            </span>
+                            <input asp-for="Email" class="form-control" placeholder="Enter your email"
+                                   aria-label="Email" aria-describedby="email-validation" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger" id="email-validation"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            <input asp-for="Password" class="form-control" placeholder="Enter your password"
+                                   aria-label="Password" aria-describedby="password-validation" />
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword"
+                                    aria-label="Toggle password visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger" id="password-validation"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="ConfirmPassword" class="form-label">Confirm Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            <input asp-for="ConfirmPassword" class="form-control" placeholder="Confirm your password"
+                                   aria-label="Confirm Password" aria-describedby="confirm-password-validation" />
+                            <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword"
+                                    aria-label="Toggle confirm password visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger" id="confirm-password-validation"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="UserType" class="form-label">User Type</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-user-tag"></i>
+                            </span>
+                            <select asp-for="UserType" class="form-select" asp-items="Html.GetEnumSelectList<UserType>()" aria-label="User Type"></select>
+                        </div>
+                        <span asp-validation-for="UserType" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="registerButton">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="fas fa-user-plus me-2"></i>Register
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <p class="mb-0">Already have an account? <a href="/Account/Login" class="text-primary fw-bold">Login here</a></p>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-    <div class="mb-3 position-relative">
-        <label for="password" class="form-label">Password</label>
-        <input type="password" class="form-control" id="password" name="Password" required />
-        <span class="password-toggle" aria-label="Show password"><i class="bi bi-eye"></i></span>
-        <div class="password-strength mt-1"></div>
-        <div class="invalid-feedback">
-            @Html.ValidationMessageFor(m => m.Password)
-        </div>
-    </div>
-    <div class="mb-3">
-        <label for="confirmPassword" class="form-label">Confirm Password</label>
-        <input type="password" class="form-control" id="confirmPassword" name="ConfirmPassword" required />
-        <div class="invalid-feedback">
-            @Html.ValidationMessageFor(m => m.ConfirmPassword)
-        </div>
-    </div>
-    <div class="mb-3">
-        <label for="role" class="form-label">Role</label>
-        <select class="form-select" id="role" name="Role" required>
-            <option value="">Select a role</option>
-            <option value="Customer">Customer</option>
-            <option value="Admin">Admin</option>
-        </select>
-        <div class="invalid-feedback">
-            @Html.ValidationMessageFor(m => m.Role)
-        </div>
-    </div>
-    <input type="hidden" name="ReturnUrl" value="@ViewData["ReturnUrl"]" />
-    <button type="submit" class="btn btn-primary w-100">Sign Up</button>
-</form>
+</div>
 
 @section Scripts {
-    <script src="~/js/auth.js"></script>
+    <partial name="_ValidationScriptsPartial" />
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const passwordInput = document.getElementById("password");
-            const passwordToggle = document.querySelector(".password-toggle");
-            const passwordStrength = document.querySelector(".password-strength");
-            passwordToggle.addEventListener("click", function () {
-                if (passwordInput.type === "password") {
-                    passwordInput.type = "text";
-                    passwordToggle.innerHTML = '<i class="bi bi-eye-slash"></i>';
+        $(document).ready(function() {
+            // Toggle password visibility
+            $('#togglePassword').click(function() {
+                const passwordInput = $('#Password');
+                const icon = $(this).find('i');
+                
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
                 } else {
-                    passwordInput.type = "password";
-                    passwordToggle.innerHTML = '<i class="bi bi-eye"></i>';
+                    passwordInput.attr('type', 'password');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
                 }
             });
-            passwordInput.addEventListener("input", function () {
-                const strength = checkPasswordStrength(passwordInput.value);
-                passwordStrength.textContent = strength;
+
+            $('#toggleConfirmPassword').click(function() {
+                const passwordInput = $('#ConfirmPassword');
+                const icon = $(this).find('i');
+                
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                }
+            });
+
+            // Form submission handling
+            $('#registerForm').on('submit', function() {
+                if ($(this).valid()) {
+                    const button = $('#registerButton');
+                    const spinner = button.find('.spinner-border');
+                    const icon = button.find('.fas');
+                    
+                    button.prop('disabled', true);
+                    spinner.removeClass('d-none');
+                    icon.addClass('d-none');
+                }
+            });
+
+            // Enhanced validation feedback
+            $('input, select').on('input change', function() {
+                $(this).valid();
             });
         });
-        function checkPasswordStrength(password) {
-            if (password.length < 6) return "Weak";
-            if (password.match(/[A-Z]/) && password.match(/[0-9]/)) return "Strong";
-            return "Medium";
-        }
     </script>
 }

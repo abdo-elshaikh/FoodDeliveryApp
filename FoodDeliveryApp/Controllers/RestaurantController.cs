@@ -1,7 +1,4 @@
-﻿using FoodDeliveryApp.Models;
-using FoodDeliveryApp.Repositories.Interfaces;
-using FoodDeliveryApp.ViewModels.PromotionViewModels;
-using FoodDeliveryApp.ViewModels.RestaurantViewModels;
+﻿using FoodDeliveryApp.Models;using FoodDeliveryApp.Repositories.Interfaces;using FoodDeliveryApp.ViewModels.Promotion;using FoodDeliveryApp.ViewModels.PromotionViewModels;using FoodDeliveryApp.ViewModels.Restaurant;using FoodDeliveryApp.ViewModels.Review;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -42,7 +39,6 @@ namespace FoodDeliveryApp.Controllers
         // GET: Restaurant Home (Index) with filtering, sorting and pagination
         [Route("restaurants")]
         [HttpGet]
-        [HttpGet]
         public async Task<IActionResult> Index(int? categoryId, string searchTerm, string sortOrder = "name", int page = 1, string cuisines = "", string dietary = "", string features = "", string deliveryFee = "")
         {
             const int pageSize = 9;
@@ -51,14 +47,15 @@ namespace FoodDeliveryApp.Controllers
 
             if (categoryId.HasValue)
                 restaurantsQuery = restaurantsQuery.Where(r => r.CategoryId == categoryId.Value);
+            
             if (!string.IsNullOrEmpty(searchTerm))
-                restaurantsQuery = restaurantsQuery.Where(r => r.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || r.Category.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+                restaurantsQuery = restaurantsQuery.Where(r => r.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || 
+                                                             r.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                                                             r.Category.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-            var cuisineList = cuisines.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(c => c.ToLower()).ToList();
-            var dietaryList = dietary.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(d => d.ToLower()).ToList();
-            var featureList = features.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(f => f.ToLower()).ToList();
-            var deliveryFeeList = deliveryFee.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(f => f.ToLower()).ToList();
-
+            var cuisineList = !string.IsNullOrEmpty(cuisines) ? cuisines.Split(',', StringSplitOptions.RemoveEmptyEntries) : new string[0];
+            var dietaryList = !string.IsNullOrEmpty(dietary) ? dietary.Split(',', StringSplitOptions.RemoveEmptyEntries) : new string[0];
+            var featureList = !string.IsNullOrEmpty(features) ? features.Split(',', StringSplitOptions.RemoveEmptyEntries) : new string[0];
 
             // Filter by delivery fee
             if (!string.IsNullOrEmpty(deliveryFee))
@@ -68,20 +65,17 @@ namespace FoodDeliveryApp.Controllers
                     restaurantsQuery = restaurantsQuery.Where(r => r.DeliveryFee <= fee);
                 }
             }
-            // Filter by dietary restrictions
-            if (!string.IsNullOrEmpty(dietary))
+            
+            // Filter by dietary restrictions (this would need to be expanded with more detailed dietary data)
+            if (dietaryList.Any())
             {
-                restaurantsQuery = restaurantsQuery.Where(r => r.Category.Name.Contains(dietary));
+                restaurantsQuery = restaurantsQuery.Where(r => dietaryList.Any(d => r.Description.Contains(d, StringComparison.OrdinalIgnoreCase)));
             }
-            // Filter by features
-            if (!string.IsNullOrEmpty(features))
+            
+            // Filter by cuisines (using category as a proxy in this simple example)
+            if (cuisineList.Any())
             {
-                restaurantsQuery = restaurantsQuery.Where(r => r.Category.Name.Contains(features));
-            }
-            // Filter by cuisines
-            if (!string.IsNullOrEmpty(cuisines))
-            {
-                restaurantsQuery = restaurantsQuery.Where(r => r.Category.Name.Contains(cuisines));
+                restaurantsQuery = restaurantsQuery.Where(r => cuisineList.Any(c => r.Category.Name.Contains(c, StringComparison.OrdinalIgnoreCase)));
             }
 
             // Sort restaurants
@@ -89,11 +83,11 @@ namespace FoodDeliveryApp.Controllers
             {
                 "name_desc" => restaurantsQuery.OrderByDescending(r => r.Name),
                 "rating" => restaurantsQuery.OrderByDescending(r => r.Rating),
-                "rating_desc" => restaurantsQuery.OrderBy(r => r.Rating),
+                "rating_asc" => restaurantsQuery.OrderBy(r => r.Rating),
                 "delivery_fee" => restaurantsQuery.OrderBy(r => r.DeliveryFee),
-                "delivery_fee_desc" => restaurantsQuery.OrderByDescending(r => r.DeliveryFee),
                 _ => restaurantsQuery.OrderBy(r => r.Name)
             };
+            
             // Paginate restaurants
             var totalRestaurants = restaurantsQuery.Count();
             var totalPages = (int)Math.Ceiling((double)totalRestaurants / pageSize);
@@ -107,21 +101,15 @@ namespace FoodDeliveryApp.Controllers
                 Id = r.Id,
                 Name = r.Name,
                 Description = r.Description,
-                ImageUrl = r.ImageUrl,
+                LogoUrl = r.ImageUrl,
+                CoverImageUrl = r.ImageUrl,
                 PhoneNumber = r.PhoneNumber,
-                Address = r.Address,
-                City = r.City,
-                State = r.State,
-                OpeningTime = r.OpeningTime,
-                ClosingTime = r.ClosingTime,
-                Rating = (decimal)r.Rating,
+                Website = r.WebsiteUrl,
+                Rating = (double)r.Rating,
                 CategoryName = r.Category?.Name,
                 IsOpen = IsRestaurantOpenNow(r),
                 IsActive = r.IsActive,
-                WebsiteUrl = r.WebsiteUrl,
-                LocationUrl = r.LocationUrl,
                 DeliveryFee = r.DeliveryFee,
-                TaxRate = r.TaxRate,
                 IsAdminOrOwner = IsOwnerOrAdmin(r.OwnerId),
             }).ToList();
 
@@ -134,8 +122,13 @@ namespace FoodDeliveryApp.Controllers
                 CurrentSortOrder = sortOrder,
                 CurrentPage = page,
                 TotalPages = totalPages,
+                TotalCount = totalRestaurants,
+                MaxDeliveryFee = deliveryFee,
+                SelectedCuisines = cuisineList.ToList(),
+                SelectedDietaryOptions = dietaryList.ToList(),
                 IsAdmin = User.IsInRole("Admin"),
             };
+            
             return View(viewModel);
         }
 
@@ -162,8 +155,10 @@ namespace FoodDeliveryApp.Controllers
                     Description = item.Description,
                     Price = item.Price,
                     ImageUrl = item.ImageUrl,
+                    IsAvailable = item.IsAvailable
                 });
             }
+            
             var reviewsModel = new List<ReviewViewModel>();
             foreach (var review in reviews)
             {
@@ -171,23 +166,26 @@ namespace FoodDeliveryApp.Controllers
                 {
                     Id = review.Id,
                     CustomerName = $"{review.CustomerProfile.FirstName} {review.CustomerProfile.LastName}",
-                    Rating = review.Rating,
+                    Rating = (int)review.Rating,
                     Comment = review.Comment,
                     CreatedAt = review.CreatedAt,
                 });
             }
 
-            var promotionsModel = new List<ViewModels.RestaurantViewModels.PromotionViewModel>();
-            foreach (var promotion in promotions)
+            var promotionsModel = new List<PromotionViewModel>();
+            foreach (var promotion in promotions.Where(p => p.IsActive && p.EndDate > DateTime.Now))
             {
-                promotionsModel.Add(new ViewModels.RestaurantViewModels.PromotionViewModel
+                promotionsModel.Add(new PromotionViewModel
                 {
                     Id = promotion.Id,
                     Description = promotion.Description,
-                    DiscountPercentage = promotion.IsPercentage ? promotion.DiscountValue : 0,
-                    PromoCode = promotion.Code,
-                    Title = promotion.Restaurant.Name,
-                    ValidUntil = promotion.EndDate,
+                    DiscountValue = promotion.DiscountValue,
+                    PromotionCode = promotion.Code,
+                    StartDate = promotion.StartDate,
+                    EndDate = promotion.EndDate,
+                    MinimumOrderAmount = promotion.MinimumOrderAmount ?? 0,
+                    UsageLimit = promotion.UsageLimit ?? 0,
+                    IsActive = promotion.IsActive
                 });
             }
 
@@ -199,28 +197,30 @@ namespace FoodDeliveryApp.Controllers
                     Name = restaurant.Name,
                     Description = restaurant.Description,
                     PhoneNumber = restaurant.PhoneNumber,
-                    Address = restaurant.Address,
-                    City = restaurant.City,
-                    State = restaurant.State,
-                    PostalCode = restaurant.PostalCode,
-                    OpeningTime = restaurant.OpeningTime,
-                    ClosingTime = restaurant.ClosingTime,
-                    Rating = (decimal)restaurant.Rating,
+                    CoverImageUrl = restaurant.ImageUrl,
+                    Rating = (double)restaurant.Rating,
                     CategoryName = restaurant.Category?.Name,
                     IsOpen = IsRestaurantOpenNow(restaurant),
                     IsActive = restaurant.IsActive,
-                    WebsiteUrl = restaurant.WebsiteUrl,
-                    LocationUrl = restaurant.LocationUrl,
+                    Website = restaurant.WebsiteUrl,
                     DeliveryFee = restaurant.DeliveryFee,
-                    TaxRate = restaurant.TaxRate,
-                    ImageUrl = restaurant.ImageUrl,
+                    Address = new ViewModels.Address.AddressViewModel
+                    {
+                        AddressLine = restaurant.Address,
+                        City = restaurant.City,
+                        State = restaurant.State,
+                        PostalCode = restaurant.PostalCode
+                    },
+                    OpeningTime = restaurant.OpeningTime,
+                    ClosingTime = restaurant.ClosingTime,
+                    IsAdminOrOwner = isAdminOrOwner,
+
                 },
                 MenuItems = menuItemsModel,
                 Reviews = reviewsModel,
                 Promotions = promotionsModel,
                 IsAdminOrOwner = isAdminOrOwner,
             };
-
 
             return View(model);
         }
@@ -240,7 +240,7 @@ namespace FoodDeliveryApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var viewModel = new RestaurantCreateViewModel
+            var viewModel = new CreateRestaurantViewModel
             {
                 Categories = new SelectList(categories, "Id", "Name"),
                 OpeningTime = new TimeSpan(9, 0, 0),
@@ -266,7 +266,7 @@ namespace FoodDeliveryApp.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("restaurants/create")]
-        public async Task<IActionResult> Create(RestaurantCreateViewModel model)
+        public async Task<IActionResult> Create(CreateRestaurantViewModel model)
         {
             var currentUser = await _userManager.GetUserAsync(User);
 
@@ -307,10 +307,11 @@ namespace FoodDeliveryApp.Controllers
                 OwnerId = User.IsInRole("Admin") ? model.OwnerId : currentUser?.Id,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
-                WebsiteUrl = model.WebsiteUrl,
+                WebsiteUrl = model.Website,
                 LocationUrl = model.LocationUrl,
                 DeliveryFee = model.DeliveryFee,
                 TaxRate = model.TaxRate,
+                Rating = 0 // New restaurant starts with 0 rating
             };
 
             if (model.ImageFile != null)
@@ -357,7 +358,7 @@ namespace FoodDeliveryApp.Controllers
             var categories = await _categoryRepository.GetAllAsync();
             var currentUser = await _userManager.GetUserAsync(User);
 
-            var viewModel = new RestaurantEditViewModel
+            var viewModel = new EditRestaurantViewModel
             {
                 Id = restaurant.Id,
                 OwnerId = restaurant.OwnerId,
@@ -374,7 +375,7 @@ namespace FoodDeliveryApp.Controllers
                 ImageUrl = restaurant.ImageUrl,
                 Categories = new SelectList(categories, "Id", "Name", restaurant.CategoryId),
                 IsActive = restaurant.IsActive,
-                WebsiteUrl = restaurant.WebsiteUrl,
+                Website = restaurant.WebsiteUrl,
                 LocationUrl = restaurant.LocationUrl,
                 DeliveryFee = restaurant.DeliveryFee,
                 TaxRate = restaurant.TaxRate,
@@ -395,7 +396,7 @@ namespace FoodDeliveryApp.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("restaurants/edit/{id:int}")]
-        public async Task<IActionResult> Edit(RestaurantEditViewModel model)
+        public async Task<IActionResult> Edit(EditRestaurantViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -436,7 +437,7 @@ namespace FoodDeliveryApp.Controllers
             restaurant.CategoryId = model.CategoryId;
             restaurant.UpdatedAt = DateTime.UtcNow;
             restaurant.IsActive = model.IsActive;
-            restaurant.WebsiteUrl = model.WebsiteUrl;
+            restaurant.WebsiteUrl = model.Website;
             restaurant.LocationUrl = model.LocationUrl;
             restaurant.DeliveryFee = model.DeliveryFee;
             restaurant.TaxRate = model.TaxRate;
@@ -579,54 +580,73 @@ namespace FoodDeliveryApp.Controllers
         public async Task<IActionResult> Promotions(int restaurantId)
         {
             var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
-            if (restaurant == null) return NotFound();
+            if (restaurant == null)
+            {
+                return NotFound("Restaurant not found.");
+            }
+
             if (!IsOwnerOrAdmin(restaurant.OwnerId))
+            {
                 return Forbid();
-            var promotions = await _promotionRepository.GetAllAsync();
-            var restaurantPromotions = promotions.Where(p => p.RestaurantId == restaurantId).ToList();
+            }
+
+            var promotions = await _promotionRepository.FindAsync(p => p.RestaurantId == restaurantId);
+            if (promotions == null || !promotions.Any())
+            {
+                TempData["InfoMessage"] = "No promotions found for this restaurant.";
+            }
+
             var viewModel = new RestaurantPromotionsViewModel
             {
-                RestaurantId = restaurant.Id,
+                RestaurantId = restaurantId,
                 RestaurantName = restaurant.Name,
-                Promotions = restaurantPromotions.Select(p => new ViewModels.PromotionViewModels.PromotionViewModel
+                Promotions = promotions.Select(p => new PromotionViewModel
                 {
                     Id = p.Id,
-                    Code = p.Code,
-                    Description = p.Description,
+                    PromotionCode = p.Code ?? string.Empty,
+                    Description = p.Description ?? string.Empty,
                     DiscountValue = p.DiscountValue,
-                    IsPercentage = p.IsPercentage,
                     StartDate = p.StartDate,
                     EndDate = p.EndDate,
-                    MinimumOrderAmount = p.MinimumOrderAmount,
-                    UsageLimit = p.UsageLimit,
-                    IsActive = p.IsActive
+                    MinimumOrderAmount = p.MinimumOrderAmount ?? 0,
+                    UsageLimit = p.UsageLimit ?? 0,
+                    RestaurantId = p.RestaurantId ?? 0,
+                    RestaurantName = restaurant.Name,
+                    IsActive = p.IsActive && p.StartDate <= DateTime.UtcNow && p.EndDate >= DateTime.UtcNow
                 }).ToList()
             };
+
             return View(viewModel);
         }
 
-        // GET: Promotion Create
+        // GET: /Restaurant/Promotions/Create/5
         [Authorize(Roles = "Admin, Owner")]
         [Route("restaurants/promotions/create/{restaurantId:int}")]
         public async Task<IActionResult> CreatePromotion(int restaurantId)
         {
             var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
-            if (restaurant == null) return NotFound();
+            if (restaurant == null)
+            {
+                return NotFound("Restaurant not found.");
+            }
+
             if (!IsOwnerOrAdmin(restaurant.OwnerId))
+            {
                 return Forbid();
+            }
+
             var viewModel = new PromotionCreateViewModel
             {
                 RestaurantId = restaurantId,
                 StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddDays(30),
-                IsPercentage = true,
-                UsageLimit = 1,
-                MinimumOrderAmount = 0
+                EndDate = DateTime.UtcNow.AddMonths(1),
+                Code = string.Empty, // Initialize required string
+                Description = string.Empty // Initialize required string
             };
             return View(viewModel);
         }
 
-        // POST: Promotion Create
+        // POST: /Restaurant/Promotions/Create
         [Authorize(Roles = "Admin, Owner")]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -651,7 +671,7 @@ namespace FoodDeliveryApp.Controllers
                 EndDate = model.EndDate,
                 RestaurantId = model.RestaurantId,
                 UsageLimit = model.UsageLimit,
-                MinimumOrderAmount = model.MinimumOrderAmount,
+                MinimumOrderAmount = (int)model.MinimumOrderAmount,
                 IsActive = true
             };
             try
@@ -687,7 +707,7 @@ namespace FoodDeliveryApp.Controllers
                 IsPercentage = promotion.IsPercentage,
                 StartDate = promotion.StartDate,
                 EndDate = promotion.EndDate,
-                MinimumOrderAmount = promotion.MinimumOrderAmount,
+                MinimumOrderAmount = (int)promotion.MinimumOrderAmount,
                 UsageLimit = promotion.UsageLimit,
                 RestaurantId = restaurant.Id,
                 IsActive = promotion.IsActive
@@ -719,7 +739,7 @@ namespace FoodDeliveryApp.Controllers
             promotion.IsPercentage = model.IsPercentage;
             promotion.StartDate = model.StartDate;
             promotion.EndDate = model.EndDate;
-            promotion.MinimumOrderAmount = model.MinimumOrderAmount;
+            promotion.MinimumOrderAmount = (int)model.MinimumOrderAmount;
             promotion.UsageLimit = model.UsageLimit;
             promotion.IsActive = model.IsActive;
             try
@@ -790,19 +810,19 @@ namespace FoodDeliveryApp.Controllers
             if (restaurant == null) return NotFound();
             if (!IsOwnerOrAdmin(restaurant.OwnerId))
                 return Forbid();
-            var viewModel = new ViewModels.PromotionViewModels.PromotionViewModel
+            var viewModel = new PromotionViewModel
             {
                 Id = promotion.Id,
-                Code = promotion.Code,
+                PromotionCode = promotion.Code,
                 Description = promotion.Description,
                 DiscountValue = promotion.DiscountValue,
-                IsPercentage = promotion.IsPercentage,
                 StartDate = promotion.StartDate,
                 EndDate = promotion.EndDate,
-                MinimumOrderAmount = promotion.MinimumOrderAmount,
-                UsageLimit = promotion.UsageLimit,
+                MinimumOrderAmount = promotion.MinimumOrderAmount ?? 0,
+                UsageLimit = promotion.UsageLimit ?? 0,
                 RestaurantName = restaurant.Name,
                 RestaurantId = restaurant.Id,
+                IsActive = promotion.IsActive
             };
             return View(viewModel);
         }

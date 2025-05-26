@@ -40,7 +40,7 @@ namespace FoodDeliveryApp.Controllers
                 var cart = await _cartService.GetCartAsync(user.Id);
                 var cartItems = cart.Items.Select(item => new CartItemViewModel
                 {
-                    CartItemId = item.Id,
+                    Id = item.Id,
                     MenuItemId = item.MenuItemId,
                     Quantity = item.Quantity,
                     Name = item.MenuItem?.Name ?? "Unnamed Item",
@@ -50,12 +50,12 @@ namespace FoodDeliveryApp.Controllers
                     RestaurantName = item.MenuItem?.Restaurant?.Name ?? "Unknown Restaurant",
                     TaxRate = item.MenuItem?.Restaurant?.TaxRate ?? 0,
                     DeliveryFee = item.MenuItem?.Restaurant?.DeliveryFee ?? 0,
-                    Customizations = item.Customizations?.Select(c => new CustomizationViewModel
+                    Customizations = item.Customizations?.Select(c => new CartItemCustomizationViewModel
                     {
                         OptionId = c.OptionId,
                         ChoiceId = c.ChoiceId,
                         Price = c.Price
-                    }).ToList() ?? new List<CustomizationViewModel>()
+                    }).ToList() ?? new List<CartItemCustomizationViewModel>()
                 }).ToList();
 
                 var viewModel = new CartViewModel
@@ -82,73 +82,63 @@ namespace FoodDeliveryApp.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("add")]
-        public async Task<IActionResult> AddToCart([FromBody] AddToCartViewModel model)
+        public async Task<IActionResult> AddToCart(AddToCartViewModel model)
         {
             if (model == null || model.MenuItemId <= 0 || model.Quantity <= 0 || model.Quantity > 100)
             {
-                _logger.LogWarning("Invalid add to cart data: {Model}, User={UserId}", model, User.Identity?.Name);
-                return Json(new { success = false, message = "Invalid item or quantity." });
+                _logger.LogWarning("Invalid add to cart data: {ModelData}, User={UserId}",
+                    model != null ? $"MenuItemId={model.MenuItemId}, Quantity={model.Quantity}" : "null model",
+                    User.Identity?.Name);
+                TempData["ErrorMessage"] = "Invalid item data or quantity.";
+                return RedirectToAction("Index");
             }
 
             try
             {
+                var user = await _userManager.GetUserAsync(User);
                 var menuItem = await _menuItemRepository.GetByIdAsync(model.MenuItemId);
-                if (menuItem == null)
+
+                if (menuItem == null || !menuItem.IsAvailable)
                 {
-                    _logger.LogWarning("Menu item ID {MenuItemId} not found for user {UserId}", model.MenuItemId, User.Identity?.Name);
-                    return Json(new { success = false, message = "Menu item not found." });
+                    _logger.LogWarning("Attempted to add unavailable item to cart: MenuItemId={MenuItemId}, User={UserId}",
+                        model.MenuItemId, user.Id);
+                    TempData["ErrorMessage"] = "This item is no longer available.";
+                    return RedirectToAction("Details", "MenuItems", new { id = model.MenuItemId });
                 }
 
-                if (!menuItem.IsAvailable)
-                {
-                    _logger.LogWarning("Attempted to add unavailable item {MenuItemId}: {MenuItemName} for user {UserId}", model.MenuItemId, menuItem.Name, User.Identity?.Name);
-                    return Json(new { success = false, message = $"{menuItem.Name} is currently unavailable." });
-                }
-
-                // Validate customizations
-                if (model.Customizations?.Any() == true)
-                {
-                    var validOptions = await _menuItemRepository.GetCustomizationOptionsAsync(model.MenuItemId);
-                    var validOptionIds = validOptions.Select(o => o.Id).ToHashSet();
-                    var validChoices = validOptions
-                        .SelectMany(o => o.Choices)
-                        .ToDictionary(c => c.Id, c => c.Price);
-
-                    foreach (var customization in model.Customizations)
+               var castomizations = model.Customizations
+                    .Select(c => new CartItemCustomizationViewModel
                     {
-                        if (!validOptionIds.Contains(customization.OptionId) || !validChoices.ContainsKey(customization.ChoiceId))
-                        {
-                            _logger.LogWarning("Invalid customization for item {MenuItemId}: OptionId={OptionId}, ChoiceId={ChoiceId}, User={UserId}",
-                                model.MenuItemId, customization.OptionId, customization.ChoiceId, User.Identity?.Name);
-                            return Json(new { success = false, message = "Invalid customization selected." });
-                        }
-                        customization.Price = validChoices[customization.ChoiceId];
-                    }
-                }
+                        OptionId = c.OptionId,
+                        ChoiceId = c.ChoiceId,
+                        Price = c.Price
+                    }).ToList();
 
                 var cartItem = new CartItemViewModel
                 {
                     MenuItemId = model.MenuItemId,
                     Quantity = model.Quantity,
-                    Name = menuItem.Name ?? "Unnamed Item",
-                    ImageUrl = menuItem.ImageUrl ?? "/images/food-placeholder.jpg",
-                    Price = menuItem.Price,
+                    Name = menuItem.Name,
+                    ImageUrl = menuItem.ImageUrl,
                     RestaurantId = menuItem.RestaurantId,
-                    RestaurantName = menuItem.Restaurant?.Name ?? "Unknown Restaurant",
-                    Customizations = model.Customizations ?? new List<CustomizationViewModel>()
+                    Customizations = castomizations
                 };
 
-                var user = await _userManager.GetUserAsync(User);
+                // Add item to cart
                 await _cartService.AddItemToCartAsync(user.Id, cartItem);
-                _logger.LogInformation("Added {Quantity} of {MenuItemName} to cart for user {UserId}", model.Quantity, menuItem.Name, user.Id);
+                _logger.LogInformation("Added item {MenuItemId} to cart with quantity {Quantity} for user {UserId}",
+                    model.MenuItemId, model.Quantity, user.Id);
 
-                var cartCount = await _cartService.GetCartItemCountAsync(user.Id);
-                return Json(new { success = true, message = $"{model.Quantity} {menuItem.Name} added to cart.", cartCount });
+                TempData["SuccessMessage"] = $"{menuItem.Name} added to your cart.";
+                ViewBag.CartCount = await _cartService.GetCartItemCountAsync(user.Id);
+                return RedirectToAction("Details", "MenuItems", new { id = model.MenuItemId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding item {MenuItemId} to cart for user {UserId}", model.MenuItemId, User.Identity?.Name);
-                return Json(new { success = false, message = "An error occurred while adding to cart." });
+                _logger.LogError(ex, "Error adding item {MenuItemId} to cart for user {UserId}",
+                    model.MenuItemId, User.Identity?.Name);
+                TempData["ErrorMessage"] = "Failed to add item to cart. Please try again.";
+                return RedirectToAction("Details", "MenuItems", new { id = model.MenuItemId });
             }
         }
 
@@ -171,6 +161,7 @@ namespace FoodDeliveryApp.Controllers
                 await _cartService.UpdateItemQuantityAsync(user.Id, cartItemId, quantity);
                 _logger.LogInformation("Updated cart item {CartItemId} to quantity {Quantity} for user {UserId}", cartItemId, quantity, user.Id);
                 TempData["SuccessMessage"] = "Cart item quantity updated.";
+                ViewBag.CartCount = await _cartService.GetCartItemCountAsync(user.Id);
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
@@ -200,6 +191,7 @@ namespace FoodDeliveryApp.Controllers
                 await _cartService.RemoveItemFromCartAsync(user.Id, cartItemId);
                 _logger.LogInformation("Removed cart item {CartItemId} from cart for user {UserId}", cartItemId, user.Id);
                 TempData["SuccessMessage"] = "Item removed from cart.";
+                ViewBag.CartCount = await _cartService.GetCartItemCountAsync(user.Id);
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
@@ -222,6 +214,7 @@ namespace FoodDeliveryApp.Controllers
                 await _cartService.ClearCartAsync(user.Id);
                 _logger.LogInformation("Cleared cart for user {UserId}", user.Id);
                 TempData["SuccessMessage"] = "Cart cleared successfully.";
+                ViewBag.CartCount = await _cartService.GetCartItemCountAsync(user.Id);
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
@@ -235,11 +228,13 @@ namespace FoodDeliveryApp.Controllers
         // GET: Cart/Summary
         [HttpGet]
         [Route("summary")]
+        [AllowAnonymous]
         public async Task<IActionResult> CartSummary()
         {
             try
             {
                 var user = await _userManager.GetUserAsync(User);
+                if(user == null) return PartialView("_CartSummary", 0);
                 var count = await _cartService.GetCartItemCountAsync(user.Id);
                 return PartialView("_CartSummary", count);
             }

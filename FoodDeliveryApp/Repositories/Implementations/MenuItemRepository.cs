@@ -68,7 +68,6 @@ namespace FoodDeliveryApp.Repositories.Implementations
         //GetPopularDishesAsync
         public async Task<IEnumerable<MenuItem>> GetPopularDishesAsync(int count)
         {
-            // Example: Fetch popular dishes based on order count
             return await _context.MenuItems
                 .Where(m => m.IsAvailable)
                 .OrderByDescending(m => m.OrderItems.Count())

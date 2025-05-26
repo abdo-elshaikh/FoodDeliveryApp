@@ -1,5 +1,6 @@
 ﻿@{
     Layout = null;
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
 }
 
 <!DOCTYPE html>
@@ -34,31 +35,31 @@
             </div>
             <ul class="nav-items">
                 <li class="nav-item">
-                    <a href="@Url.Action("Dashboard", "Account")" class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Dashboard" ? "active" : "")">
+                    <a href="@Url.Action("Dashboard", "Account")" class="nav-link @(currentAction == "Dashboard" ? "active" : "")">
                         <span class="nav-icon"><i class="ri-dashboard-line"></i></span>
                         <span class="nav-text">Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="@Url.Action("Orders", "Account")" class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Orders" ? "active" : "")">
+                    <a href="@Url.Action("Orders", "Account")" class="nav-link @(currentAction == "Orders" ? "active" : "")">
                         <span class="nav-icon"><i class="ri-shopping-bag-3-line"></i></span>
                         <span class="nav-text">My Orders</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="@Url.Action("ViewAddress", "Profile")" class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Addresses" ? "active" : "")">
+                    <a href="@Url.Action("ViewAddress", "Profile")" class="nav-link @(currentAction == "Addresses" ? "active" : "")">
                         <span class="nav-icon"><i class="ri-map-pin-line"></i></span>
                         <span class="nav-text">Addresses</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="@Url.Action("Payment", "Account")" class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Payment" ? "active" : "")">
+                    <a href="@Url.Action("Payment", "Account")" class="nav-link @(currentAction == "Payment" ? "active" : "")">
                         <span class="nav-icon"><i class="ri-bank-card-line"></i></span>
                         <span class="nav-text">Payment Methods</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="@Url.Action("UserProfile", "Account")" class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Profile" ? "active" : "")">
+                    <a href="@Url.Action("UserProfile", "Account")" class="nav-link @(currentAction == "Profile" ? "active" : "")">
                         <span class="nav-icon"><i class="ri-user-line"></i></span>
                         <span class="nav-text">Profile</span>
                     </a>

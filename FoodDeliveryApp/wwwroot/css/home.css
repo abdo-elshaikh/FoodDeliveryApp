@@ -1,464 +1,74 @@
-﻿/*:root {
-    --primary: #ff5733;
-    --secondary: #6c757d;
-    --light: #f8f9fa;
-    --dark: #343a40;
-}
-
-body {
-    font-family: 'Inter', sans-serif;
-    color: var(--dark);
-}*/
-
-.text-primary {
-    color: var(--primary) !important;
-}
-
-.btn-primary {
-    background-color: var(--primary);
-    border-color: var(--primary);
-    transition: background-color 0.3s, transform 0.2s;
-}
-
-    .btn-primary:hover {
-        background-color: #e64d2e;
-        border-color: #e64d2e;
-        transform: translateY(-2px);
-    }
-
-.bg-primary {
-    background-color: var(--primary) !important;
-}
-
-.bg-gradient-primary {
-    background: linear-gradient(135deg, var(--primary), #e64d2e);
-}
-
-.bg-gradient-hero {
-    background: linear-gradient(135deg, rgba(255, 87, 51, 0.05), rgba(255, 255, 255, 0.95));
-}
-
-/* Hero Section */
+﻿/* Home Page Styles */
 .hero-section {
-    min-height: 90vh;
-    margin-top: 3rem;
-    position: relative;
-/*    overflow: hidden;
+    min-height: 100vh;
     display: flex;
     align-items: center;
-    justify-content: center;
-    text-align: center;*/
 }
 
-.hero-image-container img {
-    max-height: 450px;
-    object-fit: cover;
-    transition: transform 0.3s;
+.hero-bg video, .hero-bg img {
+    transition: opacity 0.5s ease;
 }
 
-    .hero-image-container img:hover {
-        transform: scale(1.05);
+.sticky-search-bar {
+    position: sticky;
+    top: 80px;
+    z-index: 20;
+    transition: transform 0.3s ease;
+}
+
+.search-suggestions {
+    max-height: 200px;
+    overflow-y: auto;
+    backdrop-filter: blur(10px);
+}
+
+.category-card, .dish-card, .restaurant-card, .promotion-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+    .category-card:hover, .dish-card:hover, .restaurant-card:hover, .promotion-card:hover {
+        transform: translateY(-5px) rotateX(5deg) rotateY(5deg);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     }
 
-.hero-rating-badge {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    padding: 8px 12px;
-    font-size: 14px;
-    font-weight: bold;
-}
-/* Hero Search Bar */
-.hero-search-bar {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(255, 255, 255, 0.9);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-    .hero-search-bar input {
-        border: 1px solid var(--secondary);
-        padding: 10px 20px;
-        border-radius: 8px;
-        width: 100%;
-        font-size: 16px;
-        transition: border-color 0.3s, box-shadow 0.3s;
+    .category-card img, .dish-card img, .restaurant-card img {
+        height: 200px;
+        object-fit: cover;
     }
 
-        .hero-search-bar input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(255, 87, 51, 0.1);
-        }
-
-
-/* Feature Badges */
-.feature-badge {
-    display: inline-flex;
-    align-items: center;
-    font-size: 14px;
-    font-weight: 500;
-    transition: transform 0.3s;
+.app-section {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
 }
 
-    .feature-badge:hover {
-        transform: translateY(-2px);
+    .app-section img {
+        max-width: 350px;
+        transition: transform 0.3s ease, filter 0.3s ease;
     }
 
-/* How It Works Section */
-.how-it-works-card {
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-    .how-it-works-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    }
-
-.how-it-works-icon {
-    width: 64px;
-    height: 64px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.3s;
-}
-
-.how-it-works-card:hover .how-it-works-icon {
-    transform: scale(1.1);
-}
-
-/* Category Cards */
-.category-card {
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-    .category-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-    }
-
-        .category-card:hover .category-image {
+        .app-section img:hover {
             transform: scale(1.05);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
         }
 
-.category-icon {
-    width: 56px;
-    height: 56px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.3s, transform 0.3s;
+.newsletter-section .newsletter-form input {
+    transition: box-shadow 0.3s ease, background-color 0.3s ease;
 }
 
-.category-card:hover .category-icon {
-    transform: scale(1.1);
-}
-
-.category-image {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    transition: transform 0.3s;
-}
-
-.category-overlay {
-    transition: background-color 0.3s;
-}
-
-/* Filter Bar */
-.filter-bar {
-    z-index: 1000;
-}
-
-.filter-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.filter-label {
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.filter-select {
-    border: 1px solid #dee2e6;
-    padding: 8px 16px;
-    font-size: 14px;
-    transition: border-color 0.3s;
-}
-
-    .filter-select:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(255, 87, 51, 0.1);
+    .newsletter-section .newsletter-form input:focus {
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.3);
+        background: rgba(255, 255, 255, 0.3);
     }
 
-/* Restaurant Cards */
-.restaurant-item {
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-    .restaurant-item:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    }
-
-.restaurant-image {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-}
-
-.top-rated-badge {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.delivery-time-badge {
-    position: absolute;
-    bottom: 12px;
-    right: 12px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.restaurant-name {
-    font-size: 20px;
-}
-
-.rating-badge {
-    font-size: 14px;
-    font-weight: 500;
-}
-
-/* Dish Cards */
-.dish-card {
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-    .dish-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    }
-
-.dish-image {
-    height: 160px;
-    width: 100%;
-    object-fit: cover;
-}
-
-.dish-price-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-/* Offer Cards */
-.offer-card {
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-    .offer-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    }
-
-.offer-title {
-    font-size: 20px;
-}
-
-.offer-description {
-    font-size: 15px;
-}
-
-/* Partner Section */
-.partner-image-container img {
-    max-height: 400px;
-}
-
-.partner-stats-container {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.partner-stats-value {
-    font-size: 22px;
-}
-
-.partner-benefit-icon {
-    transition: transform 0.3s;
-}
-
-.partner-benefit:hover .partner-benefit-icon {
-    transform: scale(1.1);
-}
-
-/* App Features */
-.app-feature-icon {
-    transition: transform 0.3s;
-}
-
-.app-feature:hover .app-feature-icon {
-    transform: scale(1.1);
-}
-
-/* Testimonials */
-.testimonial-card {
-    transition: transform 0.3s, box-shadow 0.3s;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-    .testimonial-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-
-    }
-
-/* CTA Section */
-.app-download-btn {
-    transition: transform 0.3s, box-shadow 0.3s;
-    background-color: var(--primary);
-    text-align: center;
-    padding: 12px 24px;
-}
-
-    .app-download-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-
-/* Rounded Pill Fix for Bootstrap */
-.rounded-start-pill {
-    border-top-left-radius: 50rem !important;
-    border-bottom-left-radius: 50rem !important;
-}
-
-.rounded-end-pill {
-    border-top-right-radius: 50rem !important;
-    border-bottom-right-radius: 50rem !important;
-}
-
-/* Spinning animation for loading states */
-.spin {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-/* Pulse animation for filter button */
-.btn-pulse {
-    animation: pulse 0.5s ease-in-out;
-}
-
-@keyframes pulse {
-    0%, 100% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.05);
-    }
-}
-
-/* Smooth transitions for grid/list view */
-.transition-all {
-    transition: all 0.3s ease-in-out;
-}
-
-/* Search suggestions */
-#searchSuggestions .dropdown-item {
-    padding: 10px 15px;
-    font-size: 15px;
-    transition: background-color 0.2s;
-}
-
-    #searchSuggestions .dropdown-item:hover {
-        background-color: rgba(255, 87, 51, 0.1);
-    }
-
-/* Toast adjustments */
-.toast {
-    max-width: 350px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.toast-header {
-    border-radius: 8px 8px 0 0;
-}
-
-/* Responsive Adjustments */
 @media (max-width: 768px) {
-    .hero-section {
-        min-height: 400px;
+    .hero-section h1 {
+        font-size: 2.5rem;
     }
 
-    .hero-image-container img,
-    .partner-image-container img,
-    .app-mockup-container img {
-        max-height: 300px;
+    .category-card img, .dish-card img, .restaurant-card img {
+        height: 150px;
     }
 
-    .filter-group {
-        flex: 1 1 45%;
-    }
-
-    .filter-select {
-        width: 100%;
-    }
-
-    .restaurant-image,
-    .dish-image,
-    .category-image {
-        height: 140px;
-    }
-
-    .how-it-works-icon {
-        width: 48px;
-        height: 48px;
-    }
-}
-
-@media (max-width: 576px) {
-    .hero-section {
-        padding: 3rem 0;
-    }
-
-    .hero-image-container img {
-        max-height: 200px;
-    }
-
-    .filter-group {
-        flex: 1 1 100%;
-    }
-
-    .how-it-works-card {
-        padding: 3rem;
-    }
-
-    .category-image {
-        height: 120px;
+    .sticky-search-bar {
+        top: 60px;
     }
 }

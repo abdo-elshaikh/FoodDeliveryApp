@@ -1,132 +1,236 @@
-﻿$(document).ready(function () {
-    // Theme Toggle
-    const $themeToggle = $('#themeToggle');
-    const $html = $('html');
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    $html.attr('data-bs-theme', currentTheme);
-    updateThemeIcons(currentTheme);
+﻿/**
+ * FoodFast - Authentication UI
+ * Handles the authentication form interactions
+ */
 
-    $themeToggle.on('click', function () {
-        const newTheme = $html.attr('data-bs-theme') === 'light' ? 'dark' : 'light';
-        $html.attr('data-bs-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcons(newTheme);
-    });
+document.addEventListener('DOMContentLoaded', function () {
+    // Password visibility toggle
+    setupPasswordToggles();
 
-    function updateThemeIcons(theme) {
-        if (theme === 'dark') {
-            $('.light-icon').addClass('d-none');
-            $('.dark-icon').removeClass('d-none');
-        } else {
-            $('.light-icon').removeClass('d-none');
-            $('.dark-icon').addClass('d-none');
-        }
-    }
+    // Form validation enhancement
+    setupFormValidation();
 
-    // Welcome Message
-    if (!localStorage.getItem('welcomeDismissed')) {
-        $('.welcome-message').removeClass('d-none');
-        $('.welcome-message .btn-close').on('click', function () {
-            localStorage.setItem('welcomeDismissed', 'true');
-        });
-    } else {
-        $('.welcome-message').remove();
-    }
+    // Auto-dismiss alerts after 5 seconds
+    setupAlertDismissal();
 
-    // Password Toggle
-    $('.password-toggle').on('click', function () {
-        const $toggle = $(this);
-        const $input = $toggle.siblings('input');
-        const type = $input.attr('type') === 'password' ? 'text' : 'password';
-        $input.attr('type', type);
-        $toggle.find('i').toggleClass('bi-eye bi-eye-slash');
-        $toggle.attr('aria-label', type === 'password' ? 'Show password' : 'Hide password');
-    });
+    // Smooth animation for alerts
+    setupAlertAnimations();
+});
 
-    // Password Strength
-    $('input[type="password"]').on('input', function () {
-        const $input = $(this);
-        const $strength = $input.siblings('.password-strength');
-        const value = $input.val();
-        let strength = 'weak';
-        if (value.length >= 8 && /[A-Z]/.test(value) && /[0-9]/.test(value)) {
-            strength = 'strong';
-        } else if (value.length >= 6) {
-            strength = 'medium';
-        }
-        $strength.removeClass('strength-weak strength-medium strength-strong').addClass(`strength-${strength}`);
-    });
+/**
+ * Sets up password visibility toggles
+ */
+function setupPasswordToggles() {
+    const passwordFields = document.querySelectorAll('.password-field');
 
-    // Form Validation
-    $('form').on('submit', function (e) {
-        const $form = $(this);
-        $form.find('.is-invalid').removeClass('is-invalid');
-        $form.find('.invalid-feedback').remove();
+    passwordFields.forEach(field => {
+        const input = field.querySelector('input[type="password"]');
+        const toggleBtn = field.querySelector('.password-toggle');
 
-        let isValid = true;
-        $form.find('input[required], select[required]').each(function () {
-            const $input = $(this);
-            if (!$input.val().trim()) {
-                isValid = false;
-                $input.addClass('is-invalid');
-                $input.after('<div class="invalid-feedback">This field is required.</div>');
-                gsap.from($input.siblings('.invalid-feedback'), { opacity: 0, y: 10, duration: 0.3 });
+        if (!input || !toggleBtn) return;
+
+        toggleBtn.addEventListener('click', () => {
+            // Change input type
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+
+            // Toggle icon
+            const showIcon = toggleBtn.querySelector('.bi-eye');
+            const hideIcon = toggleBtn.querySelector('.bi-eye-slash');
+
+            if (showIcon && hideIcon) {
+                showIcon.classList.toggle('d-none');
+                hideIcon.classList.toggle('d-none');
             }
         });
-
-        const $email = $form.find('input[type="email"]');
-        if ($email.length && $email.val().trim() && !isValidEmail($email.val())) {
-            isValid = false;
-            $email.addClass('is-invalid');
-            $email.after('<div class="invalid-feedback">Please enter a valid email address.</div>');
-            gsap.from($email.siblings('.invalid-feedback'), { opacity: 0, y: 10, duration: 0.3 });
-        }
-
-        if (!isValid) {
-            e.preventDefault();
-            $('[aria-live="polite"]').attr('aria-atomic', 'true').attr('aria-relevant', 'additions');
-            return;
-        }
-
-        // Show loading spinner
-        $form.find('.form-loading').removeClass('d-none');
-        $form.find('button[type="submit"]').prop('disabled', true).html('<i class="bi bi-arrow-repeat spin me-1"></i> Submitting...');
     });
+}
 
-    function isValidEmail(email) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+/**
+ * Sets up enhanced form validation
+ */
+function setupFormValidation() {
+    const forms = document.querySelectorAll('.needs-validation');
+
+    Array.from(forms).forEach(form => {
+        // Add input validation feedback as user types
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('blur', () => {
+                if (input.checkValidity()) {
+                    input.classList.remove('is-invalid');
+                    input.classList.add('is-valid');
+                } else {
+                    input.classList.remove('is-valid');
+                    input.classList.add('is-invalid');
+                }
+            });
+
+            // Remove validation classes when user starts typing again
+            input.addEventListener('input', () => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                // Find the first invalid field and focus it
+                const invalidInput = form.querySelector('.form-control:invalid');
+                if (invalidInput) {
+                    invalidInput.focus();
+                }
+            }
+
+            form.classList.add('was-validated');
+        });
+    });
+}
+
+/**
+ * Sets up auto-dismissal for alerts
+ */
+function setupAlertDismissal() {
+    const alerts = document.querySelectorAll('.alert-dismissible');
+
+    alerts.forEach(alert => {
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }, 5000);
+    });
+}
+
+/**
+ * Sets up animations for alerts
+ */
+function setupAlertAnimations() {
+    const alerts = document.querySelectorAll('.alert');
+
+    // Apply entrance animation
+    alerts.forEach(alert => {
+        // Ensure the alert starts visible (in case CSS has it hidden)
+        alert.style.display = 'block';
+        alert.style.opacity = '0';
+        alert.style.transform = 'translateY(-20px)';
+        alert.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+
+        // Trigger animation on next frame
+        setTimeout(() => {
+            alert.style.opacity = '1';
+            alert.style.transform = 'translateY(0)';
+        }, 10);
+    });
+}
+
+/**
+ * Adds a password strength meter to password fields
+ * @param {string} inputId - The ID of the password input element
+ * @param {string} meterId - The ID of the meter element
+ */
+function setupPasswordStrengthMeter(inputId, meterId) {
+    const passwordInput = document.getElementById(inputId);
+    const strengthMeter = document.getElementById(meterId);
+    const strengthText = document.getElementById(meterId + 'Text');
+
+    if (!passwordInput || !strengthMeter) return;
+
+    passwordInput.addEventListener('input', () => {
+        const password = passwordInput.value;
+        const strength = calculatePasswordStrength(password);
+
+        // Update meter width
+        strengthMeter.style.width = strength.score * 25 + '%';
+
+        // Update meter color
+        strengthMeter.className = 'password-strength-meter-bar';
+        if (strength.score === 0) {
+            strengthMeter.classList.add('bg-danger');
+        } else if (strength.score <= 2) {
+            strengthMeter.classList.add('bg-warning');
+        } else if (strength.score === 3) {
+            strengthMeter.classList.add('bg-info');
+        } else {
+            strengthMeter.classList.add('bg-success');
+        }
+
+        // Update text if available
+        if (strengthText) {
+            strengthText.textContent = strength.feedback;
+        }
+    });
+}
+
+/**
+ * Calculates password strength score (0-4) and provides feedback
+ * @param {string} password - The password to evaluate
+ * @returns {Object} Object containing score and feedback
+ */
+function calculatePasswordStrength(password) {
+    // Empty password
+    if (!password) {
+        return { score: 0, feedback: 'No password' };
     }
 
-    // OAuth Button Animation
-    $('.oauth-btn').on('mouseenter', function () {
-        gsap.to(this, { scale: 1.05, duration: 0.3, ease: 'power2.out' });
-    }).on('mouseleave', function () {
-        gsap.to(this, { scale: 1, duration: 0.3, ease: 'power2.out' });
-    }).on('click', function () {
-        const $btn = $(this);
-        $btn.prop('disabled', true).html($btn.data('loading-text'));
-        gsap.to($btn, { opacity: 0.7, duration: 0.2 });
-    });
+    let score = 0;
 
-    // GSAP Animations
-    gsap.from('.logo img', {
-        opacity: 0,
-        y: -20,
-        duration: 0.8,
-        ease: 'power2.out'
+    // Length check
+    if (password.length > 8) score++;
+    if (password.length > 12) score++;
+
+    // Character variety checks
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+    // Common patterns decrease score
+    if (/^(password|12345|qwerty)/i.test(password)) score = Math.max(1, score - 2);
+
+    // Define feedback based on score
+    let feedback;
+    switch (score) {
+        case 0:
+            feedback = 'Very weak';
+            break;
+        case 1:
+            feedback = 'Weak';
+            break;
+        case 2:
+            feedback = 'Fair';
+            break;
+        case 3:
+            feedback = 'Good';
+            break;
+        case 4:
+        case 5:
+            feedback = 'Strong';
+            break;
+        default:
+            feedback = 'Invalid';
+    }
+
+    return { score: Math.min(4, score), feedback };
+}
+
+/**
+ * Sets up social login button animations
+ */
+function setupSocialButtons() {
+    const socialButtons = document.querySelectorAll('.btn-social');
+
+    socialButtons.forEach(button => {
+        button.addEventListener('mouseenter', () => {
+            button.classList.add('pulse-animation');
+        });
+
+        button.addEventListener('mouseleave', () => {
+            setTimeout(() => {
+                button.classList.remove('pulse-animation');
+            }, 300);
+        });
     });
-    gsap.from('.auth-form-wrapper', {
-        opacity: 0,
-        y: 30,
-        duration: 0.8,
-        delay: 0.2,
-        ease: 'power2.out'
-    });
-    gsap.from('.alert', {
-        opacity: 0,
-        y: 10,
-        duration: 0.5,
-        ease: 'power2.out',
-        stagger: 0.1
-    });
-});
+}

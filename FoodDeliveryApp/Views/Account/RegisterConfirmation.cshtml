@@ -1,12 +1,21 @@
-﻿@model dynamic
-@{
+﻿@{
     ViewData["Title"] = "Registration Complete";
-    ViewData["SubTitle"] = "Please check your email to confirm your account.";
-    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+    Layout = "~/Views/Shared/_LayoutAccount.cshtml";
 }
 
-<div class="text-center">
-    <p class="lead">A confirmation email has been sent to <strong>@Model.Email</strong>.</p>
-    <p>Please click the link in the email to activate your account.</p>
-    <a href="@Url.Action("Login", "Account")" class="btn btn-primary rounded-pill px-4">Back to Login</a>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0 animate__animated animate__fadeInUp">
+            <div class="card-body p-4 text-center">
+                <h2 class="mb-4">
+                    <i class="fas fa-check-circle me-2 text-success"></i>@ViewData["Title"]
+                </h2>
+                <p>@ViewData["SubTitle"]</p>
+                <p>Please check your email <strong>@ViewData["Email"]</strong> for a confirmation link.</p>
+                <a class="btn btn-primary mt-3" asp-controller="Home" asp-action="Index">
+                    <i class="fas fa-home me-2"></i>Return to Home
+                </a>
+            </div>
+        </div>
+    </div>
 </div>

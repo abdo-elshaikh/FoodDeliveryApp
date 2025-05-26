@@ -107,9 +107,13 @@
                                         }
                                         else
                                         {
-                                            <button class="btn btn-sm btn-primary add-to-cart" data-id="@item.Id" data-name="@item.Name" data-price="@item.Price" data-available="@item.IsAvailable" data-bs-toggle="modal" data-bs-target="#cartModal">
-                                                <i class="bi bi-cart-plus me-1"></i> Add
+                                            @* <button class="btn btn-sm btn-primary add-to-cart" data-id="@item.Id" data-name="@item.Name" data-price="@item.Price" data-available="@item.IsAvailable" data-bs-toggle="modal" data-bs-target="#cartModal"> *@
+                                            @*     <i class="bi bi-cart-plus me-1"></i> Add *@
+                                            @* </button> *@
+                                            <button class="btn btn-primary rounded-pill" id="addToCartBtn" data-id="@item.Id" data-name="@item.Name" data-image="@item.ImageUrl">
+                                                <i class="bi bi-cart-plus me-2"></i> Add to Cart - $<span id="totalPrice">@item.Price.ToString("0.00")</span>
                                             </button>
+
                                         }
                                     </div>
                                 </div>
@@ -491,6 +495,41 @@
                 }
             });
         });
+
+        // add to cart
+        $('#addToCartBtn').click(function () {
+            const menuItemId = $(this).data('id');
+            const quantity = parseInt($('#itemQuantity').val()) || 1;
+            const customizations = [];
+
+            $('.customization-choice:checked').each(function () {
+                customizations.push({
+                    optionId: $(this).data('option-id'),
+                    choiceId: $(this).val(),
+                    price: parseFloat($(this).data('price') || 0)
+                });
+            });
+
+            $.ajax({
+                url: '/cart/add',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ menuItemId, quantity, customizations }),
+                headers: { 'X-CSRF-TOKEN': $('input[name="__RequestVerificationToken"]').val() },
+                success: function (response) {
+                    if (response.success) {
+                        alert(response.message);
+                        updateCartCount(response.cartCount);
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function () {
+                    alert('An error occurred while adding to cart.');
+                }
+            });
+        });
+
 
         // Notification utility
         function showNotification(type, title, message, icon) {

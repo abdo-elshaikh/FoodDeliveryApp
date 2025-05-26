@@ -2,6 +2,8 @@
 using FoodDeliveryApp.Models;
 using FoodDeliveryApp.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq.Expressions;
 
 namespace FoodDeliveryApp.Repositories.Implementations
 {
@@ -13,53 +15,49 @@ namespace FoodDeliveryApp.Repositories.Implementations
             _context = context;
         }
 
-        public async Task<IEnumerable<Order>> GetUserOrdersAsync(string userId)
+        public async Task<IEnumerable<Order>> GetUserOrdersAsync(string userId, params Expression<Func<Order, object>>[] includes)
         {
-            return await _context.Orders
-                .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.MenuItem)
-                .Where(o => o.UserId == userId)
-                .ToListAsync();
+            IQueryable<Order> query = _context.Orders.Where(o => o.UserId == userId);
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            return await query.ToListAsync();
         }
 
-        public async Task<IEnumerable<Order>> GetAllOrdersAsync()
+        public async Task<IEnumerable<Order>> GetAllOrdersAsync(params Expression<Func<Order, object>>[] includes)
         {
-            return await _context.Orders
-                .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.MenuItem)
-                .ThenInclude(or => or.Restaurant)
-                .ToListAsync();
+            IQueryable<Order> query = _context.Orders;
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            return await query.ToListAsync();
         }
 
-        public async Task<Order> GetOrderWithDetailsAsync(int orderId)
+        public async Task<Order?> GetOrderWithDetailsAsync(int orderId)
         {
             return await _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.Restaurant)
+                .Include(o => o.Address)
+                .Include(o => o.Payment)
+                    .ThenInclude(p => p.PaymentMethod)
                 .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.MenuItem)
-                .ThenInclude(or => or.Restaurant)
+                    .ThenInclude(oi => oi.MenuItem)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Customizations)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
         }
 
-
-        public async Task<Order> GetByIdAsync(int id)
+        public async Task<IEnumerable<Order>> GetRecentOrdersAsync(int count, params Expression<Func<Order, object>>[] includes)
         {
-            return await _context.Orders
-                .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.MenuItem)
-                .ThenInclude(or => or.Restaurant)
-                .FirstOrDefaultAsync(o => o.Id == id);
-        }
-
-        //GetRecentOrdersAsync
-        public async Task<IEnumerable<Order>> GetRecentOrdersAsync(int count)
-        {
-            return await _context.Orders
-                .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.MenuItem)
-                .ThenInclude(or => or.Restaurant)
-                .OrderByDescending(o => o.OrderDate)
-                .Take(count)
-                .ToListAsync();
+            IQueryable<Order> query = _context.Orders.OrderByDescending(o => o.OrderDate).Take(count);
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            return await query.ToListAsync();
         }
     }
 }

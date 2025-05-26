@@ -13,6 +13,7 @@ namespace FoodDeliveryApp.Repositories.Interfaces
         IPromotionRepository Promotions { get; }
         IPaymentRepository Payments { get; }
         IReviewRepository Reviews { get; }
+        ISearchHistoryRepository SearchHistory { get; }
 
         IRepository<RestaurantCategory> RestaurantCategories { get; }
         IRepository<PaymentMethod> PaymentMethods { get; }

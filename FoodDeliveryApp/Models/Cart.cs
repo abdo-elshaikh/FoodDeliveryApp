@@ -10,7 +10,10 @@ namespace FoodDeliveryApp.Models
         public int Id { get; set; }
 
         [Required]
+        [ForeignKey(nameof(User))]
         public string UserId { get; set; }
+
+        public virtual ApplicationUser User { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

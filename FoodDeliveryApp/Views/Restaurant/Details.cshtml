@@ -1,417 +1,855 @@
-﻿@model FoodDeliveryApp.ViewModels.RestaurantViewModels.RestaurantDetailViewModel
+﻿@model FoodDeliveryApp.ViewModels.Restaurant.RestaurantDetailViewModel
 @{
     ViewData["Title"] = $"{Model.Restaurant.Name} Details";
     ViewData["ActiveMenu"] = "Restaurants";
 }
 
 @section Styles {
-    
     <style>
-        
-        .hero-bg {
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.2)), url('@Model.Restaurant.ImageUrl');
+        /* Hero section styles */
+        .restaurant-hero {
+            position: relative;
+            height: 50vh;
+            min-height: 400px;
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4)), 
+                        url('@(string.IsNullOrEmpty(Model.Restaurant.CoverImageUrl) ? "/images/default-restaurant-bg.jpg" : Model.Restaurant.CoverImageUrl)');
             background-size: cover;
             background-position: center;
-            min-height: 60vh;
+            display: flex;
+            align-items: flex-end;
+            padding-bottom: 2rem;
+            color: white;
+        }
+        
+        .restaurant-hero::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+            z-index: 1;
+        }
+        
+        .restaurant-hero .container {
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* Sticky navbar */
+        .restaurant-nav {
+            background-color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .restaurant-nav .nav-link {
+            color: #6c757d;
+            font-weight: 500;
+            padding: 1rem 1.25rem;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        
+        .restaurant-nav .nav-link:hover,
+        .restaurant-nav .nav-link.active {
+            color: var(--bs-primary);
+            border-bottom-color: var(--bs-primary);
+        }
+        
+        /* Restaurant info */
+        .restaurant-info-badge {
+            font-size: 0.85rem;
+            padding: 0.35em 0.65em;
+        }
+        
+        /* Menu section */
+        .menu-category {
+            position: sticky;
+            top: 65px;
+            max-height: calc(100vh - 65px);
+            overflow-y: auto;
+            padding-top: 1rem;
+            z-index: 10;
+        }
+        
+        .menu-category::-webkit-scrollbar {
+            width: 5px;
+        }
+        
+        .menu-category::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .menu-category::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 5px;
+        }
+        
+        .menu-category .list-group-item {
+            border-left: 3px solid transparent;
+            border-right: none;
+            border-top: none;
+            border-bottom-color: #eee;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+        }
+        
+        .menu-category .list-group-item.active {
+            background-color: transparent;
+            color: var(--bs-primary);
+            border-left-color: var(--bs-primary);
+            font-weight: 600;
+        }
+        
+        .menu-item-card {
+            transition: all 0.3s ease;
+            border: 1px solid #eee;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        .menu-item-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .menu-item-img {
+            height: 160px;
+            object-fit: cover;
+            width: 100%;
+        }
+        
+        .menu-item-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        
+        /* Reviews section */
+        .reviews-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+        
+        .reviews-container::-webkit-scrollbar {
+            width: 5px;
+        }
+        
+        .reviews-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .reviews-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 5px;
+        }
+        
+        .review-card {
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+        }
+        
+        .review-card:hover {
+            background-color: rgba(var(--bs-primary-rgb), 0.03);
+        }
+        
+        .review-rating {
+            font-size: 18px;
+            color: #ffc107;
+        }
+        
+        .promotion-card {
+            border-left: 4px solid var(--bs-primary);
+            transition: all 0.2s ease;
+        }
+        
+        .promotion-card:hover {
+            transform: translateX(5px);
+        }
+        
+        /* Action buttons */
+        .fab-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 99;
+        }
+        
+        .fab {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
         }
-
-        .sticky-nav {
-            position: sticky;
-            top: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(8px);
+        
+        .section-heading {
+            position: relative;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
         }
-
-        .card {
-            border: none;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        
+        .section-heading::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background-color: var(--bs-primary);
         }
-
-            .card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+        
+        /* Media queries */
+        @@media (max-width: 991.98px) {
+            .restaurant-hero {
+                height: 40vh;
+                min-height: 300px;
             }
-
-        .fab {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            z-index: 1030;
-        }
-
-        .scroll-indicator {
-            animation: bounce 2s infinite;
-        }
-        @@keyframes bounce {
-            0%, 20%, 50%, 80%, 100%
-
-        {
-            transform: translateY(0);
-        }
-
-        40% {
-            transform: translateY(-10px);
-        }
-
-        60% {
-            transform: translateY(-5px);
-        }
-
-        }
-
-        .star-rating .fa-star {
-            color: #dee2e6;
-            transition: color 0.2s ease;
-        }
-
-            .star-rating .fa-star.active {
-                color: #ffc107;
+            
+            .menu-category {
+                position: relative;
+                top: 0;
+                max-height: none;
+                margin-bottom: 2rem;
             }
-
-        .reviews-container {
-            max-height: 400px;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: #ced4da #f8f9fa;
-        }
-
-        .btn-sm {
-            padding: 0.25rem 0.75rem;
-            font-size: 0.875rem;
-        }
-        @@media (max-width: 576px) {
-            .hero-bg
-
-        {
-            min-height: 50vh;
-            background-attachment: scroll;
-        }
-
-        .card-grid > .row {
-            --bs-columns: 1;
-        }
-
+            
+            .menu-category .list-group {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                white-space: nowrap;
+                padding-bottom: 0.5rem;
+            }
+            
+            .menu-category .list-group-item {
+                display: inline-block;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+            
+            .menu-category .list-group-item.active {
+                border-left-color: transparent;
+                border-bottom-color: var(--bs-primary);
+            }
         }
     </style>
 }
 
-<!-- Sticky Navigation -->
-<nav class="sticky-nav navbar navbar-expand-lg navbar-light shadow-sm py-3">
-    <div class="container">
-        <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link text-gray-600 hover:text-primary" href="#overview" aria-label="Go to overview">Overview</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-gray-600 hover:text-primary" href="#menu" aria-label="Go to menu">Menu</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-gray-600 hover:text-primary" href="#promotions" aria-label="Go to promotions">Promotions</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-gray-600 hover:text-primary" href="#reviews" aria-label="Go to reviews">Reviews</a>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
-
 <!-- Hero Section -->
-<section class="hero-bg text-white py-16 px-4">
+<section class="restaurant-hero">
     <div class="container">
-        <h1 id="restaurantHeading" class="display-5 fw-bold mb-4">@Model.Restaurant.Name</h1>
-        <p class="lead mb-5 mx-auto" style="max-width: 600px;" id="restaurantDescription">@Model.Restaurant.Description</p>
-        <div class="d-flex justify-content-center gap-3">
-            @if (!string.IsNullOrEmpty(Model.Restaurant.WebsiteUrl))
-            {
-                <a href="@Model.Restaurant.WebsiteUrl" target="_blank" class="btn btn-primary btn-sm rounded-pill" aria-label="Visit restaurant website">
-                    <i class="fas fa-globe me-2"></i> Website
-                </a>
-            }
-            @if (!string.IsNullOrEmpty(Model.Restaurant.LocationUrl))
-            {
-                <a href="@Model.Restaurant.LocationUrl" target="_blank" class="btn btn-info btn-sm rounded-pill" aria-label="View restaurant location on map">
-                    <i class="fas fa-map-marker-alt me-2"></i> Map
-                </a>
-            }
-        </div>
-        <div class="mt-5">
-            <a href="#overview" class="text-white scroll-indicator" aria-label="Scroll to overview">
-                <i class="fas fa-chevron-down fs-5"></i>
-            </a>
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center mb-3">
+                    @if (Model.Restaurant.IsOpen)
+                    {
+                        <span class="badge bg-success restaurant-info-badge me-2"><i class="fas fa-check-circle me-1"></i> Open Now</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger restaurant-info-badge me-2"><i class="fas fa-times-circle me-1"></i> Closed</span>
+                    }
+                    <div class="d-flex align-items-center ms-2">
+                        <span class="badge bg-warning text-dark restaurant-info-badge">
+                            <i class="fas fa-star me-1"></i> @Model.Restaurant.Rating.ToString("0.0")
+                        </span>
+                        <span class="text-white ms-2 small">(@Model.Reviews.Count reviews)</span>
+                    </div>
+                </div>
+                <h1 class="display-5 fw-bold mb-2">@Model.Restaurant.Name</h1>
+                <p class="lead mb-3 opacity-90">@Model.Restaurant.Description</p>
+                <div class="d-flex align-items-center text-white opacity-90 mb-4">
+                    <div class="me-3"><i class="fas fa-utensils me-2"></i>@Model.Restaurant.CategoryName</div>
+                    <div class="me-3"><i class="fas fa-truck me-2"></i>@(Model.Restaurant.DeliveryFee > 0 ? Model.Restaurant.DeliveryFee.ToString("C") : "Free Delivery")</div>
+                    <div>
+                        <i class="fas fa-clock me-2"></i>
+                        @DateTime.Today.Add(Model.Restaurant.OpeningTime).ToString("hh:mm tt") - 
+                        @DateTime.Today.Add(Model.Restaurant.ClosingTime).ToString("hh:mm tt")
+
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    @if (!string.IsNullOrEmpty(Model.Restaurant.Website))
+                    {
+                        <a href="@Model.Restaurant.Website" target="_blank" class="btn btn-light btn-sm rounded-pill">
+                            <i class="fas fa-globe me-1"></i> Website
+                        </a>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Restaurant.LocationUrl))
+                    {
+                        <a href="@Model.Restaurant.LocationUrl" target="_blank" class="btn btn-light btn-sm rounded-pill">
+                            <i class="fas fa-map-marker-alt me-1"></i> Directions
+                        </a>
+                    }
+                    <a href="tel:@Model.Restaurant.PhoneNumber" class="btn btn-light btn-sm rounded-pill">
+                        <i class="fas fa-phone-alt me-1"></i> @Model.Restaurant.PhoneNumber
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- Main Content -->
+<!-- Navigation -->
+<nav class="restaurant-nav py-0">
+    <div class="container">
+        <ul class="nav">
+            <li class="nav-item">
+                <a class="nav-link active" href="#menu">
+                    <i class="fas fa-utensils me-1"></i> Menu
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#reviews">
+                    <i class="fas fa-star me-1"></i> Reviews <span class="badge bg-secondary rounded-pill">@Model.Reviews.Count</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#promotions">
+                    <i class="fas fa-tags me-1"></i> Promotions <span class="badge bg-secondary rounded-pill">@Model.Promotions.Count</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#info">
+                    <i class="fas fa-info-circle me-1"></i> Info
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
 <div class="container py-5">
     <!-- Success/Error Messages -->
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show mb-4 animate__animated animate__fadeIn" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close alert"></button>
+            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show mb-4 animate__animated animate__fadeIn" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close alert"></button>
+            <i class="fas fa-exclamation-circle me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
-
-    <!-- Overview Section -->
-    <section id="overview" class="mb-5">
-        <h2 class="h3 fw-semibold mb-4 text-dark">Overview</h2>
-        <div class="card rounded-3 p-4">
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <p class="text-muted mb-2"><strong>Category:</strong> @Model.Restaurant.CategoryName</p>
-                    <p class="text-muted mb-2"><strong>Rating:</strong> <span class="text-warning">@Model.Restaurant.Rating.ToString("0.0") <i class="fas fa-star"></i></span></p>
-                    <p class="text-muted mb-2"><strong>Address:</strong> @Model.Restaurant.Address, @Model.Restaurant.City, @Model.Restaurant.State @Model.Restaurant.PostalCode</p>
-                    <p class="text-muted"><strong>Phone:</strong> <a href="tel:@Model.Restaurant.PhoneNumber" class="text-primary text-decoration-none">@Model.Restaurant.PhoneNumber</a></p>
-                </div>
-                <div class="col-md-6">
-                    <p class="text-muted mb-2"><strong>Hours:</strong> @Model.Restaurant.OpeningTime.ToString("hh\\:mm") - @Model.Restaurant.ClosingTime.ToString("hh\\:mm")</p>
-                    <p class="text-muted mb-2"><strong>Delivery Fee:</strong> @Model.Restaurant.DeliveryFee.ToString("C")</p>
-                    <p class="text-muted"><strong>Status:</strong> <span class="badge @(Model.Restaurant.IsOpen ? "bg-success" : "bg-danger")">@(Model.Restaurant.IsOpen ? "Open" : "Closed")</span></p>
-                </div>
-            </div>
-        </div>
-    </section>
-
+    
     <!-- Menu Section -->
     <section id="menu" class="mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h3 fw-semibold text-dark">Menu</h2>
-
-            <a href="@Url.Action("ByRestaurant", "MenuItems", new { RestaurantId = Model.Restaurant.Id })" class="btn btn-warning btn-sm rounded-pill" >
-                <i class="fas fa-utensils me-2"></i> View All Menu Items
-            </a>
-            
-        </div>
-        @if (Model.MenuItems.Any())
+        <h2 class="section-heading">Menu</h2>
+        
+        @if (!Model.MenuItems.Any())
         {
-            <div class="card-grid row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-                @foreach (var item in Model.MenuItems)
-                {
-                    <div class="col">
-                        <div class="card rounded-3 overflow-hidden">
-                            <img src="@item.ImageUrl" class="card-img-top" style="height: 160px; object-fit: cover;" alt="@item.Name" loading="lazy" />
-                            <div class="card-body p-3">
-                                <h5 class="card-title fw-semibold text-dark mb-2 fs-6">@item.Name</h5>
-                                <p class="card-text text-muted small mb-3 text-truncate">@item.Description</p>
-                                <p class="card-text fw-bold text-dark small mb-3">@item.Price.ToString("C")</p>
-                                <div class="d-flex gap-2">
-                                    <form asp-action="AddToCart" asp-route-itemId="@item.Id" method="post" class="d-flex align-items-center">
-                                        <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm me-1" style="width: 70px;" aria-label="Quantity" />
-                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#cartModal" aria-label="Add to cart">
-                                            <i class="fas fa-cart-plus"></i>
-                                        </button>
-                                    </form>
-                                    <a asp-action="Details" asp-controller="MenuItems" asp-route-id="@item.Id" class="btn btn-outline-secondary btn-sm rounded-pill" aria-label="View menu item details">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> This restaurant hasn't added any menu items yet.
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <!-- Menu Categories Column -->
+                <div class="col-lg-3">
+                    <div class="menu-category">
+                        <h5 class="mb-3">Categories</h5>
+                        <div class="list-group">
+                            <a href="#all" class="list-group-item active" data-category="all">All Items</a>
+                            <a href="#popular" class="list-group-item" data-category="popular">Popular Items</a>
+                            <!-- This would be dynamically populated based on actual categories -->
+                            <a href="#mains" class="list-group-item" data-category="mains">Main Dishes</a>
+                            <a href="#sides" class="list-group-item" data-category="sides">Side Dishes</a>
+                            <a href="#desserts" class="list-group-item" data-category="desserts">Desserts</a>
+                            <a href="#beverages" class="list-group-item" data-category="beverages">Beverages</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Menu Items Column -->
+                <div class="col-lg-9">
+                    <div class="row g-4">
+                        @foreach (var item in Model.MenuItems)
+                        {
+                            <div class="col-md-6 col-xl-4 menu-item" data-category="all">
+                                <div class="menu-item-card">
+                                    <div class="position-relative">
+                                        <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/default-food.jpg" : item.ImageUrl)" 
+                                             class="menu-item-img" alt="@item.Name">
+                                        @if (item.IsVegetarian)
+                                        {
+                                            <span class="badge bg-success menu-item-badge"><i class="fas fa-leaf"></i></span>
+                                        }
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h5 class="card-title mb-0">@item.Name</h5>
+                                            <span class="badge bg-primary">@item.Price.ToString("C")</span>
+                                        </div>
+                                        <p class="card-text text-muted small mb-3">
+                                            @(string.IsNullOrEmpty(item.Description) ? "No description available" : item.Description)
+                                        </p>
+                                        <div class="d-grid">
+                                            <button class="btn btn-outline-primary btn-sm add-to-cart" 
+                                                    data-id="@item.Id" 
+                                                    data-name="@item.Name" 
+                                                    data-price="@item.Price">
+                                                <i class="fas fa-shopping-cart me-1"></i> Add to Cart
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        }
                     </div>
-                }
+                </div>
             </div>
         }
-        else
-        {
-            <p class="text-muted">No menu items available.</p>
-        }
     </section>
-
+    
     <!-- Promotions Section -->
     <section id="promotions" class="mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h3 fw-semibold text-dark">Promotions</h2>
-            @if (User.IsInRole("Admin") || User.IsInRole("Owner"))
-            {
-                <a href="@Url.Action("Promotions", "Restaurants", new { restaurantId = Model.Restaurant.Id })" class="btn btn-info btn-sm rounded-pill" aria-label="Manage promotions">
-                    <i class="fas fa-megaphone me-2"></i> Manage Promotions
-                </a>
-            }
-        </div>
-        @if (Model.Promotions.Any())
+        <h2 class="section-heading">Promotions & Offers</h2>
+        
+        @if (!Model.Promotions.Any())
         {
-            <div class="row row-cols-1 row-cols-md-2 g-4">
-                @foreach (var promo in Model.Promotions)
-                {
-                    <div class="col">
-                        <div class="card rounded-3 p-3">
-                            <h5 class="card-title fw-semibold text-dark mb-2 fs-6">@promo.Title</h5>
-                            <p class="card-text text-muted small mb-2 text-truncate">@promo.Description</p>
-                            <p class="card-text text-muted small mb-2"><strong>Code:</strong> <span class="badge bg-primary">@promo.PromoCode</span></p>
-                            <p class="card-text text-muted small mb-2"><strong>Discount:</strong> @(promo.DiscountPercentage > 0 ? $"{promo.DiscountPercentage}%" : "N/A")</p>
-                            <p class="card-text text-muted small mb-3"><strong>Valid Until:</strong> @promo.ValidUntil.ToString("d")</p>
-                            <form asp-action="ApplyPromotion" asp-route-code="@promo.PromoCode" asp-route-returnUrl="@Url.Action("Details", new { id = Model.Restaurant.Id })" method="post">
-                                <button type="submit" class="btn btn-success btn-sm rounded-pill" aria-label="Apply promotion">
-                                    <i class="fas fa-tag me-1"></i> Apply
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                }
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> No active promotions at this time.
             </div>
         }
         else
         {
-            <p class="text-muted">No promotions available.</p>
-        }
-    </section>
-
-    <!-- Reviews Section -->
-    <section id="reviews" class="mb-5">
-        <h2 class="h3 fw-semibold mb-4 text-dark">Reviews</h2>
-        @if (Model.Reviews.Any())
-        {
-            <div class="reviews-container">
-                @foreach (var review in Model.Reviews.Take(5))
+            <div class="row">
+                @foreach (var promotion in Model.Promotions)
                 {
-                    <div class="card rounded-3 p-3 mb-3">
-                        <div class="d-flex align-items-center mb-2">
-                            <h6 class="card-title fw-semibold text-dark flex-grow-1 mb-0 small">@review.CustomerName</h6>
-                            <div class="star-rating">
-                                @for (int i = 1; i <= 5; i++)
-                                {
-                                    <i class="fas fa-star fs-6 @(i <= review.Rating ? "active" : "")"></i>
-                                }
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card promotion-card shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title">@promotion.Code</h5>
+                                    @if (promotion.EndDate < DateTime.Now.AddDays(3))
+                                    {
+                                        <span class="badge bg-danger">Expires Soon</span>
+                                    }
+                                </div>
+                                <p class="card-text">@promotion.Description</p>
+                                <ul class="list-unstyled text-muted small">
+                                    <li class="mb-1"><i class="fas fa-tag me-2"></i> 
+                                        @(promotion.IsPercentage ? $"{promotion.DiscountValue}% off" : $"${promotion.DiscountValue} off")
+                                    </li>
+                                    @if (promotion.MinimumOrderAmount > 0)
+                                    {
+                                        <li class="mb-1"><i class="fas fa-dollar-sign me-2"></i> Min. order: @promotion.MinimumOrderAmount.ToString()</li>
+                                    }
+                                    <li><i class="far fa-calendar-alt me-2"></i> Valid until: @promotion.EndDate.ToString("MMM dd, yyyy")</li>
+                                </ul>
+                            </div>
+                            <div class="card-footer bg-white border-0">
+                                <button class="btn btn-primary btn-sm w-100 copy-code" data-code="@promotion.Code">
+                                    <i class="far fa-copy me-1"></i> Copy Code
+                                </button>
                             </div>
                         </div>
-                        <p class="card-text text-muted small mb-2">@review.Comment</p>
-                        <small class="text-muted">@review.CreatedAt.ToString("d")</small>
                     </div>
                 }
             </div>
-            @if (Model.Reviews.Count() > 5)
-            {
-                <nav aria-label="Reviews pagination" class="mt-4">
-                    <ul class="pagination pagination-sm justify-content-center">
-                        <li class="page-item">
-                            <a class="page-link" href="#" aria-label="Previous page">Previous</a>
-                        </li>
-                        <li class="page-item active">
-                            <a class="page-link" href="#" aria-label="Page 1">1</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#" aria-label="Page 2">2</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#" aria-label="Next page">Next</a>
-                        </li>
-                    </ul>
-                </nav>
-            }
+        }
+    </section>
+    
+    <!-- Reviews Section -->
+    <section id="reviews" class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-heading mb-0">Customer Reviews</h2>
+            <button class="btn btn-outline-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                <i class="fas fa-edit me-1"></i> Write a Review
+            </button>
+        </div>
+        
+        @if (!Model.Reviews.Any())
+        {
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> No reviews yet. Be the first to leave a review!
+            </div>
         }
         else
         {
-            <p class="text-muted">No reviews yet.</p>
+            <div class="row">
+                <!-- Review Summary -->
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 fw-bold text-primary mb-2">@Model.Restaurant.Rating.ToString("0.0")</div>
+                            <div class="review-rating mb-3">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    if (i <= Math.Round(Model.Restaurant.Rating))
+                                    {
+                                        <i class="fas fa-star"></i>
+                                    }
+                                    else if (i - 0.5 <= Model.Restaurant.Rating)
+                                    {
+                                        <i class="fas fa-star-half-alt"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="far fa-star"></i>
+                                    }
+                                }
+                            </div>
+                            <p class="text-muted">Based on @Model.Reviews.Count reviews</p>
+                            
+                            <!-- Rating distribution -->
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="me-2">5</span>
+                                <div class="progress flex-grow-1" style="height: 8px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: 70%"></div>
+                                </div>
+                                <span class="ms-2 text-muted small">70%</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="me-2">4</span>
+                                <div class="progress flex-grow-1" style="height: 8px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: 20%"></div>
+                                </div>
+                                <span class="ms-2 text-muted small">20%</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="me-2">3</span>
+                                <div class="progress flex-grow-1" style="height: 8px;">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: 5%"></div>
+                                </div>
+                                <span class="ms-2 text-muted small">5%</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="me-2">2</span>
+                                <div class="progress flex-grow-1" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 3%"></div>
+                                </div>
+                                <span class="ms-2 text-muted small">3%</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="me-2">1</span>
+                                <div class="progress flex-grow-1" style="height: 8px;">
+                                    <div class="progress-bar bg-danger" role="progressbar" style="width: 2%"></div>
+                                </div>
+                                <span class="ms-2 text-muted small">2%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Review List -->
+                <div class="col-md-8">
+                    <div class="reviews-container">
+                        @foreach (var review in Model.Reviews)
+                        {
+                            <div class="card review-card shadow-sm mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <h6 class="mb-0">@review.CustomerName</h6>
+                                            <div class="review-rating small">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= review.Rating)
+                                                    {
+                                                        <i class="fas fa-star"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="far fa-star"></i>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">@review.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                    </div>
+                                    <p class="mb-0">@review.Comment</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
         }
     </section>
-
-    <!-- Admin Delete Action -->
-    @if (Model.IsAdminOrOwner)
-    {
-        <section class="mb-5">
-            <h2 class="h3 fw-semibold mb-4 text-dark">Admin Actions</h2>
-            <button type="button" class="btn btn-danger btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#deleteModal" aria-label="Delete restaurant" disabled="@User.IsInRole("Owner")">
-                <i class="fas fa-trash me-2"></i> Delete Restaurant
-            </button>
-            <a class="btn btn-info btn-sm rounded-pill" asp-action="Edit" asp-controller="Restaurant" asp-route-id="@Model.Restaurant.Id">
-                <i class="fas fa-edit me-2"></i> Edit Restaurant
-            </a>
-            <a class="btn btn-secondary btn-sm rounded-pill" asp-action="Index" asp-controller="Restaurant" aria-label="Back to restaurant list">
-                <i class="fas fa-arrow-left me-2"></i> Back to List
-            </a>
-        </section>
-    }
-</div>
-
-<!-- Floating Action Button -->
-<button class="fab btn btn-primary btn-floating rounded-circle d-md-none" onclick="window.location.href='#menu'" aria-label="Go to menu">
-    <i class="fas fa-utensils fs-5"></i>
-</button>
-
-<!-- Cart Confirmation Modal -->
-<div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-3">
-            <div class="modal-header border-0">
-                <h5 class="modal-title fs-6 fw-semibold" id="cartModalLabel">Added to Cart</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close modal"></button>
+    
+    <!-- Info Section -->
+    <section id="info" class="mb-5">
+        <h2 class="section-heading">Restaurant Information</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Contact & Location</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-3">
+                                <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                <strong>Address:</strong><br>
+                                <span class="ms-4">@Model.Restaurant.Address, @Model.Restaurant.Address.City, @Model.Restaurant.Address.State @Model.Restaurant.Address.PostalCode</span>
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-phone-alt text-primary me-2"></i>
+                                <strong>Phone:</strong> 
+                                <a href="tel:@Model.Restaurant.PhoneNumber" class="text-decoration-none">@Model.Restaurant.PhoneNumber</a>
+                            </li>
+                            @if (!string.IsNullOrEmpty(Model.Restaurant.Website))
+                            {
+                                <li class="mb-3">
+                                    <i class="fas fa-globe text-primary me-2"></i>
+                                    <strong>Website:</strong> 
+                                    <a href="@Model.Restaurant.Website" target="_blank" class="text-decoration-none">@Model.Restaurant.Website</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body text-muted small">
-                The item has been added to your cart.
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Continue Shopping</button>
-                <a href="@Url.Action("Cart", "Cart")" class="btn btn-primary btn-sm rounded-pill" aria-label="View cart">View Cart</a>
+            <div class="col-md-6 mt-4 mt-md-0">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Hours & Details</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-3">
+                                <i class="fas fa-clock text-primary me-2"></i>
+                                <strong>Hours:</strong> 
+                                @DateTime.Today.Add(Model.Restaurant.OpeningTime).ToString("hh:mm tt") - 
+                                @DateTime.Today.Add(Model.Restaurant.ClosingTime).ToString("hh:mm tt")
+
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-utensils text-primary me-2"></i>
+                                <strong>Cuisine:</strong> @Model.Restaurant.CategoryName
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-truck text-primary me-2"></i>
+                                <strong>Delivery Fee:</strong> @(Model.Restaurant.DeliveryFee > 0 ? Model.Restaurant.DeliveryFee.ToString("C") : "Free")
+                            </li>
+                            <li>
+                                <i class="fas fa-percent text-primary me-2"></i>
+                                <strong>Tax Rate:</strong> @Model.Restaurant.TaxRate.ToString("0.##\\%")
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
 </div>
 
-<!-- Delete Confirmation Modal -->
-@if (User.IsInRole("Admin"))
+<!-- Admin Actions FAB -->
+@if (Model.IsAdminOrOwner)
 {
-    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-3">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fs-6 fw-semibold" id="deleteModalLabel">Confirm Delete</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close modal"></button>
-                </div>
-                <div class="modal-body text-muted small">
-                    Are you sure you want to delete <strong>@Model.Restaurant.Name</strong>? This action cannot be undone.
-                </div>
-                <div class="modal-footer border-0">
-                    <form asp-action="Delete" asp-route-id="@Model.Restaurant.Id" method="post">
-                        <button type="submit" class="btn btn-danger btn-sm rounded-pill">Delete</button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                    </form>
-                </div>
-            </div>
+    <div class="fab-container">
+        <div class="dropdown">
+            <button class="fab btn btn-primary shadow" type="button" id="adminActions" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-cog"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminActions">
+                <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@Model.Restaurant.Id">
+                    <i class="fas fa-edit me-2"></i> Edit Restaurant</a></li>
+                <li><a class="dropdown-item" asp-controller="MenuItem" asp-action="Create" asp-route-restaurantId="@Model.Restaurant.Id">
+                    <i class="fas fa-plus me-2"></i> Add Menu Item</a></li>
+                <li><a class="dropdown-item" asp-action="Promotions" asp-route-restaurantId="@Model.Restaurant.Id">
+                    <i class="fas fa-tags me-2"></i> Manage Promotions</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#toggleStatusModal">
+                    <i class="fas fa-@(Model.Restaurant.IsActive ? "power-off" : "check-circle") me-2"></i>
+                    @(Model.Restaurant.IsActive ? "Deactivate" : "Activate") Restaurant</button></li>
+            </ul>
         </div>
     </div>
 }
 
+<!-- Status Toggle Modal -->
+<div class="modal fade" id="toggleStatusModal" tabindex="-1" aria-labelledby="toggleStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header @(Model.Restaurant.IsActive ? "bg-danger text-white" : "bg-success text-white")">
+                <h5 class="modal-title" id="toggleStatusModalLabel">
+                    <i class="fas fa-@(Model.Restaurant.IsActive ? "power-off" : "check-circle") me-2"></i>
+                    @(Model.Restaurant.IsActive ? "Deactivate" : "Activate") Restaurant
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to @(Model.Restaurant.IsActive ? "deactivate" : "activate") <strong>@Model.Restaurant.Name</strong>?</p>
+                @if (Model.Restaurant.IsActive)
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Deactivating this restaurant will hide it from customer searches and prevent new orders.
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <form asp-action="ToggleStatus" asp-route-id="@Model.Restaurant.Id" method="post">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn @(Model.Restaurant.IsActive ? "btn-danger" : "btn-success")">
+                        <i class="fas fa-@(Model.Restaurant.IsActive ? "power-off" : "check-circle") me-1"></i>
+                        @(Model.Restaurant.IsActive ? "Deactivate" : "Activate")
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="reviewModalLabel">
+                    <i class="fas fa-star me-2"></i> Write a Review
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reviewForm" asp-controller="Review" asp-action="Create" method="post">
+                    <input type="hidden" name="RestaurantId" value="@Model.Restaurant.Id" />
+                    
+                    <div class="mb-3">
+                        <label for="Rating" class="form-label">Rating</label>
+                        <div class="star-rating-input">
+                            <div class="d-flex">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <div class="star-container me-2" data-rating="@i">
+                                        <i class="far fa-star fs-3 text-warning"></i>
+                                    </div>
+                                }
+                            </div>
+                            <input type="hidden" id="Rating" name="Rating" value="5" required />
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="Comment" class="form-label">Your Review</label>
+                        <textarea class="form-control" id="Comment" name="Comment" rows="4" required 
+                                  placeholder="Share your experience with this restaurant..."></textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i> Submit Review
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        // Smooth scrolling
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
+        $(document).ready(function() {
+            // Smooth scrolling for anchor links
+            $('a[href^="#"]').on('click', function(e) {
                 e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
+                
+                const target = $($(this).attr('href'));
+                if (target.length) {
+                    $('html, body').animate({
+                        scrollTop: target.offset().top - 70
+                    }, 500);
+                    
+                    // Update active link
+                    $('.restaurant-nav .nav-link').removeClass('active');
+                    $(this).addClass('active');
+                }
+            });
+            
+            // Menu category filter
+            $('.menu-category .list-group-item').click(function(e) {
+                e.preventDefault();
+                
+                $('.menu-category .list-group-item').removeClass('active');
+                $(this).addClass('active');
+                
+                const category = $(this).data('category');
+                if (category === 'all') {
+                    $('.menu-item').show();
+                } else {
+                    $('.menu-item').hide();
+                    $(`.menu-item[data-category="${category}"]`).show();
+                }
+            });
+            
+            // Review star rating
+            $('.star-container').click(function() {
+                const rating = $(this).data('rating');
+                $('#Rating').val(rating);
+                
+                $('.star-container i').removeClass('fas').addClass('far');
+                $('.star-container').each(function() {
+                    if ($(this).data('rating') <= rating) {
+                        $(this).find('i').removeClass('far').addClass('fas');
+                    }
                 });
             });
-        });
-
-        // AJAX for Add to Cart
-        const cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
-        document.querySelectorAll('form[action*="AddToCart"]').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                fetch(this.action, {
-                    method: 'POST',
-                    body: new FormData(this)
-                }).then(response => {
-                    if (response.ok) {
-                        cartModal.show();
-                    } else {
-                        alert('Failed to add item to cart.');
+            
+            // Copy promotion code to clipboard
+            $('.copy-code').click(function() {
+                const code = $(this).data('code');
+                navigator.clipboard.writeText(code).then(function() {
+                    toastr.success(`Promotion code ${code} copied to clipboard!`);
+                }, function() {
+                    toastr.error('Failed to copy code. Please try again.');
+                });
+            });
+            
+            // Handle menu item add to cart
+            $('.add-to-cart').click(function() {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const price = $(this).data('price');
+                
+                // This would be integrated with your cart system
+                toastr.success(`${name} added to your cart!`);
+            });
+            
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Navbar scrolling behavior
+            const navEl = document.querySelector('.restaurant-nav');
+            const headerHeight = $('.restaurant-hero').outerHeight();
+            
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > headerHeight - 60) {
+                    navEl.classList.add('shadow');
+                } else {
+                    navEl.classList.remove('shadow');
+                }
+            });
+            
+            // Highlight active section based on scroll position
+            $(window).on('scroll', function() {
+                const scrollPosition = $(window).scrollTop();
+                
+                $('section').each(function() {
+                    const sectionTop = $(this).offset().top - 100;
+                    const sectionBottom = sectionTop + $(this).outerHeight();
+                    const sectionId = $(this).attr('id');
+                    
+                    if (scrollPosition >= sectionTop && scrollPosition <= sectionBottom) {
+                        $('.restaurant-nav .nav-link').removeClass('active');
+                        $(`.restaurant-nav .nav-link[href="#${sectionId}"]`).addClass('active');
                     }
-                }).catch(() => alert('An error occurred.'));
+                });
             });
         });
     </script>

@@ -111,7 +111,7 @@
                                 <div class="restaurant-card">
                                     <a asp-controller="Restaurants" asp-action="Details" asp-route-id="@restaurant.Id" class="restaurant-link">
                                         <div class="restaurant-image-container">
-                                            <img src="@(restaurant.ImageUrl ?? "/images/restaurant-placeholder.jpg")" alt="@restaurant.Name" class="restaurant-image">
+                                            <img src="@(restaurant.CoverImageUrl ?? "/images/restaurant-placeholder.jpg")" alt="@restaurant.Name" class="restaurant-image">
                                         </div>
                                         <div class="restaurant-info">
                                             <h3 class="restaurant-name">@restaurant.Name</h3>

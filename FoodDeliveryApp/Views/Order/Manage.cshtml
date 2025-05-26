@@ -1,4 +1,5 @@
 ﻿@model List<FoodDeliveryApp.ViewModels.OrderViewModels.OrderManagementViewModel>
+@using FoodDeliveryApp.Models // Assuming OrderStatus and PaymentStatus are in this namespace
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -7,27 +8,20 @@
         <div class="d-flex">
             <div class="dropdown me-2">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button"
-                        id="statusFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                id="statusFilterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     Status: @ViewBag.StatusFilter
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="statusFilterDropdown">
                     <li><a class="dropdown-item" asp-action="Manage" asp-route-status="all">All</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    @foreach (var status in Enum.GetValues(typeof(OrderStatus)))
-                    {
-                        <li>
-                            <a class="dropdown-item" asp-action="Manage" asp-route-status="@status">
-                                @status
-                            </a>
-                        </li>
-                    }
+
                 </ul>
             </div>
 
             @if (ViewBag.RestaurantId > 0)
             {
                 <a asp-action="Manage" asp-route-status="@ViewBag.StatusFilter"
-                   class="btn btn-outline-danger">
+                class="btn btn-outline-danger">
                     Clear Restaurant Filter
                 </a>
             }
@@ -73,23 +67,23 @@
                                     <br>
                                     <small class="text-muted">@GetPaymentStatusText(order.PaymentStatus)</small>
                                 </td>
-                                <td class="text-end">@order.Total.ToString("C"))</td>
+                                <td class="text-end">@order.Total.ToString("C")</td>
                                 <td class="text-end">
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-outline-primary dropdown-toggle"
-                                                type="button" id="actionDropdown-@order.Id"
-                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                        type="button" id="actionDropdown-@order.Id"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
                                             Actions
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end"
-                                            aria-labelledby="actionDropdown-@order.Id">
+                                        aria-labelledby="actionDropdown-@order.Id">
                                             <li>
                                                 <a class="dropdown-item" asp-action="Details"
-                                                   asp-route-id="@order.Id">
+                                                asp-route-id="@order.Id">
                                                     <i class="fas fa-eye me-2"></i>View Details
                                                 </a>
                                             </li>
-                                            @if (order.Status != OrderStatus.Delivered && order.Status != OrderStatus.Cancelled)
+                                            @if (order.Status != FoodDeliveryApp.Models.OrderStatus.Delivered && order.Status != FoodDeliveryApp.Models.OrderStatus.Canceled)
                                             {
                                                 <li><hr class="dropdown-divider"></li>
                                                 <li>
@@ -137,10 +131,10 @@
     {
         return status switch
         {
-            OrderStatus.Pending => "warning",
-            OrderStatus.Processing => "info",
+            OrderStatus.Placed => "warning",
+            OrderStatus.OutForDelivery => "info",
             OrderStatus.Delivered => "success",
-            OrderStatus.Cancelled => "danger",
+            OrderStatus.Canceled => "danger",
             _ => "secondary"
         };
     }
@@ -150,7 +144,7 @@
         return status switch
         {
             PaymentStatus.Pending => "Payment pending",
-            PaymentStatus.Completed => "Paid",
+            PaymentStatus.Paid => "Paid",
             PaymentStatus.Refunded => "Refunded",
             PaymentStatus.Failed => "Payment failed",
             _ => ""

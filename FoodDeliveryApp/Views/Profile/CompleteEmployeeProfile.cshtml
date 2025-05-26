@@ -1,80 +1,100 @@
 ﻿@model FoodDeliveryApp.ViewModels.Profile.EmployeeProfileViewModel
-
 @{
     ViewData["Title"] = "Complete Employee Profile";
-    Layout = "_ProfileLayout";
+    Layout = "~/Views/Shared/_LayoutAuth.cshtml";
 }
 
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header">
-                <h2>Complete Your Employee Profile</h2>
+<h2 class="mb-4"><i class="fas fa-user-edit me-2"></i>@ViewData["Title"]</h2>
+
+<div class="card shadow-lg border-0 animate__animated animate__fadeInUp">
+    <div class="card-body p-4">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show animate__animated animate__bounceIn" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-            <div class="card-body">
-                <form asp-action="CompleteEmployeeProfile" method="post" enctype="multipart/form-data">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                    
-                    <div class="form-group">
-                        <label asp-for="FirstName" class="control-label"></label>
-                        <input asp-for="FirstName" class="form-control" />
-                        <span asp-validation-for="FirstName" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label asp-for="LastName" class="control-label"></label>
-                        <input asp-for="LastName" class="form-control" />
-                        <span asp-validation-for="LastName" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label asp-for="Email" class="control-label"></label>
-                        <input asp-for="Email" class="form-control" readonly />
-                    </div>
-                    
-                    <div class="form-group">
-                        <label asp-for="PhoneNumber" class="control-label"></label>
-                        <input asp-for="PhoneNumber" class="form-control" />
-                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label asp-for="Position" class="control-label"></label>
-                        <input asp-for="Position" class="form-control" readonly />
-                        <span asp-validation-for="Position" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label asp-for="HireDate" class="control-label"></label>
-                        <input asp-for="HireDate" class="form-control" type="date" readonly />
-                        <span asp-validation-for="HireDate" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label asp-for="ProfilePicture" class="control-label"></label>
-                        <div class="custom-file">
-                            <input asp-for="ProfilePicture" class="custom-file-input" />
-                            <label class="custom-file-label">Choose file...</label>
-                        </div>
-                        <span asp-validation-for="ProfilePicture" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="form-group text-center">
-                        <button type="submit" class="btn btn-primary">Save Profile</button>
-                    </div>
-                </form>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show animate__animated animate__shakeX" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        </div>
+        }
+
+        <form asp-action="CompleteEmployeeProfile" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                    <input asp-for="Email" class="form-control" readonly />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="FirstName" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input asp-for="FirstName" class="form-control" placeholder="Enter first name" />
+                </div>
+                <span asp-validation-for="FirstName" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="LastName" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input asp-for="LastName" class="form-control" placeholder="Enter last name" />
+                </div>
+                <span asp-validation-for="LastName" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PhoneNumber" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                    <input asp-for="PhoneNumber" class="form-control" placeholder="Enter phone number" />
+                </div>
+                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="HireDate" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                    <input asp-for="HireDate" class="form-control" type="date" />
+                </div>
+                <span asp-validation-for="HireDate" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Position" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-briefcase"></i></span>
+                    <select asp-for="Position" class="form-control" asp-items="Html.GetEnumSelectList<FoodDeliveryApp.Models.EmployeePosition>()"></select>
+                </div>
+                <span asp-validation-for="Position" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ProfilePicture" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-image"></i></span>
+                    <input asp-for="ProfilePicture" class="form-control" type="file" accept="image/*" />
+                </div>
+                <span asp-validation-for="ProfilePicture" class="text-danger"></span>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>Save Profile</button>
+            </div>
+        </form>
     </div>
 </div>
 
 @section Scripts {
-    <script>
-        // Custom file input display
-        $(".custom-file-input").on("change", function () {
-            var fileName = $(this).val().split("\\").pop();
-        $(this).next(".custom-file-label").addClass("selected").html(fileName);
-    });
-    </script>
-<partial name="_ValidationScriptsPartial" />
+    <partial name="_ValidationScriptsPartial" />
 }

@@ -1,0 +1,180 @@
+﻿@model FoodDeliveryApp.ViewModels.AdminViewModels.UserViewModel
+@{
+    ViewData["Title"] = "Edit User";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-user-edit me-2"></i>Edit User</h1>
+    <a asp-action="UserList" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Back to Users
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-lg border-0 animate__animated animate__fadeIn">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">User Information</h6>
+            </div>
+            <div class="card-body p-4">
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show animate__animated animate__shakeX" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <form asp-action="EditUser" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <input type="hidden" asp-for="UserId" />
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                <input asp-for="Email" class="form-control" readonly data-val="false" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Role" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
+                                <input asp-for="Role" class="form-control" readonly data-val="false" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="FirstName" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input asp-for="FirstName" class="form-control" placeholder="Enter first name" />
+                            </div>
+                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="LastName" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input asp-for="LastName" class="form-control" placeholder="Enter last name" />
+                            </div>
+                            <span asp-validation-for="LastName" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PhoneNumber" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                            <input asp-for="PhoneNumber" class="form-control" placeholder="Enter phone number" />
+                        </div>
+                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4 form-check form-switch">
+                        <input asp-for="IsActive" class="form-check-input" />
+                        <label asp-for="IsActive" class="form-check-label"></label>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="UserList" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow-lg border-0 animate__animated animate__fadeIn" style="animation-delay: 0.2s">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">User Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" type="button" disabled>
+                        <i class="fas fa-key me-1"></i> Reset Password
+                    </button>
+                    <button class="btn btn-outline-warning" type="button" disabled>
+                        <i class="fas fa-ban me-1"></i> Suspend Account
+                    </button>
+                    <form asp-action="DeleteUser" method="post" onsubmit="return confirmDelete('@Model.FullName');">
+                        <input type="hidden" name="userId" value="@Model.UserId" />
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-trash me-1"></i> Delete Account
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow-lg border-0 mt-4 animate__animated animate__fadeIn" style="animation-delay: 0.3s">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Account Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-circle">
+                            <span class="initials">@(Model.FirstName.FirstOrDefault())@(Model.LastName.FirstOrDefault())</span>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-0">@Model.FullName</h5>
+                        <p class="text-muted mb-0">@Model.Email</p>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">Role:</small>
+                    <div>@Html.Raw(Model.RoleBadge)</div>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">Status:</small>
+                    <div>@Html.Raw(Model.StatusBadge)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function confirmDelete(userName) {
+            return confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`);
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .avatar-circle {
+            width: 50px;
+            height: 50px;
+            background-color: #4e73df;
+            text-align: center;
+            border-radius: 50%;
+            -webkit-border-radius: 50%;
+            -moz-border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .initials {
+            font-size: 20px;
+            line-height: 1;
+            color: #fff;
+            font-weight: bold;
+        }
+    </style>
+}

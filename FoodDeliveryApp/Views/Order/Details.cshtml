@@ -1,4 +1,4 @@
-﻿@model FoodDeliveryApp.ViewModels.OrderViewModels.OrderViewModel
+﻿@model FoodDeliveryApp.ViewModels.OrderViewModels.OrderDetailsViewModel
 
 @{
     ViewData["Title"] = "Order Details";
@@ -30,14 +30,14 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <strong>Restaurant:</strong> @Model.Items.First().RestaurantName
+                        <strong>Restaurant:</strong> @Model.Items.First().Name
                     </div>
                     <div class="mb-3">
                         <strong>Order Date:</strong> @Model.OrderDate.ToString("MMM dd, yyyy HH:mm")
                     </div>
                     <div class="mb-3">
                         <strong>Status:</strong>
-                        <span class="badge bg-@(Model.Status == OrderStatus.Delivered ? "success" : Model.Status == OrderStatus.Cancelled ? "danger" : "warning")">
+                        <span class="badge bg-@(Model.Status == OrderStatus.Delivered ? "success" : Model.Status == OrderStatus.Canceled ? "danger" : "warning")">
                             @Model.Status
                         </span>
                     </div>
@@ -55,7 +55,7 @@
                     </div>
                     <div class="mb-3">
                         <strong>Payment Status:</strong>
-                        <span class="badge bg-@(Model.PaymentStatus == PaymentStatus.Completed ? "success" : Model.PaymentStatus == PaymentStatus.Refunded ? "danger" : "warning")">
+                        <span class="badge bg-@(Model.PaymentStatus == PaymentStatus.Paid ? "success" : Model.PaymentStatus == PaymentStatus.Refunded ? "danger" : "warning")">
                             @Model.PaymentStatus
                         </span>
                     </div>
@@ -72,7 +72,7 @@
                                     @if (item.Customizations.Any())
                                     {
                                         <small class="d-block text-muted">
-                                            Customizations: @string.Join(", ", item.Customizations.Select(c => $"Option {c.OptionId}: Choice {c.ChoiceId} (+{c.Price:C})"))
+                                            Customizations: @string.Join(", ", item.Customizations)
                                         </small>
                                     }
                                 </div>
@@ -100,7 +100,7 @@
                     </div>
                 </div>
                 <div class="card-footer text-end">
-                    @if (Model.Status == OrderStatus.Pending)
+                    @if (Model.Status == OrderStatus.Placed)
                     {
                         <form asp-action="Cancel" method="post" class="d-inline">
                             <input type="hidden" name="id" value="@Model.Id" />

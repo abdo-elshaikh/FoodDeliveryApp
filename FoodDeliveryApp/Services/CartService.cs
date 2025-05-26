@@ -15,14 +15,7 @@ namespace FoodDeliveryApp.Services
             _context = context;
         }
 
-        public async Task<int> GetCartItemCountAsync(string userId)
-        {
-            var cart = await _context.Carts
-                .Include(c => c.Items)
-                .FirstOrDefaultAsync(c => c.UserId == userId);
-
-            return cart?.Items.Sum(i => i.Quantity) ?? 0;
-        }
+        
 
         public async Task<Cart> GetCartAsync(string userId)
         {
@@ -49,53 +42,28 @@ namespace FoodDeliveryApp.Services
 
         public async Task AddItemToCartAsync(string userId, CartItemViewModel cartItem)
         {
-            if (cartItem.Quantity < 1 || cartItem.Quantity > 100)
-            {
-                throw new ArgumentException("Quantity must be between 1 and 100");
-            }
-
-            var menuItem = await _context.MenuItems
-                .Include(m => m.Restaurant)
-                .FirstOrDefaultAsync(m => m.Id == cartItem.MenuItemId && m.IsAvailable);
-
-            if (menuItem == null)
-            {
-                throw new ArgumentException("Menu item not found or unavailable");
-            }
-
             var cart = await GetCartAsync(userId);
-
-            var existingItem = cart.Items.FirstOrDefault(i => i.MenuItemId == cartItem.MenuItemId &&
-                i.Customizations.OrderBy(c => c.OptionId).ThenBy(c => c.ChoiceId).SequenceEqual(
-                    cartItem.Customizations.Select(c => new Customization { OptionId = c.OptionId, ChoiceId = c.ChoiceId, Price = c.Price })
-                        .OrderBy(c => c.OptionId).ThenBy(c => c.ChoiceId)));
+            var existingItem = cart.Items.FirstOrDefault(i => i.MenuItemId == cartItem.MenuItemId);
 
             if (existingItem != null)
             {
                 existingItem.Quantity += cartItem.Quantity;
-                if (existingItem.Quantity > 100)
-                {
-                    throw new ArgumentException("Total quantity cannot exceed 100");
-                }
             }
             else
             {
-                var newCartItem = new CartItem
+                cart.Items.Add(new CartItem
                 {
                     MenuItemId = cartItem.MenuItemId,
                     Quantity = cartItem.Quantity,
-                    CartId = cart.Id,
                     Customizations = cartItem.Customizations.Select(c => new Customization
                     {
                         OptionId = c.OptionId,
                         ChoiceId = c.ChoiceId,
                         Price = c.Price
                     }).ToList()
-                };
-                cart.Items.Add(newCartItem);
+                });
             }
 
-            cart.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
 
@@ -149,6 +117,14 @@ namespace FoodDeliveryApp.Services
         {
             var cart = await GetCartAsync(userId);
             return cart.Items.Sum(i => (i.MenuItem.Price + i.Customizations.Sum(c => c.Price)) * i.Quantity);
+        }
+
+        public async Task<int> GetCartItemCountAsync(string userId)
+        {
+            var cartItems = await _context.Carts
+                .Where(c => c.UserId == userId)
+                .ToListAsync();
+            return cartItems.Count();
         }
     }
 }

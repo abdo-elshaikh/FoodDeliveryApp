@@ -1,0 +1,483 @@
+﻿@model IEnumerable<FoodDeliveryApp.ViewModels.AdminViewModels.UserViewModel>
+@{
+    ViewData["Title"] = "Manage Users";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-users me-2"></i>User Management</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+        <i class="fas fa-user-plus me-1"></i> Add User
+    </button>
+</div>
+
+<div class="card shadow-lg border-0 animate__animated animate__fadeIn">
+    <div class="card-header bg-white py-3">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="searchUsers" class="form-control" placeholder="Search users...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select id="roleFilter" class="form-select">
+                    <option value="">All Roles</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Customer">Customer</option>
+                    <option value="Employee">Employee</option>
+                    <option value="Driver">Driver</option>
+                    <option value="Owner">Owner</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="statusFilter" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2 text-end">
+                <button class="btn btn-outline-secondary" id="resetFilters">
+                    <i class="fas fa-undo me-1"></i> Reset
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show m-3 animate__animated animate__bounceIn" role="alert">
+                <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show m-3 animate__animated animate__shakeX" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="usersTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="user-sortable" data-sort="email"><i class="fas fa-envelope me-1"></i>Email <i class="fas fa-sort ms-1 text-muted"></i></th>
+                        <th class="user-sortable" data-sort="role"><i class="fas fa-user-tag me-1"></i>Role <i class="fas fa-sort ms-1 text-muted"></i></th>
+                        <th class="user-sortable" data-sort="name"><i class="fas fa-user me-1"></i>Name <i class="fas fa-sort ms-1 text-muted"></i></th>
+                        <th><i class="fas fa-phone me-1"></i>Phone</th>
+                        <th class="user-sortable" data-sort="status"><i class="fas fa-check-circle me-1"></i>Status <i class="fas fa-sort ms-1 text-muted"></i></th>
+                        <th><i class="fas fa-cog me-1"></i>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr class="user-row" 
+                            data-email="@user.Email.ToLower()" 
+                            data-role="@user.Role.ToString().ToLower()" 
+                            data-name="@(user.FirstName + " " + user.LastName).ToLower()" 
+                            data-status="@(user.IsActive ? "active" : "inactive")">
+                            <td>@user.Email</td>
+                            <td>@Html.Raw(user.RoleBadge)</td>
+                            <td>@user.FirstName @user.LastName</td>
+                            <td>@user.PhoneNumber</td>
+                            <td>@Html.Raw(user.StatusBadge)</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="openEditModal('@user.UserId')" data-bs-toggle="tooltip" data-bs-title="Edit User">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <form asp-action="DeleteUser" method="post" class="d-inline" onsubmit="return confirmDelete('@user.FirstName @user.LastName');">
+                                    <input type="hidden" name="userId" value="@user.UserId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" data-bs-title="Delete User">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                </form>
+                                    @if (user.Role == UserType.Customer)
+                                    {
+                                        <a href="#" class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" data-bs-title="View Orders">
+                                            <i class="fas fa-shopping-bag"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="noResults" class="text-center py-5 d-none">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <p class="lead">No users matched your search criteria.</p>
+            <button class="btn btn-outline-primary btn-sm" id="clearSearch"><i class="fas fa-undo me-1"></i> Clear Search</button>
+        </div>
+    </div>
+    <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-muted">Total users: <span class="fw-bold" id="userCount">@Model.Count()</span></span>
+            </div>
+            <div>
+                <button class="btn btn-outline-primary btn-sm" id="exportUsers"><i class="fas fa-file-export me-1"></i> Export Users</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0 animate__animated animate__fadeIn">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title" id="editUserModalLabel"><i class="fas fa-user-edit me-2"></i>Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm" asp-action="EditUser" method="post">
+                    <input type="hidden" id="UserId" name="UserId" />
+                    
+                    <div class="mb-3">
+                        <label for="Email" class="form-label">Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                            <input type="email" class="form-control" id="Email" name="Email" readonly data-val="false" />
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="Role" class="form-label">Role</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
+                            <input type="text" class="form-control" id="Role" name="Role" readonly data-val="false" />
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="FirstName" class="form-label">First Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="FirstName" name="FirstName" required />
+                        </div>
+                        <div class="invalid-feedback" id="firstNameError"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="LastName" class="form-label">Last Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="LastName" name="LastName" required />
+                        </div>
+                        <div class="invalid-feedback" id="lastNameError"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="PhoneNumber" class="form-label">Phone Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                            <input type="tel" class="form-control" id="PhoneNumber" name="PhoneNumber" />
+                        </div>
+                        <div class="invalid-feedback" id="phoneError"></div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="IsActive" name="IsActive" />
+                        <label class="form-check-label" for="IsActive">Active</label>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0 animate__animated animate__fadeIn">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title" id="addUserModalLabel"><i class="fas fa-user-plus me-2"></i>Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm" asp-action="CreateUser" method="post">
+                    <div class="mb-3">
+                        <label for="newEmail" class="form-label">Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                            <input type="email" class="form-control" id="newEmail" name="Email" required />
+                        </div>
+                        <div class="invalid-feedback" id="newEmailError"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newRole" class="form-label">Role</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
+                            <select class="form-select" id="newRole" name="Role" required>
+                                <option value="">Select Role</option>
+                                <option value="Customer">Customer</option>
+                                <option value="Employee">Employee</option>
+                                <option value="Driver">Driver</option>
+                                <option value="Owner">Owner</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="invalid-feedback" id="newRoleError"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newFirstName" class="form-label">First Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="newFirstName" name="FirstName" required />
+                        </div>
+                        <div class="invalid-feedback" id="newFirstNameError"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newLastName" class="form-label">Last Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="newLastName" name="LastName" required />
+                        </div>
+                        <div class="invalid-feedback" id="newLastNameError"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newPhoneNumber" class="form-label">Phone Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                            <input type="tel" class="form-control" id="newPhoneNumber" name="PhoneNumber" />
+                        </div>
+                        <div class="invalid-feedback" id="newPhoneError"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control" id="newPassword" name="Password" required />
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Password must be at least 6 characters long.</div>
+                        <div class="invalid-feedback" id="newPasswordError"></div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="newIsActive" name="IsActive" checked />
+                        <label class="form-check-label" for="newIsActive">Active</label>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus me-1"></i>Add User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Edit user modal
+        function openEditModal(userId) {
+            fetch(`/Admin/EditUser?userId=${userId}`)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const form = doc.querySelector('form');
+                    document.getElementById('UserId').value = form.querySelector('[name="UserId"]').value;
+                    document.getElementById('Email').value = form.querySelector('[name="Email"]').value;
+                    document.getElementById('Role').value = form.querySelector('[name="Role"]').value;
+                    document.getElementById('FirstName').value = form.querySelector('[name="FirstName"]').value;
+                    document.getElementById('LastName').value = form.querySelector('[name="LastName"]').value;
+                    document.getElementById('PhoneNumber').value = form.querySelector('[name="PhoneNumber"]').value;
+                    document.getElementById('IsActive').checked = form.querySelector('[name="IsActive"]').value === 'true';
+                    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+                    modal.show();
+                    
+                    // Reparse the form for validation
+                    $.validator.unobtrusive.parse('#editUserForm');
+                })
+                .catch(error => {
+                    console.error('Error loading edit user form:', error);
+                    showToast('error', 'Failed to load user data.');
+                });
+        }
+
+        // Search and filter functionality
+        $(document).ready(function() {
+            // Initialize tooltips
+            const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            tooltips.forEach(tooltip => {
+                new bootstrap.Tooltip(tooltip);
+            });
+            
+            // Search functionality
+            $("#searchUsers").on("keyup", function() {
+                const value = $(this).val().toLowerCase();
+                filterUsers();
+            });
+            
+            // Role filter
+            $("#roleFilter").on("change", function() {
+                filterUsers();
+            });
+            
+            // Status filter
+            $("#statusFilter").on("change", function() {
+                filterUsers();
+            });
+            
+            // Reset filters
+            $("#resetFilters").on("click", function() {
+                $("#searchUsers").val("");
+                $("#roleFilter").val("");
+                $("#statusFilter").val("");
+                filterUsers();
+            });
+            
+            // Clear search
+            $("#clearSearch").on("click", function() {
+                $("#searchUsers").val("");
+                $("#roleFilter").val("");
+                $("#statusFilter").val("");
+                filterUsers();
+            });
+            
+            // Toggle password visibility
+            $("#togglePassword").on("click", function() {
+                const passwordInput = document.getElementById("newPassword");
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    $(this).find("i").removeClass("fa-eye").addClass("fa-eye-slash");
+                } else {
+                    passwordInput.type = "password";
+                    $(this).find("i").removeClass("fa-eye-slash").addClass("fa-eye");
+                }
+            });
+            
+            // Export users
+            $("#exportUsers").on("click", function() {
+                // In a real application, this would trigger an export function
+                alert("This would export the current list of users to CSV/Excel in a real application");
+            });
+            
+            // Sorting functionality
+            $(".user-sortable").on("click", function() {
+                const column = $(this).data("sort");
+                const icon = $(this).find("i.fas.fa-sort, i.fas.fa-sort-up, i.fas.fa-sort-down");
+                
+                // Reset all other icons
+                $(".user-sortable").find("i:not(.fa-envelope, .fa-user-tag, .fa-user, .fa-check-circle)")
+                    .removeClass("fa-sort-up fa-sort-down text-primary").addClass("fa-sort text-muted");
+                
+                // Toggle sort direction
+                if (icon.hasClass("fa-sort") || icon.hasClass("fa-sort-down")) {
+                    sortUsers(column, "asc");
+                    icon.removeClass("fa-sort fa-sort-down text-muted").addClass("fa-sort-up text-primary");
+                } else {
+                    sortUsers(column, "desc");
+                    icon.removeClass("fa-sort fa-sort-up text-muted").addClass("fa-sort-down text-primary");
+                }
+            });
+            
+            // Confirm delete
+            window.confirmDelete = function(userName) {
+                return confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`);
+            };
+        });
+        
+        // Filter users based on search and filter values
+        function filterUsers() {
+            const searchValue = $("#searchUsers").val().toLowerCase();
+            const roleValue = $("#roleFilter").val().toLowerCase();
+            const statusValue = $("#statusFilter").val().toLowerCase();
+            let visibleCount = 0;
+            
+            $(".user-row").each(function() {
+                const email = $(this).data("email");
+                const role = $(this).data("role");
+                const name = $(this).data("name");
+                const status = $(this).data("status");
+                
+                const matchesSearch = email.includes(searchValue) || name.includes(searchValue);
+                const matchesRole = roleValue === "" || role === roleValue;
+                const matchesStatus = statusValue === "" || status === statusValue;
+                
+                if (matchesSearch && matchesRole && matchesStatus) {
+                    $(this).show();
+                    visibleCount++;
+                } else {
+                    $(this).hide();
+                }
+            });
+            
+            // Show/hide no results message
+            if (visibleCount === 0) {
+                $("#noResults").removeClass("d-none");
+            } else {
+                $("#noResults").addClass("d-none");
+            }
+            
+            // Update count
+            $("#userCount").text(visibleCount);
+        }
+        
+        // Sort users
+        function sortUsers(column, direction) {
+            const rows = $("#usersTable tbody tr").get();
+            
+            rows.sort(function(a, b) {
+                let valA, valB;
+                
+                switch (column) {
+                    case "email":
+                        valA = $(a).data("email");
+                        valB = $(b).data("email");
+                        break;
+                    case "role":
+                        valA = $(a).data("role");
+                        valB = $(b).data("role");
+                        break;
+                    case "name":
+                        valA = $(a).data("name");
+                        valB = $(b).data("name");
+                        break;
+                    case "status":
+                        valA = $(a).data("status");
+                        valB = $(b).data("status");
+                        break;
+                }
+                
+                if (direction === "asc") {
+                    return valA.localeCompare(valB);
+                } else {
+                    return valB.localeCompare(valA);
+                }
+            });
+            
+            // Re-append rows in sorted order
+            $.each(rows, function(index, row) {
+                $("#usersTable tbody").append(row);
+            });
+        }
+        
+        function showToast(type, message) {
+            // This is a placeholder for a toast notification system
+            alert(message);
+        }
+    </script>
+}

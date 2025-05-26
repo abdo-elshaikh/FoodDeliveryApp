@@ -1,75 +1,69 @@
-﻿@model FoodDeliveryApp.ViewModels.HomeViewModel
+@model FoodDeliveryApp.ViewModels.Home.HomeViewModel
+
 @{
-    ViewData["Title"] = "Home";
-    ViewData["ActiveMenu"] = "Home";
-    var appName = "FoodFast Pro";
+    ViewData["Title"] = "Home Page";
 }
 
-<!-- Hero Section -->
-<section class="hero-section position-relative overflow-hidden py-5 bg-gradient-hero">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-6 py-5">
-                <h1 class="display-3 fw-bold mb-4 text-primary animate__animated animate__fadeInUp">
-                    Exceptional Dining, Delivered
-                </h1>
-                <p class="lead mb-4 text-dark fw-medium animate__animated animate__fadeInUp animate__delay-1s">
-                    Explore top restaurants with personalized recommendations on @appName.
-                </p>
-
-                <form asp-action="Search" asp-controller="Home" method="post" role="search"
-                      class="mb-4 animate__animated animate__fadeInUp animate__delay-2s">
-                    <div class="input-group input-group-lg position-relative shadow-lg rounded-pill" style="max-width: 600px;">
-                        <span class="input-group-text bg-white border-end-0 rounded-start-pill">
-                            <i class="bi bi-search text-primary"></i>
-                        </span>
-                        <input id="search-input" class="form-control border-start-0 py-3" type="search"
-                               placeholder="Find cuisines, restaurants, or dishes..." aria-label="Search" name="Query"
-                               value="@Model.Search.Query" autocomplete="off" />
-                        <input type="hidden" name="Location" value="@Model.Search.Location" />
-                        <button class="btn btn-primary fw-medium px-4 rounded-end-pill" type="submit" aria-label="Search">
-                            Search
-                        </button>
-                        <div id="searchSuggestions" class="position-absolute w-100 start-0 bg-white rounded-3 shadow-lg"
-                             style="top: 100%; z-index: 1000; display: none; max-height: 300px; overflow-y: auto; margin-top: 10px;">
-                            <!-- Suggestions populated dynamically -->
+<section class="hero" style="background-image: url('@Model.Hero.BackgroundImageUrl');" role="banner"
+    aria-label="Hero section with search">
+    <!-- Floating Elements for Visual Interest -->
+    <div class="hero-floating-elements">
+        <div class="hero-floating-element"></div>
+        <div class="hero-floating-element"></div>
+        <div class="hero-floating-element"></div>
+        <div class="hero-floating-element"></div>
+    </div>
+    
+    <div class="container hero-container">
+        <h1 class="animate-fade-in-up">Delicious Food Delivered To Your Doorstep</h1>
+        <p class="animate-fade-in-up delay-100">Explore the best restaurants and dishes in your area.</p>
+        
+        <form class="hero-search animate-fade-in-up delay-200" method="get" action="/Menu/Search" role="search"
+            aria-label="Search for restaurants or dishes">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-0">
+                    <i class="fas fa-search text-primary"></i>
+                </span>
+                <input type="search" name="q" class="form-control border-0" placeholder="Search for restaurants or dishes..." 
+                    aria-label="Search" required />
+                <button type="submit" class="btn btn-primary px-4 fw-semibold" aria-label="Submit search">
+                    Search Now
+                </button>
+            </div>
+        </form>
+        
+        <div class="hero-features mt-5 animate-fade-in-up delay-300">
+            <div class="row justify-content-center">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="hero-feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h3>Quality Food</h3>
+                            <p>From top-rated restaurants</p>
                         </div>
                     </div>
-                </form>
-
-                <div class="d-flex align-items-center gap-3 animate__animated animate__fadeInUp animate__delay-3s">
-                    <button id="geoLocateBtn" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-medium">
-                        <i class="bi bi-geo-alt me-1"></i> Find Nearby
-                    </button>
-                    <span class="text-muted fw-medium">
-                        <i class="bi bi-pin-map me-1"></i> @Model.CurrentLocation
-                    </span>
                 </div>
-
-                <div class="d-flex flex-wrap gap-3 mt-4 animate__animated animate__fadeInUp animate__delay-4s">
-                    <div class="feature-badge bg-white shadow-sm rounded-pill px-3 py-2">
-                        <i class="bi bi-clock text-primary me-2"></i> Fast Delivery
-                    </div>
-                    <div class="feature-badge bg-white shadow-sm rounded-pill px-3 py-2">
-                        <i class="bi bi-shield-check text-primary me-2"></i> Quality Assured
-                    </div>
-                    <div class="feature-badge bg-white shadow-sm rounded-pill px-3 py-2">
-                        <i class="bi bi-geo-alt text-primary me-2"></i> Live Tracking
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="hero-feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h3>Fast Delivery</h3>
+                            <p>To your doorstep</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-lg-6 position-relative animate__animated animate__fadeIn animate__delay-3s">
-                <div class="hero-image-container">
-                    <img src="~/images/delivery-hero.png" alt="Premium dining experience" class="img-fluid" loading="lazy" />
-                    <div class="hero-rating-badge bg-white shadow-lg rounded-3 p-3 animate__animated animate__fadeInUp animate__delay-6s">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-primary rounded-circle p-2 text-white">
-                                <i class="bi bi-star-fill fs-5"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold fs-5">4.9 / 5.0</div>
-                                <div class="text-muted small">Customer Satisfaction</div>
-                            </div>
+                <div class="col-md-4">
+                    <div class="hero-feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h3>24/7 Support</h3>
+                            <p>Always here to help</p>
                         </div>
                     </div>
                 </div>
@@ -78,502 +72,267 @@
     </div>
 </section>
 
-<!-- How It Works Section -->
-<section class="py-5 bg-white">
+<section class="food-categories" aria-label="Food categories">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="h2 fw-bold mb-2 animate__animated animate__fadeInUp">How @appName Works</h2>
-            <p class="text-muted lead animate__animated animate__fadeInUp animate__delay-1s">
-                Order your favorite meals in just a few simple steps.
-            </p>
+        <div class="section-header text-center mb-5 animate-fade-in">
+            <span class="section-subtitle">Explore Food</span>
+            <h2>Food Categories</h2>
+            <p class="section-description mx-auto">Discover a variety of cuisines from around the world</p>
         </div>
-        <div class="row g-4">
-            <div class="col-md-3 col-sm-6 animate__animated animate__fadeInUp" style="animation-delay: 100ms">
-                <div class="how-it-works-card bg-white shadow-sm rounded-3 p-4 text-center">
-                    <div class="how-it-works-icon bg-primary text-white rounded-circle p-3 mb-3 mx-auto">
-                        <i class="bi bi-search fs-3"></i>
-                    </div>
-                    <h3 class="h5 fw-semibold mb-2">Search</h3>
-                    <p class="text-muted small">
-                        Browse restaurants, cuisines, or dishes with AI-driven recommendations.
-                    </p>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 animate__animated animate__fadeInUp" style="animation-delay: 200ms">
-                <div class="how-it-works-card bg-white shadow-sm rounded-3 p-4 text-center">
-                    <div class="how-it-works-icon bg-primary text-white rounded-circle p-3 mb-3 mx-auto">
-                        <i class="bi bi-cart-plus fs-3"></i>
-                    </div>
-                    <h3 class="h5 fw-semibold mb-2">Order</h3>
-                    <p class="text-muted small">
-                        Select your meal and customize your order with ease.
-                    </p>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 animate__animated animate__fadeInUp" style="animation-delay: 300ms">
-                <div class="how-it-works-card bg-white shadow-sm rounded-3 p-4 text-center">
-                    <div class="how-it-works-icon bg-primary text-white rounded-circle p-3 mb-3 mx-auto">
-                        <i class="bi bi-geo-alt fs-3"></i>
-                    </div>
-                    <h3 class="h5 fw-semibold mb-2">Track</h3>
-                    <p class="text-muted small">
-                        Monitor your delivery in real-time with live tracking.
-                    </p>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 animate__animated animate__fadeInUp" style="animation-delay: 400ms">
-                <div class="how-it-works-card bg-white shadow-sm rounded-3 p-4 text-center">
-                    <div class="how-it-works-icon bg-primary text-white rounded-circle p-3 mb-3 mx-auto">
-                        <i class="bi bi-heart fs-3"></i>
-                    </div>
-                    <h3 class="h5 fw-semibold mb-2">Enjoy</h3>
-                    <p class="text-muted small">
-                        Savor premium dining delivered fresh to your door.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Explore Categories Section -->
-<section class="py-5 bg-light">
-    <div class="container">
-        <div class="d-flex align-items-center justify-content-between mb-5">
-            <h2 class="h2 fw-bold mb-0 animate__animated animate__fadeInUp">Explore Categories</h2>
-            <div class="swiper-navigation d-flex gap-2 animate__animated animate__fadeInUp">
-                <button class="btn btn-sm btn-light rounded-circle category-swiper-prev" aria-label="Previous slide">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <button class="btn btn-sm btn-light rounded-circle category-swiper-next" aria-label="Next slide">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
-            </div>
-        </div>
-        <div class="swiper category-swiper animate__animated animate__fadeIn">
-            <div class="swiper-wrapper">
-                @{
-                    var categoryIcons = new string[] { "egg-fried", "cup-hot", "egg", "apple", "pizza", "flower2", "tag" };
-                }
-                @foreach (var category in Model.Categories)
-                {
-                    var iconClass = categoryIcons[Model.Categories.IndexOf(category) % categoryIcons.Length];
-                    <div class="swiper-slide">
-                        <a asp-controller="Category" asp-action="Details" asp-route-id="@category.Id" class="category-card text-decoration-none">
-                            <div class="category-image-container position-relative rounded-3 overflow-hidden">
-                                <img src="@category.ImageUrl" alt="@category.Name" class="category-image" loading="lazy" />
-                                <div class="category-overlay bg-dark bg-opacity-50 d-flex flex-column align-items-center justify-content-center text-center p-3">
-                                    <div class="category-icon bg-primary text-white rounded-circle p-3 mb-2">
-                                        <i class="bi bi-@iconClass fs-4"></i>
-                                    </div>
-                                    <h3 class="category-name h5 fw-semibold text-white mb-0">@category.Name</h3>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                }
-            </div>
-        </div>
-        <div class="text-center mt-5 animate__animated animate__fadeInUp">
-            <a asp-controller="Category" asp-action="Index" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-medium">
-                View All Categories <i class="bi bi-arrow-right ms-1"></i>
-            </a>
-        </div>
-    </div>
-</section>
-
-<!-- Filters Bar -->
-<section class="filter-bar sticky-top shadow-sm bg-white py-3">
-    <div class="container">
-        <div class="d-flex flex-wrap gap-3 align-items-center">
-            <div class="filter-group">
-                <label class="filter-label fw-medium text-primary" for="categoryFilter">Category</label>
-                <select class="filter-select form-select rounded-pill" aria-label="Category filter" id="categoryFilter">
-                    <option value="">All Categories</option>
-                    @foreach (var category in Model.Categories)
-                    {
-                        <option value="@category.Id">@category.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label fw-medium text-primary" for="ratingFilter">Rating</label>
-                <select class="filter-select form-select rounded-pill" aria-label="Rating filter" id="ratingFilter">
-                    <option value="">All Ratings</option>
-                    <option value="4">4+ Stars</option>
-                    <option value="3">3+ Stars</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label fw-medium text-primary" for="distanceFilter">Distance</label>
-                <select class="filter-select form-select rounded-pill" aria-label="Distance filter" id="distanceFilter">
-                    <option value="">All Distances</option>
-                    <option value="5">Within 5 miles</option>
-                    <option value="10">Within 10 miles</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label class="filter-label fw-medium text-primary" for="priceFilter">Price</label>
-                <select class="filter-select form-select rounded-pill" aria-label="Price filter" id="priceFilter">
-                    <option value="">All Prices</option>
-                    <option value="1">$</option>
-                    <option value="2">$$</option>
-                    <option value="3">$$$</option>
-                </select>
-            </div>
-            <button class="btn btn-primary rounded-pill px-4 fw-medium" id="applyFilters">
-                Apply Filters
-            </button>
-            <button class="btn btn-outline-secondary rounded-pill ms-auto d-none d-md-block" id="toggleViewBtn" aria-label="Toggle view">
-                <i class="bi bi-grid"></i>
-            </button>
-        </div>
-    </div>
-</section>
-
-<!-- Popular Restaurants Section -->
-<section class="py-5">
-    <div class="container">
-        <div class="d-flex align-items-center justify-content-between mb-5">
-            <h2 class="h2 fw-bold mb-0 animate__animated animate__fadeInUp">
-                Top Picks in @Model.CurrentLocation
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill ms-2 fs-6">@Model.PopularRestaurants.Count()</span>
-            </h2>
-            <a asp-controller="Restaurants" asp-action="Index" class="btn btn-link text-primary fw-medium text-decoration-none animate__animated animate__fadeInUp">
-                View All <i class="bi bi-arrow-right"></i>
-            </a>
-        </div>
-
-        <div id="restaurantGrid" class="row g-4">
-            @foreach (var restaurant in Model.PopularRestaurants)
+        
+        <div class="row g-4 justify-content-center">
+            @foreach (var category in Model.Categories)
             {
-                <div class="col-lg-4 col-md-6 restaurant-card animate__animated animate__fadeInUp"
-                     data-category="@restaurant.CategoryId" data-rating="@restaurant.Rating"
-                     data-distance="@restaurant.Distance" data-price="@restaurant.PriceLevel">
-                    <article class="restaurant-item bg-white shadow-sm rounded-3 overflow-hidden">
-                        <a asp-action="Details" asp-controller="Restaurant" asp-route-id="@restaurant.Id" class="cursor-pointer">
-                        <div class="restaurant-image-container position-relative">
-                            <img src="@restaurant.ImageUrl" alt="@restaurant.Name" class="restaurant-image" loading="lazy" />
-                            @if (restaurant.Rating >= (decimal)4.5)
-                            {
-                                <span class="top-rated-badge bg-primary text-white rounded-pill px-3 py-1">
-                                    <i class="bi bi-award-fill me-1"></i> Top Rated
-                                </span>
-                            }
-                            <span class="delivery-time-badge bg-dark bg-opacity-75 text-white rounded-pill px-3 py-1">
-                                <i class="bi bi-clock me-1"></i> @restaurant.DeliveryTime
-                            </span>
-                        </div>
-                        <div class="restaurant-details p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h3 class="restaurant-name h5 fw-semibold mb-0">@restaurant.Name</h3>
-                                <span class="rating-badge bg-light rounded-pill px-2 py-1">
-                                    <i class="bi bi-star-fill text-primary me-1"></i> @restaurant.Rating.ToString("F1")
-                                </span>
-                            </div>
-                            <p class="restaurant-category text-muted small mb-2">
-                                <i class="bi bi-tag me-1"></i> @restaurant.Category
-                            </p>
-                            <div class="restaurant-meta text-muted small">
-                                <span><i class="bi bi-geo-alt me-1"></i> @restaurant.Distance mi</span>
-                                <span class="ms-2"><i class="bi bi-cash me-1"></i> @string.Concat(Enumerable.Repeat("$", restaurant.PriceLevel))</span>
+                <div class="col-6 col-md-4 col-lg-3 animate-fade-in" data-delay="@(100 * Model.Categories.IndexOf(category))">
+                    <article class="category-card" role="region" aria-labelledby="category-@category.Id">
+                        <div class="category-img-wrapper">
+                            <img src="@category.ImageUrl" alt="@category.Name" class="img-fluid" loading="lazy" />
+                            <div class="category-overlay">
+                                <a href="/Menu/ByCategory/@category.Id" class="btn btn-sm btn-light rounded-pill">
+                                    Explore <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
                             </div>
                         </div>
-                        </a>
+                        <div class="category-content p-4">
+                            <h3 id="category-@category.Id" class="category-title">@category.Name</h3>
+                            <p class="category-description">@category.Description</p>
+                            <div class="category-meta">
+                                <span class="badge bg-light text-primary">
+                                    <i class="fas fa-store me-1"></i> @category.RestaurantCount restaurant(s)
+                                </span>
+                            </div>
+                        </div>
                     </article>
                 </div>
             }
         </div>
-        <div class="text-center mt-5 animate__animated animate__fadeInUp">
-            <a asp-controller="Restaurants" asp-action="Index" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-medium">
-                Explore All Restaurants <i class="bi bi-arrow-right ms-1"></i>
+    </div>
+</section>
+
+<section class="popular-restaurants" aria-label="Popular restaurants">
+    <div class="container">
+        <div class="section-header text-center mb-5 animate-fade-in">
+            <span class="section-subtitle">Top Rated</span>
+            <h2>Popular Restaurants</h2>
+            <p class="section-description mx-auto">Discover the most loved restaurants in your area</p>
+        </div>
+        
+        <div class="restaurant-controls mb-4 d-flex justify-content-between align-items-center animate-fade-in">
+            <div class="restaurant-filter">
+                <button class="btn btn-sm btn-primary active me-2">All</button>
+                <button class="btn btn-sm btn-outline-primary me-2">Fast Food</button>
+                <button class="btn btn-sm btn-outline-primary me-2">Italian</button>
+                <button class="btn btn-sm btn-outline-primary">Asian</button>
+            </div>
+            <div class="restaurant-navigation">
+                <button class="btn btn-sm btn-light rounded-circle me-2" id="prevRestaurant" aria-label="Previous">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="btn btn-sm btn-light rounded-circle" id="nextRestaurant" aria-label="Next">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div id="popularRestaurantsCarousel" class="carousel slide" data-bs-ride="carousel" tabindex="0"
+            aria-label="Popular Restaurants Carousel">
+            <div class="carousel-inner">
+                @{
+                    var chunkSize = 3;
+                    var total = Model.TopRatedRestaurants.Count;
+                }
+                @for (int i = 0; i < total; i += chunkSize)
+                {
+                    var chunk = Model.TopRatedRestaurants.Skip(i).Take(chunkSize).ToList();
+                    var activeClass = i == 0 ? "active" : "";
+                    <div class="carousel-item @activeClass">
+                        <div class="row justify-content-center g-4">
+                            @foreach (var restaurant in chunk)
+                            {
+                                <div class="col-md-4 animate-fade-in" data-delay="@(100 * chunk.IndexOf(restaurant))">
+                                    <article class="restaurant-card" role="group" aria-labelledby="restaurant-@restaurant.Id">
+                                        <div class="restaurant-img-wrapper">
+                                            <img src="@restaurant.ImageUrl" alt="@restaurant.Name" class="img-fluid" loading="lazy" />
+                                            @if (restaurant.Rating >= 4.5)
+                                            {
+                                                <div class="restaurant-badge featured">
+                                                    <i class="fas fa-award me-1"></i> Featured
+                                                </div>
+                                            }
+                                            <div class="restaurant-overlay">
+                                                <a href="/Restaurant/Details/@restaurant.Id" class="btn btn-sm btn-light rounded-pill">
+                                                    View Menu <i class="fas fa-arrow-right ms-1"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="restaurant-content p-4">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h3 id="restaurant-@restaurant.Id" class="restaurant-title mb-0">@restaurant.Name</h3>
+                                                <div class="restaurant-rating">
+                                                    <i class="fas fa-star text-warning"></i>
+                                                    <span>@restaurant.Rating</span>
+                                                </div>
+                                            </div>
+                                            <p class="restaurant-description">@restaurant.Description</p>
+                                            <div class="restaurant-meta d-flex justify-content-between align-items-center">
+                                                <span class="restaurant-reviews">
+                                                    <i class="fas fa-comment-alt me-1"></i> @restaurant.ReviewCount reviews
+                                                </span>
+                                                <span class="restaurant-delivery">
+                                                    <i class="fas fa-bicycle me-1"></i> @restaurant.DeliveryFee.ToString("C")
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </article>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <button class="carousel-control-prev d-none" type="button" data-bs-target="#popularRestaurantsCarousel"
+                data-bs-slide="prev" aria-label="Previous">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            </button>
+            <button class="carousel-control-next d-none" type="button" data-bs-target="#popularRestaurantsCarousel"
+                data-bs-slide="next" aria-label="Next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            </button>
+        </div>
+        
+        <div class="text-center mt-5 animate-fade-in">
+            <a href="/Restaurant" class="btn btn-outline-primary rounded-pill px-4">
+                View All Restaurants <i class="fas fa-arrow-right ms-1"></i>
             </a>
         </div>
     </div>
 </section>
 
-<!-- Popular Dishes Section -->
-<section class="py-5 bg-light">
+<section class="featured-dishes">
     <div class="container">
-        <div class="d-flex align-items-center justify-content-between mb-5">
-            <h2 class="h2 fw-bold mb-0 animate__animated animate__fadeInUp">Trending Dishes</h2>
-            <div class="swiper-navigation d-flex gap-2 animate__animated animate__fadeInUp">
-                <button class="btn btn-sm btn-light rounded-circle dish-swiper-prev" aria-label="Previous slide">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <button class="btn btn-sm btn-light rounded-circle dish-swiper-next" aria-label="Next slide">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
-            </div>
-        </div>
-        <div class="swiper dish-swiper animate__animated animate__fadeIn">
-            <div class="swiper-wrapper">
-                @foreach (var dish in Model.PopularDishes)
-                {
-                    <div class="swiper-slide">
-                        <article class="dish-card bg-white shadow-sm rounded-3 overflow-hidden">
-                            <a asp-controller="MenuItems" asp-action="Details" asp-route-id="@dish.Id" class="cursor-pointer">
-                            <div class="dish-image-container position-relative">
-                                <img src="@dish.ImageUrl" alt="@dish.Name" class="dish-image image-fluid" loading="lazy" />
-                                <div class="dish-price-badge bg-primary text-white rounded-pill px-3 py-1">
-                                    @dish.Price.ToString("C")
-                                </div>
-                            </div>
-                            <div class="dish-details p-4">
-                                <h3 class="dish-name h6 fw-semibold mb-2">@dish.Name</h3>
-                                <p class="dish-restaurant text-muted small mb-3">
-                                    <i class="bi bi-shop me-1"></i> @dish.RestaurantName
-                                </p>
-                            </div>
-                            </a>
-                        </article>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Offers & Promotions Section -->
-<section class="py-5">
-    <div class="container">
-        <div class="d-flex align-items-center justify-content-between mb-5">
-            <h2 class="h2 fw-bold mb-0 animate__animated animate__fadeInUp">Exclusive Offers</h2>
-            <div class="swiper-navigation d-flex gap-2 animate__animated animate__fadeInUp">
-                <button class="btn btn-sm btn-light rounded-circle offer-swiper-prev" aria-label="Previous slide">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <button class="btn btn-sm btn-light rounded-circle offer-swiper-next" aria-label="Next slide">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
-            </div>
-        </div>
-        <div class="swiper offer-swiper animate__animated animate__fadeIn">
-            <div class="swiper-wrapper">
-                @foreach (var offer in Model.Offers)
-                {
-                    <div class="swiper-slide">
-                        <div class="offer-card bg-white shadow-sm rounded-3 p-4 text-center">
-                            <div class="offer-details">
-                                <h3 class="offer-title h5 fw-semibold text-primary mb-2">@offer.Title</h3>
-                                <p class="offer-description text-muted mb-3">@offer.Description</p>
-                                <p class="offer-restaurant text-muted small mb-3">
-                                    <i class="bi bi-shop me-1"></i> @offer.RestaurantName
-                                </p>
-                                <p class="offer-validity text-muted small mb-3">
-                                    Valid until @offer.ValidUntil.ToString("MMM dd, yyyy")
-                                </p>
-                                <button class="btn btn-primary rounded-pill px-4 fw-medium copy-offer-code"
-                                        data-code="@offer.Title" aria-label="Copy offer code">
-                                    <i class="bi bi-clipboard me-1"></i> Copy Code
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Become a Partner Section -->
-<section class="py-5 bg-gradient-primary text-white">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-6 mb-4 mb-lg-0">
-                <span class="badge bg-white text-primary fw-medium px-3 py-2 mb-3 animate__animated animate__fadeInUp">Restaurant Partners</span>
-                <h2 class="h2 fw-bold mb-4 animate__animated animate__fadeInUp">Grow Your Business with @appName</h2>
-                <p class="lead mb-4 animate__animated animate__fadeInUp animate__delay-1s">
-                    Partner with us to expand your reach and boost revenue with seamless delivery and marketing support.
-                </p>
-                <div class="row g-4 mb-4">
-                    <div class="col-md-6 animate__animated animate__fadeInUp animate__delay-2s">
-                        <div class="partner-benefit">
-                            <div class="partner-benefit-icon fs-3"><i class="bi bi-graph-up"></i></div>
-                            <h3 class="partner-benefit-title h6 fw-semibold">Boost Revenue</h3>
-                            <p class="partner-benefit-text small">Up to 30% sales increase with our platform.</p>
-                        </div>
-                    </div>
-                    <div class="col-md-6 animate__animated animate__fadeInUp animate__delay-3s">
-                        <div class="partner-benefit">
-                            <div class="partner-benefit-icon fs-3"><i class="bi bi-megaphone"></i></div>
-                            <h3 class="partner-benefit-title h6 fw-semibold">Enhanced Visibility</h3>
-                            <p class="partner-benefit-text small">Reach thousands of local customers.</p>
-                        </div>
-                    </div>
-                    <div class="col-md-6 animate__animated animate__fadeInUp animate__delay-4s">
-                        <div class="partner-benefit">
-                            <div class="partner-benefit-icon fs-3"><i class="bi bi-tools"></i></div>
-                            <h3 class="partner-benefit-title h6 fw-semibold">Easy Integration</h3>
-                            <p class="partner-benefit-text small">Seamless POS system connectivity.</p>
-                        </div>
-                    </div>
-                    <div class="col-md-6 animate__animated animate__fadeInUp animate__delay-5s">
-                        <div class="partner-benefit">
-                            <div class="partner-benefit-icon fs-3"><i class="bi bi-truck"></i></div>
-                            <h3 class="partner-benefit-title h6 fw-semibold">Reliable Delivery</h3>
-                            <p class="partner-benefit-text small">Fresh food delivered by our fleet.</p>
-                        </div>
+        <h2>Featured Dishes</h2>
+        <div class="row g-4 justify-content-center">
+            @foreach (var dish in Model.FeaturedDishes)
+            {
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="dish-card">
+                        <img src="@dish.ImageUrl" alt="@dish.Name" class="img-fluid rounded" />
+                        <h3 class="mt-3">@dish.Name</h3>
+                        <p>@dish.Description</p>
+                        <p>Price: @dish.Price.ToString("C")</p>
+                        <p>@(dish.IsAvailable ? "Available" : "Currently Unavailable")</p>
                     </div>
                 </div>
-                <a asp-controller="Home" asp-action="Contact" class="btn btn-light text-primary rounded-pill px-4 py-2 fw-medium animate__animated animate__fadeInUp animate__delay-6s">
-                    <i class="bi bi-building-add me-2"></i> Become a Partner
-                </a>
-            </div>
-            <div class="col-lg-6 animate__animated animate__fadeIn animate__delay-2s">
-                <div class="partner-image-container text-center">
-                    <img src="~/images/app-mockup.png" alt="Restaurant Partner" class="img-fluid" loading="lazy" />
-                    <div class="partner-stats-container bg-white text-dark rounded-3 p-3 mt-4 shadow-sm">
-                        <div class="row g-3 text-center">
-                            <div class="col-4 partner-stats-item">
-                                <div class="partner-stats-value fw-bold fs-5">1,200+</div>
-                                <div class="partner-stats-label small text-muted">Restaurants</div>
-                            </div>
-                            <div class="col-4 partner-stats-item">
-                                <div class="partner-stats-value fw-bold fs-5">32%</div>
-                                <div class="partner-stats-label small text-muted">Revenue Growth</div>
-                            </div>
-                            <div class="col-4 partner-stats-item">
-                                <div class="partner-stats-value fw-bold fs-5">96%</div>
-                                <div class="partner-stats-label small text-muted">Satisfaction</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            }
         </div>
     </div>
 </section>
-<!-- Testimonials Section -->
-<section class="py-5 bg-light">
+
+<section class="special-offers">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="h2 fw-bold mb-2 animate__animated animate__fadeInUp">Customer Reviews</h2>
-            <p class="text-muted lead animate__animated animate__fadeInUp">Loved by thousands for seamless food delivery.</p>
-        </div>
-        <div class="swiper testimonial-swiper animate__animated animate__fadeIn">
-            <div class="swiper-wrapper">
-                @foreach (var testimonial in Model.Testimonials)
-                {
-                    <div class="swiper-slide">
-                        <div class="testimonial-card bg-white shadow-sm rounded-3 p-4 text-center">
-                            <div class="testimonial-rating text-primary mb-3">
-                                @for (int i = 0; i < 5; i++)
-                                {
-                                    <i class="bi bi-star-fill"></i>
-                                }
-                            </div>
-                            <p class="testimonial-text lead fw-medium mb-4">“@testimonial.Quote”</p>
-                            <div class="testimonial-author d-flex align-items-center justify-content-center gap-3">
-                                <div class="testimonial-avatar">
-                                    <img src="@testimonial.AvatarUrl" alt="@testimonial.Name" class="rounded-circle" style="width: 48px; height: 48px;" loading="lazy" />
-                                </div>
-                                <div class="testimonial-info">
-                                    <h4 class="testimonial-name h6 fw-semibold mb-0">@testimonial.Name</h4>
-                                    <p class="testimonial-location text-muted small">@testimonial.Location</p>
-                                </div>
-                            </div>
-                        </div>
+        <h2>Special Offers</h2>
+        <div class="row g-4 justify-content-center">
+            @foreach (var promo in Model.ActivePromotions)
+            {
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="offer-card">
+                        <h3>@promo.Code</h3>
+                        <p>@promo.Description</p>
+                        <p>Discount: @(promo.IsPercentage? promo.DiscountValue + "%" : promo.DiscountValue.ToString("C"))
+                        </p>
+                        <p>Minimum Order: @promo.MinimumOrderAmount.ToString("C")</p>
+                        <p>Valid: @promo.StartDate.ToShortDateString() - @promo.EndDate.ToShortDateString()</p>
                     </div>
-                }
-            </div>
-            <div class="swiper-pagination testimonial-pagination mt-4"></div>
+                </div>
+            }
         </div>
     </div>
 </section>
 
-
-<!-- App Features Section -->
-<section class="py-5 bg-secondary text-white">
+<section class="how-it-works">
     <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-6 mb-4 mb-lg-0">
-                <h2 class="h2 fw-bold mb-4 animate__animated animate__fadeInUp">Why @appName?</h2>
-                <div class="row g-4">
-                    <div class="col-md-6 animate__animated animate__fadeInUp" style="animation-delay: 100ms">
-                        <div class="app-feature d-flex">
-                            <div class="app-feature-icon fs-3 me-3"><i class="bi bi-clock"></i></div>
-                            <div>
-                                <h3 class="app-feature-title h6 fw-semibold">Swift Delivery</h3>
-                                <p class="app-feature-text small">Meals delivered in under 30 minutes.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 animate__animated animate__fadeInUp" style="animation-delay: 200ms">
-                        <div class="app-feature d-flex">
-                            <div class="app-feature-icon fs-3 me-3"><i class="bi bi-shop"></i></div>
-                            <div>
-                                <h3 class="app-feature-title h6 fw-semibold">Elite Restaurants</h3>
-                                <p class="app-feature-text small">Top-rated dining experiences.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 animate__animated animate__fadeInUp" style="animation-delay: 300ms">
-                        <div class="app-feature d-flex">
-                            <div class="app-feature-icon fs-3 me-3"><i class="bi bi-geo-alt"></i></div>
-                            <div>
-                                <h3 class="app-feature-title h6 fw-semibold">Live Tracking</h3>
-                                <p class="app-feature-text small">Monitor your order in real time.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 animate__animated animate__fadeInUp" style="animation-delay: 400ms">
-                        <div class="app-feature d-flex">
-                            <div class="app-feature-icon fs-3 me-3"><i class="bi bi-heart"></i></div>
-                            <div>
-                                <h3 class="app-feature-title h6 fw-semibold">Smart Suggestions</h3>
-                                <p class="app-feature-text small">AI-curated dining recommendations.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 text-center animate__animated animate__fadeIn" style="animation-delay: 200ms">
-                <div class="app-mockup-container">
-                    <img src="~/images/delivery.png" alt="FoodFast Pro Mobile App" class="img-fluid" loading="lazy" />
-                </div>
-            </div>
-        </div>
+        <h2>How It Works</h2>
+        <ol class="steps-list">
+            <li>Search for your favorite food or restaurant</li>
+            <li>Place your order easily</li>
+            <li>Enjoy fast delivery at your doorstep</li>
+        </ol>
     </div>
 </section>
 
-<!-- CTA Section -->
-<section class="py-5 text-center cta-section bg-gradient-hero">
+<section class="testimonials">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <h2 class="h2 fw-bold mb-4 animate__animated animate__fadeInUp">Experience Premium Dining Today</h2>
-                <p class="lead mb-4 animate__animated animate__fadeInUp animate__delay-1s">
-                    Download @appName for exclusive offers and seamless ordering.
-                </p>
-                <div class="d-flex justify-content-center gap-3 animate__animated animate__fadeInUp animate__delay-2s">
-                    <a href="https://www.apple.com/app-store/" class="app-download-btn bg-white shadow-sm rounded-3 px-4 py-2 text-dark text-decoration-none">
-                        <i class="bi bi-apple fs-5 me-2"></i>
-                        <div class="text-start">
-                            <small class="d-block">Download on the</small>
-                            <div class="fw-semibold">App Store</div>
-                        </div>
-                    </a>
-                    <a href="https://play.google.com/store" class="app-download-btn bg-white shadow-sm rounded-3 px-4 py-2 text-dark text-decoration-none">
-                        <i class="bi bi-google-play fs-5 me-2"></i>
-                        <div class="text-start">
-                            <small class="d-block">Get it on</small>
-                            <div class="fw-semibold">Google Play</div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
+        <h2>What Our Customers Say</h2>
+        <blockquote>
+            "Fast delivery and delicious food! Highly recommend FoodDeliveryApp."
+            <footer>- Happy Customer</footer>
+        </blockquote>
     </div>
 </section>
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-}
+<section class="download-app">
+    <div class="container">
+        <h2>Get Our App</h2>
+        <p>Order food on the go with our mobile app.</p>
+        <img src="@Model.AppDownload.AppScreenshotUrl" alt="App Screenshot" class="img-fluid rounded" />
+        <a href="#" class="app-download-button">Download Now</a>
+    </div>
+</section>
+
+<section class="become-partner">
+    <div class="container">
+        <h2>Become a Partner</h2>
+        <p>Join FoodDeliveryApp and grow your restaurant business with us.</p>
+        <a href="/Partner/Join" class="partner-button">Join Now</a>
+    </div>
+</section>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    <script src="~/js/home.js" asp-append-version="true" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Connect custom navigation buttons to carousel
+            const prevButton = document.getElementById('prevRestaurant');
+            const nextButton = document.getElementById('nextRestaurant');
+            const carousel = new bootstrap.Carousel(document.getElementById('popularRestaurantsCarousel'));
+            
+            prevButton.addEventListener('click', function() {
+                carousel.prev();
+            });
+            
+            nextButton.addEventListener('click', function() {
+                carousel.next();
+            });
+            
+            // Add animation to elements when they come into view
+            const animatedElements = document.querySelectorAll('.animate-fade-in');
+            
+            if ('IntersectionObserver' in window) {
+                const animationObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const element = entry.target;
+                            const delay = element.dataset.delay || 0;
+                            
+                            setTimeout(() => {
+                                element.classList.add('fade-in');
+                            }, delay);
+                            
+                            animationObserver.unobserve(element);
+                        }
+                    });
+                }, {
+                    threshold: 0.1
+                });
+                
+                animatedElements.forEach(element => {
+                    animationObserver.observe(element);
+                });
+            } else {
+                // Fallback for browsers that don't support IntersectionObserver
+                animatedElements.forEach(element => {
+                    element.classList.add('fade-in');
+                });
+            }
+        });
+    </script>
 }

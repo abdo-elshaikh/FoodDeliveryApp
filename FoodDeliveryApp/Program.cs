@@ -7,6 +7,7 @@ using FoodDeliveryApp.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,10 +15,13 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 // Register the DbContext with MySQL.
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+// builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 // Uncomment the following line to use SQL Server instead of MySQL
-// builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+
+// Configure static files
+
 
 // Register Identity services
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -49,9 +53,11 @@ builder.Services.AddScoped<ICartService, CartService>();
 
 // Add Braintree service
 builder.Services.AddTransient<IBraintreeService, BraintreeService>();
-// 
+
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 
+// Add File service
+builder.Services.AddScoped<IFileService, FileService>();
 
 // register generic repository
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -76,7 +82,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
-        options.AccessDeniedPath = "/Shared/AccessDenied";
+        options.AccessDeniedPath = "/AccessDenied";
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(1);
     });
@@ -93,7 +99,7 @@ app.Use(async (context, next) =>
         await next();
         if (context.Response.StatusCode == 404)
         {
-            context.Request.Path = "/Home/NotFound";
+            context.Request.Path = "/NotFound";
             await next();
         }
     }
@@ -125,8 +131,8 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
-    app.UseStatusCodePagesWithReExecute("/Home/NotFound");
+    app.UseExceptionHandler("/Error");
+    app.UseStatusCodePagesWithReExecute("/NotFound");
     app.UseHsts();
 }
 else
@@ -138,7 +144,41 @@ app.UseSession();
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+
+
+// Configure static files with proper MIME types
+var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+provider.Mappings[".webmanifest"] = "application/manifest+json";
+provider.Mappings[".json"] = "application/json";
+provider.Mappings[".js"] = "application/javascript";
+
+// First, configure static files for the wwwroot directory
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = provider,
+    OnPrepareResponse = ctx =>
+    {
+        // Cache static files for 1 day
+        const int durationInSeconds = 86400;
+        ctx.Context.Response.Headers["Cache-Control"] = 
+            "public,max-age=" + durationInSeconds;
+    }
+});
+
+// Then, configure static files for the Uploads directory
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "Uploads")),
+    RequestPath = "/Uploads",
+    OnPrepareResponse = ctx =>
+    {
+        // Cache uploaded files for 1 hour
+        const int durationInSeconds = 3600;
+        ctx.Context.Response.Headers["Cache-Control"] = 
+            "public,max-age=" + durationInSeconds;
+    }
+});
 
 app.UseRouting();
 

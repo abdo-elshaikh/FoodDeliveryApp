@@ -1,161 +1,186 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using FoodDeliveryApp.Models;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
-namespace FoodDeliveryApp.Models
+public enum PaymentStatus
 {
-    public enum PaymentMethodType
-    {
-        CreditCard,
-        DebitCard,
-        PayPal,
-        ApplePay,
-        GooglePay,
-        CashOnDelivery
-    }
+    Pending,
+    Paid,
+    Failed,
+    Refunded
+}
 
-    public enum PaymentStatus
-    {
-        Pending,
-        Completed,
-        Failed,
-        Refunded
-    }
-    public class PaymentMethod
-    {
-        [Key]
-        public int Id { get; set; }
+public enum PaymentMethodType
+{
+    CreditCard,
+    DebitCard,
+    PayPal,
+    CashOnDelivery,
+    Other
+}
 
-        [Required]
-        public string UserId { get; set; }
+public class PaymentMethod
+{
+    [Key]
+    public int Id { get; set; }
 
-        [Required]
-        public PaymentMethodType Type { get; set; }
+    [Required]
+    public string UserId { get; set; } = string.Empty;
 
-        [Required]
-        [StringLength(100)]
-        public string Provider { get; set; }
+    [Required]
+    public PaymentMethodType Type { get; set; }
 
-        [StringLength(100)]
-        public string? AccountNumberMasked { get; set; }
-        public bool IsDefault { get; set; } = false;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
+    [Required]
+    [StringLength(100)]
+    public string Provider { get; set; } = string.Empty;
 
-        // Navigation properties
-        public virtual ApplicationUser User { get; set; }
-        public virtual ICollection<Payment> Payments { get; set; } = new HashSet<Payment>();
-    }
+    [StringLength(100)]
+    public string? AccountNumberMasked { get; set; }
 
-    public class Payment
-    {
-        [Key]
-        public int Id { get; set; }
+    public bool IsDefault { get; set; }
 
-        [Required]
-        public int OrderId { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public int? PaymentMethodId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
-        [Required]
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Amount { get; set; }
+    // Navigation properties
+    public virtual ApplicationUser User { get; set; }
+    public virtual ICollection<Payment> Payments { get; set; } = new HashSet<Payment>();
+}
 
-        [Required]
-        public PaymentStatus Status { get; set; }
+public class Payment
+{
+    [Key]
+    public int Id { get; set; }
 
-        [Required]
-        public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
+    [Required]
+    [ForeignKey("Order")]
+    public int OrderId { get; set; }
 
-        [StringLength(255)]
-        public string? TransactionId { get; set; }
+    [Required]
+    public string UserId { get; set; } = string.Empty;
 
-        // Navigation properties
-        public virtual Order Order { get; set; }
-        public virtual PaymentMethod? PaymentMethod { get; set; }
-    }
+    [ForeignKey("PaymentMethod")]
+    public int? PaymentMethodId { get; set; }
 
-    public class Promotion
-    {
-        [Key]
-        public int Id { get; set; }
+    [Required]
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal Amount { get; set; }
 
-        [Required]
-        [StringLength(50)]
-        public string Code { get; set; }
+    [Required]
+    public PaymentStatus Status { get; set; }
 
-        [Required]
-        [StringLength(255)]
-        public string Description { get; set; }
+    [Required]
+    public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
 
-        [Required]
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal DiscountValue { get; set; }
+    [StringLength(255)]
+    public string? TransactionId { get; set; }
 
-        [Required]
-        public bool IsPercentage { get; set; } = false;
+    // Navigation properties
+    public virtual Order Order { get; set; } = null!;
+    public virtual PaymentMethod? PaymentMethod { get; set; }
+    public virtual ApplicationUser User { get; set; } = null!;
+}
 
-        [Required]
-        public DateTime StartDate { get; set; }
+public class Promotion
+{
+    [Key]
+    public int Id { get; set; }
 
-        [Required]
-        public DateTime EndDate { get; set; }
+    [Required]
+    [StringLength(50)]
+    public string Code { get; set; } = string.Empty;
 
-        public int? RestaurantId { get; set; } // Null means site-wide promotion
+    [Required]
+    [StringLength(255)]
+    public string Description { get; set; } = string.Empty;
 
-        public int? UsageLimit { get; set; }
+    [Required]
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal DiscountValue { get; set; }
 
-        public int? MinimumOrderAmount { get; set; }
+    public bool IsPercentage { get; set; }
 
-        public bool IsActive { get; set; } = true;
+    [Required]
+    public DateTime StartDate { get; set; }
 
-        // Navigation properties
-        public virtual Restaurant? Restaurant { get; set; }
-        public virtual ICollection<PromotionUsage> PromotionUsages { get; set; } = new HashSet<PromotionUsage>();
-    }
+    [Required]
+    public DateTime EndDate { get; set; }
 
-    public class PromotionUsage
-    {
-        [Key]
-        public int Id { get; set; }
-        [Required]
-        public string UserId { get; set; }
-        [Required]
-        public int OrderId { get; set; }
-        [Required]
-        public int PromotionId { get; set; }
-        [Required]
-        public DateTime UsedAt { get; set; } = DateTime.UtcNow;
-        [ForeignKey("PromotionId")]
-        public virtual Promotion Promotion { get; set; }
-        [ForeignKey("OrderId")]
-        public virtual Order Order { get; set; }
-        [ForeignKey("UserId")]
-        public virtual ApplicationUser User { get; set; }
-    }
+    [ForeignKey("Restaurant")]
+    public int? RestaurantId { get; set; }
 
-    public class Review
-    {
-        [Key]
-        public int Id { get; set; }
+    [Range(0, int.MaxValue)]
+    public int? UsageLimit { get; set; }
 
-        [Required]
-        public int RestaurantId { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? MinimumOrderAmount { get; set; }
 
-        [Required]
-        public int CustomerProfileId { get; set; }
+    public bool IsActive { get; set; } = true;
 
-        [Required]
-        [Range(0, 5)]
-        public decimal Rating { get; set; }
+    // Navigation properties
+    public virtual Restaurant? Restaurant { get; set; }
+    public virtual ICollection<PromotionUsage> PromotionUsages { get; set; } = new HashSet<PromotionUsage>();
+}
 
-        [StringLength(1000)]
-        public string? Comment { get; set; }
+public class PromotionUsage
+{
+    [Key]
+    public int Id { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
+    [Required]
+    public string UserId { get; set; } = string.Empty;
 
-        // Navigation properties
-        public virtual Restaurant Restaurant { get; set; }
-        public virtual CustomerProfile CustomerProfile { get; set; }
-    }
+    [Required]
+    [ForeignKey("Order")]
+    public int OrderId { get; set; }
+
+    [Required]
+    [ForeignKey("Promotion")]
+    public int PromotionId { get; set; }
+
+    [Required]
+    public DateTime UsedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public virtual Promotion Promotion { get; set; } = null!;
+    public virtual Order Order { get; set; } = null!;
+    public virtual ApplicationUser User { get; set; } = null!;
+}
+
+public class Review
+{
+    [Key]
+    public int Id { get; set; }
+
+    [Required]
+    [ForeignKey("Restaurant")]
+    public int RestaurantId { get; set; }
+
+    [Required]
+    [ForeignKey("CustomerProfile")]
+    public int CustomerProfileId { get; set; }
+
+    [ForeignKey("MenuItem")]
+    public int? MenuItemId { get; set; }
+
+    [ForeignKey("Order")]
+    public int? OrderId { get; set; }
+
+    [Required]
+    [Range(0, 5)]
+    public decimal Rating { get; set; }
+
+    [StringLength(1000)]
+    public string? Comment { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? UpdatedAt { get; set; }
+
+    // Navigation properties
+    public virtual Restaurant Restaurant { get; set; } = null!;
+    public virtual CustomerProfile CustomerProfile { get; set; } = null!;
+    public virtual MenuItem? MenuItem { get; set; }
+    public virtual Order? Order { get; set; }
 }

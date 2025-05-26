@@ -1,0 +1,16 @@
+@model FoodDeliveryApp.Models.MenuItemCategory
+
+<h2>Create Menu Item Category</h2>
+<form asp-action="Create" method="post">
+    <div>
+        <label asp-for="Name"></label>
+        <input asp-for="Name" />
+        <span asp-validation-for="Name"></span>
+    </div>
+    <div>
+        <label asp-for="Description"></label>
+        <input asp-for="Description" />
+        <span asp-validation-for="Description"></span>
+    </div>
+    <button type="submit">Create</button>
+</form>

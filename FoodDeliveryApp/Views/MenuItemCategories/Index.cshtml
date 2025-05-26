@@ -1,0 +1,21 @@
+@model IEnumerable<FoodDeliveryApp.Models.MenuItemCategory>
+
+<h2>Menu Item Categories</h2>
+<a asp-action="Create">Create New Category</a>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var cat in Model)
+    {
+        <tr>
+            <td>@cat.Name</td>
+            <td>@cat.Description</td>
+        </tr>
+    }
+    </tbody>
+</table>

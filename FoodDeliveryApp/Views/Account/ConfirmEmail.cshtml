@@ -1,10 +1,43 @@
 ﻿@{
-    ViewData["Title"] = "Email Confirmed";
-    ViewData["SubTitle"] = "Your email has been verified.";
-    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+    ViewData["Title"] = "Confirm Email";
+    Layout = "~/Views/Shared/_LayoutAccount.cshtml";
 }
 
-<div class="text-center">
-    <p class="lead">Thank you for confirming your email. You can now sign in.</p>
-    <a href="@Url.Action("Login", "Account")" class="btn btn-primary rounded-pill px-4">Sign In</a>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0 animate__animated animate__fadeInUp">
+            <div class="card-body p-4 text-center">
+                <h2 class="mb-4">
+                    <i class="fas fa-envelope-open-text me-2 text-primary"></i>@ViewData["Title"]
+                </h2>
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show animate__animated animate__bounceIn" role="alert">
+                        @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show animate__animated animate__shakeX" role="alert">
+                        @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                <p>Please wait while we confirm your email...</p>
+                <div class="spinner-border text-primary" role="status" style="display: none;" id="loadingSpinner">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#loadingSpinner').show();
+            setTimeout(() => $('#loadingSpinner').hide(), 2000);
+        });
+    </script>
+}

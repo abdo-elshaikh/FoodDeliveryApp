@@ -1,130 +1,227 @@
-﻿@model FoodDeliveryApp.ViewModels.RestaurantViewModels.RestaurantCreateViewModel
+﻿@model FoodDeliveryApp.ViewModels.Restaurant.CreateRestaurantViewModel
+@{
+    ViewData["Title"] = "Create Restaurant";
+    ViewData["ActiveMenu"] = "Restaurants";
+}
 
-<div class="container my-5">
-    <h1 id="createRestaurantHeading" class="mb-4">Create Restaurant</h1>
-
-    <!-- Success/Error Messages -->
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert" data-bs-animate="fade">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" aria-label="Close alert"></button>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert" data-bs-animate="fade">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" aria-label="Close alert"></button>
-        </div>
-    }
-
-    <div class="card">
-        <div class="card-body">
-            <form asp-action="Create" method="post" enctype="multipart/form-data" aria-labelledby="createRestaurantHeading">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label asp-for="Name" class="form-label"></label>
-                        <input asp-for="Name" class="form-control" placeholder="Enter restaurant name" aria-required="true" />
-                        <span asp-validation-for="Name" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="CategoryId" class="form-label">Category</label>
-                        <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select" aria-required="true">
-                            <option value="">Select a category</option>
-                        </select>
-                        <span asp-validation-for="CategoryId" class="text-danger"></span>
-                    </div>
-                    <div class="col-12">
-                        <label asp-for="Description" class="form-label"></label>
-                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Describe the restaurant"></textarea>
-                        <span asp-validation-for="Description" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="PhoneNumber" class="form-label"></label>
-                        <input asp-for="PhoneNumber" class="form-control" placeholder="Enter phone number" />
-                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="Address" class="form-label"></label>
-                        <input asp-for="Address" class="form-control" placeholder="Enter address" />
-                        <span asp-validation-for="Address" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-4">
-                        <label asp-for="City" class="form-label"></label>
-                        <input asp-for="City" class="form-control" placeholder="Enter city" />
-                        <span asp-validation-for="City" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-4">
-                        <label asp-for="State" class="form-label"></label>
-                        <input asp-for="State" class="form-control" placeholder="Enter state" />
-                        <span asp-validation-for="State" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-4">
-                        <label asp-for="PostalCode" class="form-label"></label>
-                        <input asp-for="PostalCode" class="form-control" placeholder="Enter postal code" />
-                        <span asp-validation-for="PostalCode" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="OpeningTime" class="form-label"></label>
-                        <input asp-for="OpeningTime" class="form-control" type="time" aria-required="true" />
-                        <span asp-validation-for="OpeningTime" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="ClosingTime" class="form-label"></label>
-                        <input asp-for="ClosingTime" class="form-control" type="time" aria-required="true" />
-                        <span asp-validation-for="ClosingTime" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="DeliveryFee" class="form-label"></label>
-                        <input asp-for="DeliveryFee" class="form-control" type="number" step="0.01" placeholder="Enter delivery fee" />
-                        <span asp-validation-for="DeliveryFee" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="TaxRate" class="form-label"></label>
-                        <input asp-for="TaxRate" class="form-control" type="number" step="0.01" placeholder="Enter tax rate" />
-                        <span asp-validation-for="TaxRate" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="WebsiteUrl" class="form-label"></label>
-                        <input asp-for="WebsiteUrl" class="form-control" placeholder="Enter website URL" />
-                        <span asp-validation-for="WebsiteUrl" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="LocationUrl" class="form-label"></label>
-                        <input asp-for="LocationUrl" class="form-control" placeholder="Enter map URL" />
-                        <span asp-validation-for="LocationUrl" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="ImageFile" class="form-label">Upload Image</label>
-                        <input asp-for="ImageFile" class="form-control" type="file" accept="image/*" />
-                        <span asp-validation-for="ImageFile" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="ImageUrl" class="form-label">Or Image URL</label>
-                        <input asp-for="ImageUrl" class="form-control" placeholder="Enter image URL" />
-                        <span asp-validation-for="ImageUrl" class="text-danger"></span>
-                    </div>
-                    @if (User.IsInRole("Admin"))
-                    {
-                        <div class="col-md-6">
-                            <label asp-for="OwnerId" class="form-label">Owner</label>
-                            <select asp-for="OwnerId" asp-items="Model.Owners" class="form-select" aria-required="true">
-                                <option value="">Select an owner</option>
-                            </select>
-                            <span asp-validation-for="OwnerId" class="text-danger"></span>
-                        </div>
-                    }
-                    else
-                    {
-                        <input asp-for="OwnerId" type="hidden" />
-                    }
-                    <div class="col-12 mt-4">
-                        <button type="submit" class="btn btn-primary" data-bs-toggle="tooltip" title="Create new restaurant">Create</button>
-                        <a asp-action="Index" class="btn btn-secondary" data-bs-toggle="tooltip" title="Cancel and return to list" aria-label="Cancel">Cancel</a>
-                    </div>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Page Header -->
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">Create New Restaurant</h1>
+                    <p class="text-muted mb-0">Fill in the details below to create a new restaurant</p>
                 </div>
-            </form>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i> Back to List
+                </a>
+            </div>
+
+            <!-- Success/Error Messages -->
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                    <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i> @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- Form Card -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i class="fas fa-utensils me-2 text-primary"></i>Restaurant Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+                        
+                        <!-- Basic Info Section -->
+                        <div class="mb-4">
+                            <h6 class="text-uppercase text-muted fw-bold small mb-3">Basic Information</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input asp-for="Name" class="form-control" placeholder="Restaurant Name" required />
+                                        <label asp-for="Name">Restaurant Name</label>
+                                        <span asp-validation-for="Name" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select" required>
+                                            <option value="">Select a category</option>
+                                        </select>
+                                        <label asp-for="CategoryId">Category</label>
+                                        <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        <textarea asp-for="Description" class="form-control" placeholder="Description" style="height: 100px"></textarea>
+                                        <label asp-for="Description">Description</label>
+                                        <span asp-validation-for="Description" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Info Section -->
+                        <div class="mb-4">
+                            <h6 class="text-uppercase text-muted fw-bold small mb-3">Contact Information</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input asp-for="PhoneNumber" class="form-control" placeholder="Phone Number" required />
+                                        <label asp-for="PhoneNumber">Phone Number</label>
+                                        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input asp-for="Website" class="form-control" placeholder="Website URL" />
+                                        <label asp-for="Website">Website URL</label>
+                                        <span asp-validation-for="Website" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Address Section -->
+                        <div class="mb-4">
+                            <h6 class="text-uppercase text-muted fw-bold small mb-3">Address</h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        <input asp-for="Address" class="form-control" placeholder="Street Address" required />
+                                        <label asp-for="Address">Street Address</label>
+                                        <span asp-validation-for="Address" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="form-floating">
+                                        <input asp-for="City" class="form-control" placeholder="City" required />
+                                        <label asp-for="City">City</label>
+                                        <span asp-validation-for="City" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input asp-for="State" class="form-control" placeholder="State" required />
+                                        <label asp-for="State">State</label>
+                                        <span asp-validation-for="State" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-floating">
+                                        <input asp-for="PostalCode" class="form-control" placeholder="Postal Code" required />
+                                        <label asp-for="PostalCode">Postal Code</label>
+                                        <span asp-validation-for="PostalCode" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        <input asp-for="LocationUrl" class="form-control" placeholder="Map URL" />
+                                        <label asp-for="LocationUrl">Map URL (Google Maps)</label>
+                                        <span asp-validation-for="LocationUrl" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Business Details -->
+                        <div class="mb-4">
+                            <h6 class="text-uppercase text-muted fw-bold small mb-3">Business Details</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input asp-for="OpeningTime" class="form-control" type="time" required />
+                                        <label asp-for="OpeningTime">Opening Time</label>
+                                        <span asp-validation-for="OpeningTime" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input asp-for="ClosingTime" class="form-control" type="time" required />
+                                        <label asp-for="ClosingTime">Closing Time</label>
+                                        <span asp-validation-for="ClosingTime" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input asp-for="DeliveryFee" class="form-control" type="number" step="0.01" min="0" />
+                                        <label asp-for="DeliveryFee">Delivery Fee ($)</label>
+                                        <span asp-validation-for="DeliveryFee" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input asp-for="TaxRate" class="form-control" type="number" step="0.01" min="0" />
+                                        <label asp-for="TaxRate">Tax Rate (%)</label>
+                                        <span asp-validation-for="TaxRate" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Image Section -->
+                        <div class="mb-4">
+                            <h6 class="text-uppercase text-muted fw-bold small mb-3">Restaurant Image</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="ImageFile" class="form-label">Upload Image</label>
+                                    <input asp-for="ImageFile" class="form-control" type="file" accept="image/*" />
+                                    <div class="form-text">Recommended size: 1200 x 800 pixels</div>
+                                    <span asp-validation-for="ImageFile" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="ImageUrl" class="form-label">Or Image URL</label>
+                                    <input asp-for="ImageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
+                                    <div class="form-text">Direct link to an image (JPG, PNG)</div>
+                                    <span asp-validation-for="ImageUrl" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Admin Only: Owner Selection -->
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <div class="mb-4">
+                                <h6 class="text-uppercase text-muted fw-bold small mb-3">Owner Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <select asp-for="OwnerId" asp-items="Model.Owners" class="form-select" required>
+                                                <option value="">Select an owner</option>
+                                            </select>
+                                            <label asp-for="OwnerId">Restaurant Owner</label>
+                                            <span asp-validation-for="OwnerId" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <input asp-for="OwnerId" type="hidden" />
+                        }
+                        
+                        <div class="d-flex justify-content-end mt-4">
+                            <a asp-action="Index" class="btn btn-light me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-plus-circle me-2"></i> Create Restaurant
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -132,10 +229,51 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Initialize Bootstrap tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-            new bootstrap.Tooltip(tooltipTriggerEl);
+        // Initialize form validation
+        (function () {
+            'use strict'
+            
+            // Fetch all forms we want to apply validation styles to
+            var forms = document.querySelectorAll('.needs-validation')
+            
+            // Loop over them and prevent submission
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+        
+        // Preview image before upload
+        document.getElementById('ImageFile').addEventListener('change', function(e) {
+            const fileInput = e.target;
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (!document.getElementById('imagePreview')) {
+                        const previewDiv = document.createElement('div');
+                        previewDiv.className = 'mt-3';
+                        previewDiv.id = 'imagePreview';
+                        
+                        const previewImg = document.createElement('img');
+                        previewImg.className = 'img-thumbnail';
+                        previewImg.style.maxHeight = '200px';
+                        previewImg.src = e.target.result;
+                        
+                        previewDiv.appendChild(previewImg);
+                        fileInput.parentNode.appendChild(previewDiv);
+                    } else {
+                        document.querySelector('#imagePreview img').src = e.target.result;
+                    }
+                }
+                reader.readAsDataURL(fileInput.files[0]);
+            }
         });
     </script>
 }

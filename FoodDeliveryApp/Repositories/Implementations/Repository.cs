@@ -14,51 +14,59 @@ namespace FoodDeliveryApp.Repositories.Implementations
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _dbSet = context.Set<TEntity>();
         }
-        public async Task<TEntity> GetByIdAsync(int id)
+        public async Task<TEntity?> GetByIdAsync(int id)
         {
             return await _dbSet.FindAsync(id);
         }
-        public async Task<TEntity> GetByIdAsync(string id)
+        public async Task<TEntity?> GetByIdAsync(string id)
         {
             return await _dbSet.FindAsync(id);
         }
-        public async Task<IEnumerable<TEntity>> GetAllAsync()
+        public async Task<IEnumerable<TEntity>> GetAllAsync(params Expression<Func<TEntity, object>>[] includes)
         {
-            return await _dbSet.ToListAsync();
+            IQueryable<TEntity> query = _dbSet;
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            return await query.ToListAsync();
         }
-        public async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate)
+        public async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
         {
-            return await _dbSet.Where(predicate).ToListAsync();
+            IQueryable<TEntity> query = _dbSet.Where(predicate);
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            return await query.ToListAsync();
         }
         public async Task AddAsync(TEntity entity)
         {
             await _dbSet.AddAsync(entity);
-            await _context.SaveChangesAsync();
         }
         public async Task AddRangeAsync(IEnumerable<TEntity> entities)
         {
             await _dbSet.AddRangeAsync(entities);
-            await _context.SaveChangesAsync();
         }
-        public async Task UpdateAsync(TEntity entity)
+        public Task UpdateAsync(TEntity entity)
         {
             _dbSet.Update(entity);
-            await _context.SaveChangesAsync();
+            return Task.CompletedTask;
         }
-        public async Task UpdateRangeAsync(IEnumerable<TEntity> entities)
+        public Task UpdateRangeAsync(IEnumerable<TEntity> entities)
         {
             _dbSet.UpdateRange(entities);
-            await _context.SaveChangesAsync();
+            return Task.CompletedTask;
         }
-        public async Task RemoveAsync(TEntity entity)
+        public Task RemoveAsync(TEntity entity)
         {
             _dbSet.Remove(entity);
-            await _context.SaveChangesAsync();
+            return Task.CompletedTask;
         }
-        public async Task RemoveRangeAsync(IEnumerable<TEntity> entities)
+        public Task RemoveRangeAsync(IEnumerable<TEntity> entities)
         {
             _dbSet.RemoveRange(entities);
-            await _context.SaveChangesAsync();
+            return Task.CompletedTask;
         }
         public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate)
         {
@@ -68,13 +76,23 @@ namespace FoodDeliveryApp.Repositories.Implementations
         {
             return await _dbSet.CountAsync(predicate);
         }
-        public async Task<TEntity> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate)
+        public async Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
         {
-            return await _dbSet.FirstOrDefaultAsync(predicate);
+            IQueryable<TEntity> query = _dbSet;
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            return await query.FirstOrDefaultAsync(predicate);
         }
-        public async Task<TEntity> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate)
+        public async Task<TEntity?> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
         {
-            return await _dbSet.SingleOrDefaultAsync(predicate);
+            IQueryable<TEntity> query = _dbSet;
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            return await query.SingleOrDefaultAsync(predicate);
         }
     }
 }

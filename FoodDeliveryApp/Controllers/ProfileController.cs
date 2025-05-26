@@ -1,50 +1,52 @@
 ﻿using FoodDeliveryApp.Models;
 using FoodDeliveryApp.Repositories.Interfaces;
 using FoodDeliveryApp.ViewModels.Profile;
+using FoodDeliveryApp.ViewModels.Address;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Address = FoodDeliveryApp.Models.Address;
+using System.Threading.Tasks;
+using FoodDeliveryApp.ViewModels.ProfileViewModels;
 
 namespace FoodDeliveryApp.Controllers
 {
-    [Authorize]
+    //[Authorize]
+    [Route("[controller]/[action]")]
     public class ProfileController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ICustomerRepository _customerRepository;
-        private readonly IEmployeeRepository _employeeRepository;
-        private readonly IRepository<Address> _addressRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly ILogger<ProfileController> _logger;
 
         public ProfileController(
             UserManager<ApplicationUser> userManager,
-            ICustomerRepository customerRepository,
-            IEmployeeRepository employeeRepository,
-            IRepository<Address> addressRepository,
+            IUnitOfWork unitOfWork,
             IWebHostEnvironment webHostEnvironment,
             ILogger<ProfileController> logger)
         {
             _userManager = userManager;
-            _customerRepository = customerRepository;
-            _employeeRepository = employeeRepository;
-            _addressRepository = addressRepository;
+            _unitOfWork = unitOfWork;
             _webHostEnvironment = webHostEnvironment;
             _logger = logger;
         }
 
         #region Customer Profile Actions
 
-        [HttpGet("complete-customer-profile")]
+        [HttpGet]
         [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> CompleteCustomerProfile()
+        public async Task<IActionResult> CompleteCustomerProfile(string email)
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var existingProfile = await _customerRepository.GetByUserIdAsync(userId);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+                
+                var existingProfile = await _unitOfWork.Customers.GetByUserIdAsync(userId);
 
                 if (existingProfile != null)
                 {
@@ -52,240 +54,309 @@ namespace FoodDeliveryApp.Controllers
                 }
 
                 var user = await _userManager.GetUserAsync(User);
-                if (user == null) return NotFound();
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
 
                 var viewModel = new CustomerProfileViewModel
                 {
-                    Email = user.Email,
-                    PhoneNumber = user.PhoneNumber,
-                    DateOfBirth = DateTime.Today.AddYears(-18) // Default to 18 years ago
+                    Email = email ?? user.Email ?? string.Empty,
+                    PhoneNumber = user.PhoneNumber ?? string.Empty,
+                    DateOfBirth = DateTime.Today.AddYears(-18),
+                    FirstName = string.Empty,
+                    LastName = string.Empty
                 };
 
                 return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading complete customer profile page");
+                _logger.LogError(ex, "Error loading complete customer profile page for user {UserId}", User.FindFirstValue(ClaimTypes.NameIdentifier));
+                TempData["ErrorMessage"] = "An error occurred while loading the profile page.";
                 return StatusCode(500);
             }
         }
 
-        [HttpPost("complete-customer-profile")]
+        [HttpPost]
         [Authorize(Roles = "Customer")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CompleteCustomerProfile(CustomerProfileViewModel model)
         {
             if (!ModelState.IsValid)
             {
+                TempData["ErrorMessage"] = "Please correct the errors in the form.";
                 return View(model);
             }
 
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+                
                 var user = await _userManager.FindByIdAsync(userId);
-                if (user == null) return NotFound();
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
 
-                var profilePicturePath = model.ProfilePicture != null
-                    ? await SaveProfilePictureAsync(model.ProfilePicture)
-                    : null;
+                string? profilePicturePath = null;
+                if (model.ProfilePicture != null)
+                {
+                    profilePicturePath = await SaveProfilePictureAsync(model.ProfilePicture);
+                }
 
                 var customer = new CustomerProfile
                 {
+                    UserId = userId,
                     FirstName = model.FirstName,
                     LastName = model.LastName,
                     PhoneNumber = model.PhoneNumber,
                     DateOfBirth = model.DateOfBirth,
                     ProfilePictureUrl = profilePicturePath,
                     ReceivePromotions = model.ReceivePromotions,
-                    LoyaltyPoints = 0, // Default loyalty points
+                    LoyaltyPoints = 0,
                     CreatedAt = DateTime.UtcNow,
-                    UserId = userId,
-                    IsActive = true,
+                    IsActive = true
                 };
 
-                await _customerRepository.AddAsync(customer);
+                await _unitOfWork.Customers.AddAsync(customer);
+                user.IsActive = true;
+                await _userManager.UpdateAsync(user);
+                await _unitOfWork.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "Profile completed successfully!";
-                return RedirectToAction(nameof(CustomerProfile));
+                _logger.LogInformation("Customer profile created for user {UserId}", userId);
+                TempData["SuccessMessage"] = "Profile completed successfully! Please add a delivery address.";
+                return RedirectToAction(nameof(AddAddress));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error completing customer profile");
-                ModelState.AddModelError("", "An error occurred while saving your profile.");
+                _logger.LogError(ex, "Error completing customer profile for user {UserId}", User.FindFirstValue(ClaimTypes.NameIdentifier));
+                TempData["ErrorMessage"] = "An error occurred while saving your profile.";
                 return View(model);
             }
         }
 
-        [HttpGet("customer-profile")]
+        [HttpGet]
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> CustomerProfile()
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var customer = await _customerRepository.GetByUserIdAsync(userId);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+                
+                var customer = await _unitOfWork.Customers.GetByUserIdAsync(userId);
 
                 if (customer == null)
                 {
                     return RedirectToAction(nameof(CompleteCustomerProfile));
                 }
 
+                var user = await _userManager.FindByIdAsync(userId);
+                
                 var viewModel = new CustomerProfileViewModel
                 {
                     CustomerId = customer.Id,
                     FirstName = customer.FirstName,
                     LastName = customer.LastName,
+                    Email = user?.Email ?? string.Empty,
                     PhoneNumber = customer.PhoneNumber,
                     DateOfBirth = customer.DateOfBirth ?? DateTime.Today.AddYears(-18),
                     ProfilePicturePath = customer.ProfilePictureUrl,
                     ReceivePromotions = customer.ReceivePromotions,
-                    LoyaltyPoints = customer.LoyaltyPoints
+                    LoyaltyPoints = (int)customer.LoyaltyPoints
                 };
 
                 return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading customer profile");
+                _logger.LogError(ex, "Error loading customer profile for user {UserId}", User.FindFirstValue(ClaimTypes.NameIdentifier));
+                TempData["ErrorMessage"] = "An error occurred while loading your profile.";
                 return StatusCode(500);
             }
         }
 
-        [HttpGet("edit-customer-profile")]
+        #region Address Management
+
+        [HttpGet]
         [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> EditCustomerProfile()
+        public async Task<IActionResult> AddAddress()
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var customer = await _customerRepository.GetByUserIdAsync(userId);
-
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+                
+                var customer = await _unitOfWork.Customers.GetByUserIdAsync(userId);
                 if (customer == null)
                 {
-                    return RedirectToAction(nameof(CompleteCustomerProfile));
+                    return NotFound("Customer profile not found.");
                 }
 
-                var viewModel = new CustomerProfileViewModel
-                {
-                    CustomerId = customer.Id,
-                    FirstName = customer.FirstName,
-                    LastName = customer.LastName,
-                    PhoneNumber = customer.PhoneNumber,
-                    DateOfBirth = customer.DateOfBirth ?? DateTime.Today.AddYears(-18),
-                    ProfilePicturePath = customer.ProfilePictureUrl,
-                    ReceivePromotions = customer.ReceivePromotions
-                };
 
-                return View(viewModel);
+
+                return View();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading edit customer profile page");
+                _logger.LogError(ex, "Error loading add address page for user {UserId}", User.FindFirstValue(ClaimTypes.NameIdentifier));
+                TempData["ErrorMessage"] = "An error occurred while loading the add address page.";
                 return StatusCode(500);
             }
         }
 
-        [HttpPost("edit-customer-profile")]
+        [HttpPost]
         [Authorize(Roles = "Customer")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditCustomerProfile(CustomerProfileViewModel model)
+        public async Task<IActionResult> AddAddress(ViewModels.Address.AddressViewModel model)
         {
             if (!ModelState.IsValid)
             {
+                TempData["ErrorMessage"] = "Please correct the errors in the form.";
                 return View(model);
             }
 
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var customer = await _customerRepository.GetByUserIdAsync(userId);
-
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+                
+                var customer = await _unitOfWork.Customers.GetByUserIdAsync(userId);
                 if (customer == null)
                 {
-                    return RedirectToAction(nameof(CompleteCustomerProfile));
+                    return NotFound("Customer profile not found.");
                 }
 
-                customer.FirstName = model.FirstName;
-                customer.LastName = model.LastName;
-                customer.PhoneNumber = model.PhoneNumber;
-                customer.DateOfBirth = model.DateOfBirth;
-                customer.ReceivePromotions = model.ReceivePromotions;
-
-                if (model.ProfilePicture != null)
+                var address = new Address
                 {
-                    customer.ProfilePictureUrl = await SaveProfilePictureAsync(model.ProfilePicture);
+                    Title = model.AddressLine,
+                    Street = model.AddressLine,
+                    City = model.City,
+                    State = model.State,
+                    PostalCode = model.PostalCode,
+                    IsDefault = model.IsDefault,
+                    Id = customer.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                if (model.IsDefault)
+                {
+                    var existingDefaults = await _unitOfWork.Addresses.FindAsync(a => a.Id == customer.Id && a.IsDefault);
+                    foreach (var existing in existingDefaults)
+                    {
+                        existing.IsDefault = false;
+                        await _unitOfWork.Addresses.UpdateAsync(existing);
+                    }
                 }
 
-                await _customerRepository.UpdateAsync(customer);
+                await _unitOfWork.Addresses.AddAsync(address);
+                await _unitOfWork.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "Profile updated successfully!";
+                _logger.LogInformation("Address added for customer {CustomerId}", customer.Id);
+                TempData["SuccessMessage"] = "Address added successfully! You're ready to start ordering.";
                 return RedirectToAction(nameof(CustomerProfile));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating customer profile");
-                ModelState.AddModelError("", "An error occurred while updating your profile.");
+                _logger.LogError(ex, "Error adding address for user {UserId}", User.FindFirstValue(ClaimTypes.NameIdentifier));
+                TempData["ErrorMessage"] = "An error occurred while adding the address.";
                 return View(model);
             }
         }
 
         #endregion
 
+        #endregion
+
         #region Employee Profile Actions
 
-        [HttpGet("complete-employee-profile")]
-        [Authorize(Roles = "Employee")]
-        public async Task<IActionResult> CompleteEmployeeProfile()
+        [HttpGet]
+        [Authorize(Roles = "Employee,Admin,Owner")]
+        public async Task<IActionResult> CompleteEmployeeProfile(string email)
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var existingProfile = await _employeeRepository.GetByUserIdAsync(userId);
-
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+                
+                var existingProfile = await _unitOfWork.Employees.GetByUserIdAsync(userId);
                 if (existingProfile != null)
                 {
                     return RedirectToAction(nameof(EmployeeProfile));
                 }
 
                 var user = await _userManager.GetUserAsync(User);
-                if (user == null) return NotFound();
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
 
                 var viewModel = new EmployeeProfileViewModel
                 {
-                    Email = user.Email,
-                    PhoneNumber = user.PhoneNumber,
-                    HireDate = DateTime.Today
+                    Email = email ?? user.Email ?? string.Empty,
+                    PhoneNumber = user.PhoneNumber ?? string.Empty,
+                    HireDate = DateTime.Today,
+                    FirstName = string.Empty,
+                    LastName = string.Empty
                 };
 
                 return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading complete employee profile page");
+                _logger.LogError(ex, "Error loading complete employee profile page for user {UserId}", User.FindFirstValue(ClaimTypes.NameIdentifier));
+                TempData["ErrorMessage"] = "An error occurred while loading the profile page.";
                 return StatusCode(500);
             }
         }
 
-        [HttpPost("complete-employee-profile")]
-        [Authorize(Roles = "Employee")]
+        [HttpPost]
+        [Authorize(Roles = "Employee,Admin,Owner")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CompleteEmployeeProfile(EmployeeProfileViewModel model)
         {
             if (!ModelState.IsValid)
             {
+                TempData["ErrorMessage"] = "Please correct the errors in the form.";
                 return View(model);
             }
 
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+                
                 var user = await _userManager.FindByIdAsync(userId);
-                if (user == null) return NotFound();
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
 
-                var profilePicturePath = model.ProfilePicture != null
-                    ? await SaveProfilePictureAsync(model.ProfilePicture)
-                    : null;
+                string? profilePicturePath = null;
+                if (model.ProfilePicture != null)
+                {
+                    profilePicturePath = await SaveProfilePictureAsync(model.ProfilePicture);
+                }
 
                 var employee = new EmployeeProfile
                 {
@@ -293,48 +364,61 @@ namespace FoodDeliveryApp.Controllers
                     FirstName = model.FirstName,
                     LastName = model.LastName,
                     PhoneNumber = model.PhoneNumber,
-                    HireDate = model.HireDate,
                     Position = model.Position,
+                    HireDate = model.HireDate,
+                    TerminationDate = model.TerminationDate,
                     ProfilePictureUrl = profilePicturePath,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true
                 };
 
-                await _employeeRepository.AddAsync(employee);
+                await _unitOfWork.Employees.AddAsync(employee);
+                user.IsActive = true;
+                await _userManager.UpdateAsync(user);
+                await _unitOfWork.SaveChangesAsync();
 
+                _logger.LogInformation("Employee profile created for user {UserId}", userId);
                 TempData["SuccessMessage"] = "Profile completed successfully!";
                 return RedirectToAction(nameof(EmployeeProfile));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error completing employee profile");
-                ModelState.AddModelError("", "An error occurred while saving your profile.");
+                _logger.LogError(ex, "Error completing employee profile for user {UserId}", User.FindFirstValue(ClaimTypes.NameIdentifier));
+                TempData["ErrorMessage"] = "An error occurred while saving your profile.";
                 return View(model);
             }
         }
 
-        [HttpGet("employee-profile")]
-        [Authorize(Roles = "Employee")]
+        [HttpGet]
+        [Authorize(Roles = "Employee,Admin,Owner")]
         public async Task<IActionResult> EmployeeProfile()
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var employee = await _employeeRepository.GetByUserIdAsync(userId);
-
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+                
+                var employee = await _unitOfWork.Employees.GetByUserIdAsync(userId);
                 if (employee == null)
                 {
                     return RedirectToAction(nameof(CompleteEmployeeProfile));
                 }
 
+                var user = await _userManager.FindByIdAsync(userId);
+                
                 var viewModel = new EmployeeProfileViewModel
                 {
                     EmployeeId = employee.Id,
                     FirstName = employee.FirstName,
                     LastName = employee.LastName,
+                    Email = user?.Email ?? string.Empty,
                     PhoneNumber = employee.PhoneNumber,
-                    HireDate = employee.HireDate,
                     Position = employee.Position,
+                    HireDate = employee.HireDate,
+                    TerminationDate = employee.TerminationDate,
                     ProfilePicturePath = employee.ProfilePictureUrl
                 };
 
@@ -342,357 +426,65 @@ namespace FoodDeliveryApp.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading employee profile");
+                _logger.LogError(ex, "Error loading employee profile for user {UserId}", User.FindFirstValue(ClaimTypes.NameIdentifier));
+                TempData["ErrorMessage"] = "An error occurred while loading your profile.";
                 return StatusCode(500);
             }
         }
 
-        [HttpGet("edit-employee-profile")]
-        [Authorize(Roles = "Employee")]
-        public async Task<IActionResult> EditEmployeeProfile()
+        [Authorize(Roles = "Employee,Admin,Owner")]
+        public async Task<IActionResult> ViewEmployeeTasks()
         {
-            try
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var employee = await _employeeRepository.GetByUserIdAsync(userId);
+                return Challenge();
+            }
 
-                if (employee == null)
+            var employeeProfile = await _unitOfWork.Employees.GetByUserIdAsync(userId);
+            if (employeeProfile == null)
+            {
+                TempData["ErrorMessage"] = "Employee profile not found. Please complete your profile.";
+                return RedirectToAction(nameof(CompleteEmployeeProfile));
+            }
+
+            // TODO: Implement GetOrdersAssignedToEmployeeAsync(employeeProfile.Id) in IOrderRepository and OrderRepository
+            // For now, returning an empty list of tasks to allow build to pass.
+            // var assignedOrders = await _unitOfWork.Orders.GetOrdersAssignedToEmployeeAsync(employeeProfile.Id);
+            var assignedOrders = new List<Order>(); // Placeholder
+
+            var tasksViewModel = new EmployeeTasksViewModel
+            {
+                EmployeeId = employeeProfile.Id,
+                EmployeeName = $"{employeeProfile.FirstName} {employeeProfile.LastName}",
+                Tasks = assignedOrders.Select(order => new EmployeeTaskViewModel
                 {
-                    return RedirectToAction(nameof(CompleteEmployeeProfile));
-                }
+                    OrderId = order.Id,
+                    OrderNumber = order.Id.ToString(), // Or a dedicated OrderNumber field
+                    CustomerName = order.User?.CustomerProfile != null ? $"{order.User.CustomerProfile.FirstName} {order.User.CustomerProfile.LastName}" : order.User?.UserName ?? "N/A",
+                    Status = order.Status,
+                    AssignedDate = order.OrderDate, // Assuming UpdatedAt might be when it was assigned or last status change
+                    DeliveryAddress = order.Address != null ? $"{order.Address.Street}, {order.Address.City}" : "N/A",
+                    EstimatedDeliveryTime = order.EstimatedDeliveryTime
+                }).ToList()
+            };
 
-                var viewModel = new EmployeeProfileViewModel
-                {
-                    EmployeeId = employee.Id,
-                    FirstName = employee.FirstName,
-                    LastName = employee.LastName,
-                    PhoneNumber = employee.PhoneNumber,
-                    HireDate = employee.HireDate,
-                    Position = employee.Position,
-                    ProfilePicturePath = employee.ProfilePictureUrl
-                };
-
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading edit employee profile page");
-                return StatusCode(500);
-            }
-        }
-
-        [HttpPost("edit-employee-profile")]
-        [Authorize(Roles = "Employee")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditEmployeeProfile(EmployeeProfileViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var employee = await _employeeRepository.GetByUserIdAsync(userId);
-
-                if (employee == null)
-                {
-                    return RedirectToAction(nameof(CompleteEmployeeProfile));
-                }
-
-                employee.FirstName = model.FirstName;
-                employee.LastName = model.LastName;
-                employee.PhoneNumber = model.PhoneNumber;
-                employee.Position = model.Position;
-
-                if (model.ProfilePicture != null)
-                {
-                    employee.ProfilePictureUrl = await SaveProfilePictureAsync(model.ProfilePicture);
-                }
-
-                await _employeeRepository.UpdateAsync(employee);
-
-                TempData["SuccessMessage"] = "Profile updated successfully!";
-                return RedirectToAction(nameof(EmployeeProfile));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating employee profile");
-                ModelState.AddModelError("", "An error occurred while updating your profile.");
-                return View(model);
-            }
+            return View(tasksViewModel);
         }
 
         #endregion
 
-        #region Address Management
-
-        [HttpGet("addresses")]
-        [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> ViewAddresses()
-        {
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var customer = await _customerRepository.GetByUserIdAsync(userId);
-                if (customer == null) return NotFound();
-
-                var addresses = await _addressRepository.FindAsync(a => a.Id == customer.Id);
-
-                var viewModel = new AddressListViewModel
-                {
-                    CustomerId = customer.Id,
-                    Addresses = addresses.Select(a => new AddressViewModel
-                    {
-                        AddressId = a.Id,
-                        AddressName = a.Title,
-                        Street = a.Street,
-                        City = a.City,
-                        State = a.State,
-                        ZipCode = a.PostalCode,
-                        IsDefault = a.IsDefault
-                    }).ToList()
-                };
-
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading addresses");
-                return StatusCode(500);
-            }
-        }
-
-        [HttpGet("add-address")]
-        [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> AddAddress()
-        {
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var customer = await _customerRepository.GetByUserIdAsync(userId);
-                if (customer == null) return NotFound();
-
-                return View(new AddressViewModel { CustomerId = customer.Id });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading add address page");
-                return StatusCode(500);
-            }
-        }
-
-        [HttpPost("add-address")]
-        [Authorize(Roles = "Customer")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddAddress(AddressViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            try
-            {
-                var address = new Address
-                {
-                    Title = model.AddressName,
-                    Street = model.Street,
-                    City = model.City,
-                    State = model.State,
-                    PostalCode = model.ZipCode,
-                    IsDefault = model.IsDefault,
-                    Id = model.CustomerId,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                // If setting as default, unset any existing default address
-                if (model.IsDefault)
-                {
-                    var existingDefaults = await _addressRepository.FindAsync(a =>
-                        a.Id == model.CustomerId && a.IsDefault);
-
-                    foreach (var existing in existingDefaults)
-                    {
-                        existing.IsDefault = false;
-                        await _addressRepository.UpdateAsync(existing);
-                    }
-                }
-
-                await _addressRepository.AddAsync(address);
-
-                TempData["SuccessMessage"] = "Address added successfully!";
-                return RedirectToAction(nameof(ViewAddresses));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error adding address");
-                ModelState.AddModelError("", "An error occurred while adding the address.");
-                return View(model);
-            }
-        }
-
-        [HttpGet("edit-address/{id}")]
-        [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> EditAddress(int id)
-        {
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var customer = await _customerRepository.GetByUserIdAsync(userId);
-                if (customer == null) return NotFound();
-
-                var address = await _addressRepository.GetByIdAsync(id);
-                if (address == null || address.Id != customer.Id)
-                {
-                    return NotFound();
-                }
-
-                var viewModel = new AddressViewModel
-                {
-                    AddressId = address.Id,
-                    AddressName = address.Title,
-                    Street = address.Street,
-                    City = address.City,
-                    State = address.State,
-                    ZipCode = address.PostalCode,
-                    IsDefault = address.IsDefault,
-                    CustomerId = customer.Id
-                };
-
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading edit address page");
-                return StatusCode(500);
-            }
-        }
-
-        [HttpPost("edit-address/{id}")]
-        [Authorize(Roles = "Customer")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditAddress(int id, AddressViewModel model)
-        {
-            if (id != model.AddressId)
-            {
-                return BadRequest();
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var customer = await _customerRepository.GetByUserIdAsync(userId);
-                if (customer == null) return NotFound();
-
-                var address = await _addressRepository.GetByIdAsync(id);
-                if (address == null || address.Id != customer.Id)
-                {
-                    return NotFound();
-                }
-
-                // If setting as default, unset any existing default address
-                if (model.IsDefault && !address.IsDefault)
-                {
-                    var existingDefaults = await _addressRepository.FindAsync(a =>
-                        a.Id == model.CustomerId && a.IsDefault);
-
-                    foreach (var existing in existingDefaults)
-                    {
-                        existing.IsDefault = false;
-                        await _addressRepository.UpdateAsync(existing);
-                    }
-                }
-
-                address.Title = model.AddressName;
-                address.Street = model.Street;
-                address.City = model.City;
-                address.State = model.State;
-                address.PostalCode = model.ZipCode;
-                address.IsDefault = model.IsDefault;
-                address.UpdatedAt = DateTime.UtcNow;
-
-                await _addressRepository.UpdateAsync(address);
-
-                TempData["SuccessMessage"] = "Address updated successfully!";
-                return RedirectToAction(nameof(ViewAddresses));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating address");
-                ModelState.AddModelError("", "An error occurred while updating the address.");
-                return View(model);
-            }
-        }
-
-        [HttpPost("delete-address/{id}")]
-        [Authorize(Roles = "Customer")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteAddress(int id)
-        {
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var customer = await _customerRepository.GetByUserIdAsync(userId);
-                if (customer == null) return NotFound();
-
-                var address = await _addressRepository.GetByIdAsync(id);
-                if (address == null || address.Id != customer.Id)
-                {
-                    return NotFound();
-                }
-
-                await _addressRepository.RemoveAsync(address);
-
-                TempData["SuccessMessage"] = "Address deleted successfully!";
-                return RedirectToAction(nameof(ViewAddresses));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting address");
-                TempData["ErrorMessage"] = "An error occurred while deleting the address.";
-                return RedirectToAction(nameof(ViewAddresses));
-            }
-        }
-
-        #endregion
-
-        #region Private Helpers
-
-        private async Task<string> SaveProfilePictureAsync(IFormFile file)
+        private async Task<string?> SaveProfilePictureAsync(IFormFile file)
         {
             if (file == null || file.Length == 0)
-            {
                 return null;
-            }
 
-            // Validate file type and size
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-
-            if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension))
-            {
-                throw new InvalidOperationException("Invalid file type. Only image files are allowed.");
-            }
-
-            if (file.Length > 5 * 1024 * 1024) // 5MB limit
-            {
-                throw new InvalidOperationException("File size exceeds the maximum limit of 5MB.");
-            }
-
-            // Create unique filename
-            var fileName = $"{Guid.NewGuid()}{extension}";
-            var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "profile-pictures");
-
-            // Ensure directory exists
-            Directory.CreateDirectory(uploadsFolder);
-
+            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+            var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "profiles");
+            
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+                
             var filePath = Path.Combine(uploadsFolder, fileName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))
@@ -700,9 +492,7 @@ namespace FoodDeliveryApp.Controllers
                 await file.CopyToAsync(stream);
             }
 
-            return $"/uploads/profile-pictures/{fileName}";
+            return $"/images/profiles/{fileName}";
         }
-
-        #endregion
     }
 }

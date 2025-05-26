@@ -16,6 +16,7 @@ namespace FoodDeliveryApp.Repositories.Implementations
         public IPromotionRepository Promotions { get; private set; }
         public IPaymentRepository Payments { get; private set; }
         public IReviewRepository Reviews { get; private set; }
+        public ISearchHistoryRepository SearchHistory { get; private set; }
         public IRepository<RestaurantCategory> RestaurantCategories { get; private set; }
         public IRepository<PaymentMethod> PaymentMethods { get; private set; }
         public IRepository<OrderItem> OrderItems { get; private set; }
@@ -34,6 +35,7 @@ namespace FoodDeliveryApp.Repositories.Implementations
             Promotions = new PromotionRepository(_context);
             Payments = new PaymentRepository(_context);
             Reviews = new ReviewRepository(_context);
+            SearchHistory = new SearchHistoryRepository(_context);
             RestaurantCategories = new Repository<RestaurantCategory>(_context);
             PaymentMethods = new Repository<PaymentMethod>(_context);
             OrderItems = new Repository<OrderItem>(_context);

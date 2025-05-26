@@ -1,4 +1,4 @@
-﻿@model FoodDeliveryApp.ViewModels.Profile.AddressViewModel
+﻿@model FoodDeliveryApp.ViewModels.ProfileViewModels.AddressViewModel
 
 @{
     ViewData["Title"] = "Edit Address";
@@ -14,7 +14,7 @@
             <div class="card-body">
                 <form asp-action="EditAddress" method="post">
                     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                    <input type="hidden" asp-for="AddressId" />
+                    <input type="hidden" asp-for="AddressName" />
                     <input type="hidden" asp-for="CustomerId" />
 
                     <div class="form-group">
