@@ -1,0 +1,121 @@
+@model FoodDeliveryApp.ViewModels.MenuItem.MenuItemCategoryEditViewModel
+
+@{ Layout = "_Layout"; }
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="h3 mb-0">Edit Menu Item Category</h1>
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data" id="editForm">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label required">Name</label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ImageFile" class="form-label">Category Image</label>
+                            <div class="input-group">
+                                <input type="file" asp-for="ImageFile" class="form-control" accept="image/*" id="imageInput" />
+                                <label class="input-group-text" for="imageInput">
+                                    <i class="fas fa-upload"></i>
+                                </label>
+                            </div>
+                            <span asp-validation-for="ImageFile" class="text-danger"></span>
+                            
+                            <div id="imagePreview" class="mt-2 @(string.IsNullOrEmpty(Model.CurrentImageUrl) ? "d-none" : "")">
+                                <img src="@Model.CurrentImageUrl" alt="Current Image" class="img-thumbnail" style="max-height: 200px;" />
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
+                            {
+                                <div class="form-text">Current image will be replaced if you upload a new one.</div>
+                            }
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .required:after {
+            content: " *";
+            color: red;
+        }
+    </style>
+}
+
+@section Scripts {
+    @{ Layout = "_Layout"; }
+    
+    <script>
+        // Image preview
+        document.getElementById('imageInput').addEventListener('change', function (e) {
+            const preview = document.getElementById('imagePreview');
+            const img = preview.querySelector('img');
+            const file = e.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    img.src = e.target.result;
+                    preview.classList.remove('d-none');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Form validation
+        $(document).ready(function() {
+            $("#editForm").validate({
+                rules: {
+                    Name: {
+                        required: true,
+                        minlength: 2
+                    }
+                },
+                messages: {
+                    Name: {
+                        required: "Please enter a category name",
+                        minlength: "Name must be at least 2 characters long"
+                    }
+                },
+                errorElement: 'span',
+                errorClass: 'text-danger',
+                highlight: function(element) {
+                    $(element).addClass('is-invalid');
+                },
+                unhighlight: function(element) {
+                    $(element).removeClass('is-invalid');
+                }
+            });
+        });
+    </script>
+}

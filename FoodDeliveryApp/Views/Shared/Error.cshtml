@@ -1,44 +1,209 @@
-﻿@using FoodDeliveryApp.ViewModels
-@model ErrorViewModel
+﻿@model ErrorViewModel
 @{
-    ViewData["Title"] = "Error";
+    ViewData["Title"] = "Error - Food Delivery App";
+    ViewData["Description"] = "An error occurred while processing your request.";
     Layout = null;
+
+    var errorTitle = Model?.ErrorTitle ?? "Error";
+    var errorMessage = Model?.ErrorMessage ?? "An error occurred while processing your request.";
+    var statusCode = Model?.StatusCode ?? 500;
+    var showRequestId = Model?.ShowRequestId ?? false;
+    var requestId = Model?.RequestId ?? "";
+    var isDevelopment = Model?.IsDevelopment ?? false;
+    var exception = Model?.Exception;
 }
 
-<div class="container my-5">
-    <div class="row">
-        <div class="col-md-8 mx-auto text-center">
-            <div class="card shadow-sm p-4">
-                <div class="card-body">
-                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
-                    <h1 class="h2 my-4">Something went wrong</h1>
-                    <p class="lead">We apologize for the inconvenience. An error occurred while processing your request.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <meta name="description" content="@ViewData["Description"]" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%);
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .error-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 600px;
+            text-align: center;
+        }
+        .error-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #dc3545;
+            position: relative;
+            animation: float 3s ease-in-out infinite;
+        }
+        @@keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            color: #dc3545;
+        }
+        p.lead {
+            font-size: 18px;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+        .request-id {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        .exception-details {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: left;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 30px;
+            text-decoration: none;
+            margin: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-outline-primary {
+            background-color: transparent;
+            color: #007bff;
+            border: 2px solid #007bff;
+        }
+        .btn-outline-primary:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        .help-section {
+            margin-top: 30px;
+            text-align: left;
+        }
+        .help-section h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .help-links {
+            display: flex;
+            gap: 20px;
+        }
+        .help-link {
+            flex: 1;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #212529;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .help-link:hover {
+            background-color: #e2e6ea;
+        }
+        .help-link i {
+            font-size: 24px;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">
+            @switch (statusCode)
+            {
+                case 404:
+                    <i class="fas fa-utensils"></i>
+                    break;
+                case 403:
+                    <i class="fas fa-lock"></i>
+                    break;
+                case 401:
+                    <i class="fas fa-user-lock"></i>
+                    break;
+                case 500:
+                    <i class="fas fa-bug"></i>
+                    break;
+                default:
+                    <i class="fas fa-exclamation-triangle"></i>
+                    break;
+            }
+        </div>
+        <h1>@statusCode</h1>
+        <p class="lead">@errorMessage</p>
 
-                    @if (Model.ShowRequestId)
-                    {
-                        <div class="alert alert-secondary mt-4">
-                            <p class="mb-0"><strong>Request ID:</strong> <code>@Model.RequestId</code></p>
-                        </div>
-                    }
-
-                    <p class="mt-4">Please try the following:</p>
-                    <ul class="list-unstyled text-start mx-auto" style="max-width: 400px;">
-                        <li><i class="bi bi-arrow-clockwise me-2"></i> Refresh the page</li>
-                        <li><i class="bi bi-arrow-left me-2"></i> Go back to the previous page</li>
-                        <li><i class="bi bi-house me-2"></i> Return to the homepage</li>
-                        <li><i class="bi bi-clock-history me-2"></i> Try again later</li>
-                    </ul>
-
-                    <div class="mt-4">
-                        <a href="/" class="btn btn-primary me-2">Go to Homepage</a>
-                        <a href="/Contact" class="btn btn-outline-secondary">Contact Support</a>
-                    </div>
-                </div>
+        @if (showRequestId)
+        {
+            <div class="request-id">
+                <strong>Request ID:</strong> @requestId
             </div>
+        }
 
-            <div class="mt-4">
-                <p class="text-muted small">If the problem persists, please contact our support team at support@fooddeliveryapp.com</p>
+        @if (isDevelopment && exception != null)
+        {
+            <div class="exception-details">
+                <h3>Exception Details:</h3>
+                <pre>@exception.ToString()</pre>
+            </div>
+        }
+
+        <a href="/" class="btn btn-primary">Go Home</a>
+        <button onclick="window.history.back()" class="btn btn-outline-primary">Go Back</button>
+
+        <div class="help-section">
+            <h2>Need Help?</h2>
+            <div class="help-links">
+                <a href="/Help" class="help-link">
+                    <i class="fas fa-question-circle"></i>
+                    <div>
+                        <h3>Help Center</h3>
+                        <p>Get support</p>
+                    </div>
+                </a>
+                <a href="/Contact" class="help-link">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <h3>Contact Us</h3>
+                        <p>Send us a message</p>
+                    </div>
+                </a>
             </div>
         </div>
     </div>
-</div>
+</body>
+</html>

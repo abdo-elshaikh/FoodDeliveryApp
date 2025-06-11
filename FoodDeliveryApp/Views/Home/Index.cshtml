@@ -1,226 +1,91 @@
 @model FoodDeliveryApp.ViewModels.Home.HomeViewModel
 
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home";
 }
 
-<section class="hero" style="background-image: url('@Model.Hero.BackgroundImageUrl');" role="banner"
-    aria-label="Hero section with search">
-    <!-- Floating Elements for Visual Interest -->
-    <div class="hero-floating-elements">
-        <div class="hero-floating-element"></div>
-        <div class="hero-floating-element"></div>
-        <div class="hero-floating-element"></div>
-        <div class="hero-floating-element"></div>
-    </div>
-    
-    <div class="container hero-container">
-        <h1 class="animate-fade-in-up">Delicious Food Delivered To Your Doorstep</h1>
-        <p class="animate-fade-in-up delay-100">Explore the best restaurants and dishes in your area.</p>
-        
-        <form class="hero-search animate-fade-in-up delay-200" method="get" action="/Menu/Search" role="search"
-            aria-label="Search for restaurants or dishes">
-            <div class="input-group">
-                <span class="input-group-text bg-white border-0">
-                    <i class="fas fa-search text-primary"></i>
-                </span>
-                <input type="search" name="q" class="form-control border-0" placeholder="Search for restaurants or dishes..." 
-                    aria-label="Search" required />
-                <button type="submit" class="btn btn-primary px-4 fw-semibold" aria-label="Submit search">
-                    Search Now
-                </button>
+<div class="hero-section" data-aos="fade-up">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="animate-text">Delicious Food Delivered To Your Doorstep</h1>
+            <p class="animate-text" data-aos-delay="100">Order from your favorite restaurants and get it delivered in minutes</p>
+            <div class="hero-search" data-aos-delay="200">
+                <div class="search-box">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <input type="text" placeholder="Enter your delivery address" />
+                    <button class="btn btn-primary">
+                        <span>Find Food</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
             </div>
-        </form>
-        
-        <div class="hero-features mt-5 animate-fade-in-up delay-300">
-            <div class="row justify-content-center">
-                <div class="col-md-4 mb-3 mb-md-0">
-                    <div class="hero-feature-item">
-                        <div class="feature-icon">
-                            <i class="fas fa-utensils"></i>
-                        </div>
-                        <div class="feature-text">
-                            <h3>Quality Food</h3>
-                            <p>From top-rated restaurants</p>
-                        </div>
-                    </div>
+        </div>
+    </div>
+    <div class="hero-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+</div>
+
+<section class="features-section" data-aos="fade-up">
+    <div class="container">
+        <div class="features-grid">
+            <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                <div class="feature-icon">
+                    <i class="fas fa-utensils"></i>
                 </div>
-                <div class="col-md-4 mb-3 mb-md-0">
-                    <div class="hero-feature-item">
-                        <div class="feature-icon">
-                            <i class="fas fa-truck"></i>
-                        </div>
-                        <div class="feature-text">
-                            <h3>Fast Delivery</h3>
-                            <p>To your doorstep</p>
-                        </div>
-                    </div>
+                <h3>Wide Selection</h3>
+                <p>Choose from thousands of restaurants and cuisines</p>
+            </div>
+            <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="feature-icon">
+                    <i class="fas fa-truck"></i>
                 </div>
-                <div class="col-md-4">
-                    <div class="hero-feature-item">
-                        <div class="feature-icon">
-                            <i class="fas fa-headset"></i>
-                        </div>
-                        <div class="feature-text">
-                            <h3>24/7 Support</h3>
-                            <p>Always here to help</p>
-                        </div>
-                    </div>
+                <h3>Fast Delivery</h3>
+                <p>Get your food delivered in minutes</p>
+            </div>
+            <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+                <div class="feature-icon">
+                    <i class="fas fa-star"></i>
                 </div>
+                <h3>Best Quality</h3>
+                <p>Enjoy fresh and delicious meals</p>
             </div>
         </div>
     </div>
 </section>
 
-<section class="food-categories" aria-label="Food categories">
+<section class="popular-section" data-aos="fade-up">
     <div class="container">
-        <div class="section-header text-center mb-5 animate-fade-in">
-            <span class="section-subtitle">Explore Food</span>
-            <h2>Food Categories</h2>
-            <p class="section-description mx-auto">Discover a variety of cuisines from around the world</p>
-        </div>
-        
-        <div class="row g-4 justify-content-center">
-            @foreach (var category in Model.Categories)
-            {
-                <div class="col-6 col-md-4 col-lg-3 animate-fade-in" data-delay="@(100 * Model.Categories.IndexOf(category))">
-                    <article class="category-card" role="region" aria-labelledby="category-@category.Id">
-                        <div class="category-img-wrapper">
-                            <img src="@category.ImageUrl" alt="@category.Name" class="img-fluid" loading="lazy" />
-                            <div class="category-overlay">
-                                <a href="/Menu/ByCategory/@category.Id" class="btn btn-sm btn-light rounded-pill">
-                                    Explore <i class="fas fa-arrow-right ms-1"></i>
-                                </a>
-                            </div>
-                        </div>
-                        <div class="category-content p-4">
-                            <h3 id="category-@category.Id" class="category-title">@category.Name</h3>
-                            <p class="category-description">@category.Description</p>
-                            <div class="category-meta">
-                                <span class="badge bg-light text-primary">
-                                    <i class="fas fa-store me-1"></i> @category.RestaurantCount restaurant(s)
-                                </span>
-                            </div>
-                        </div>
-                    </article>
-                </div>
-            }
-        </div>
-    </div>
-</section>
-
-<section class="popular-restaurants" aria-label="Popular restaurants">
-    <div class="container">
-        <div class="section-header text-center mb-5 animate-fade-in">
-            <span class="section-subtitle">Top Rated</span>
+        <div class="section-header">
             <h2>Popular Restaurants</h2>
-            <p class="section-description mx-auto">Discover the most loved restaurants in your area</p>
-        </div>
-        
-        <div class="restaurant-controls mb-4 d-flex justify-content-between align-items-center animate-fade-in">
-            <div class="restaurant-filter">
-                <button class="btn btn-sm btn-primary active me-2">All</button>
-                <button class="btn btn-sm btn-outline-primary me-2">Fast Food</button>
-                <button class="btn btn-sm btn-outline-primary me-2">Italian</button>
-                <button class="btn btn-sm btn-outline-primary">Asian</button>
-            </div>
-            <div class="restaurant-navigation">
-                <button class="btn btn-sm btn-light rounded-circle me-2" id="prevRestaurant" aria-label="Previous">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <button class="btn btn-sm btn-light rounded-circle" id="nextRestaurant" aria-label="Next">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-        </div>
-        
-        <div id="popularRestaurantsCarousel" class="carousel slide" data-bs-ride="carousel" tabindex="0"
-            aria-label="Popular Restaurants Carousel">
-            <div class="carousel-inner">
-                @{
-                    var chunkSize = 3;
-                    var total = Model.TopRatedRestaurants.Count;
-                }
-                @for (int i = 0; i < total; i += chunkSize)
-                {
-                    var chunk = Model.TopRatedRestaurants.Skip(i).Take(chunkSize).ToList();
-                    var activeClass = i == 0 ? "active" : "";
-                    <div class="carousel-item @activeClass">
-                        <div class="row justify-content-center g-4">
-                            @foreach (var restaurant in chunk)
-                            {
-                                <div class="col-md-4 animate-fade-in" data-delay="@(100 * chunk.IndexOf(restaurant))">
-                                    <article class="restaurant-card" role="group" aria-labelledby="restaurant-@restaurant.Id">
-                                        <div class="restaurant-img-wrapper">
-                                            <img src="@restaurant.ImageUrl" alt="@restaurant.Name" class="img-fluid" loading="lazy" />
-                                            @if (restaurant.Rating >= 4.5)
-                                            {
-                                                <div class="restaurant-badge featured">
-                                                    <i class="fas fa-award me-1"></i> Featured
-                                                </div>
-                                            }
-                                            <div class="restaurant-overlay">
-                                                <a href="/Restaurant/Details/@restaurant.Id" class="btn btn-sm btn-light rounded-pill">
-                                                    View Menu <i class="fas fa-arrow-right ms-1"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="restaurant-content p-4">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <h3 id="restaurant-@restaurant.Id" class="restaurant-title mb-0">@restaurant.Name</h3>
-                                                <div class="restaurant-rating">
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <span>@restaurant.Rating</span>
-                                                </div>
-                                            </div>
-                                            <p class="restaurant-description">@restaurant.Description</p>
-                                            <div class="restaurant-meta d-flex justify-content-between align-items-center">
-                                                <span class="restaurant-reviews">
-                                                    <i class="fas fa-comment-alt me-1"></i> @restaurant.ReviewCount reviews
-                                                </span>
-                                                <span class="restaurant-delivery">
-                                                    <i class="fas fa-bicycle me-1"></i> @restaurant.DeliveryFee.ToString("C")
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </article>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
-            <button class="carousel-control-prev d-none" type="button" data-bs-target="#popularRestaurantsCarousel"
-                data-bs-slide="prev" aria-label="Previous">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            </button>
-            <button class="carousel-control-next d-none" type="button" data-bs-target="#popularRestaurantsCarousel"
-                data-bs-slide="next" aria-label="Next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            </button>
-        </div>
-        
-        <div class="text-center mt-5 animate-fade-in">
-            <a href="/Restaurant" class="btn btn-outline-primary rounded-pill px-4">
-                View All Restaurants <i class="fas fa-arrow-right ms-1"></i>
+            <a href="#" class="view-all">
+                <span>View All</span>
+                <i class="fas fa-arrow-right"></i>
             </a>
         </div>
-    </div>
-</section>
-
-<section class="featured-dishes">
-    <div class="container">
-        <h2>Featured Dishes</h2>
-        <div class="row g-4 justify-content-center">
-            @foreach (var dish in Model.FeaturedDishes)
+        <div class="restaurants-grid">
+            @for (int i = 0; i < 4; i++)
             {
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="dish-card">
-                        <img src="@dish.ImageUrl" alt="@dish.Name" class="img-fluid rounded" />
-                        <h3 class="mt-3">@dish.Name</h3>
-                        <p>@dish.Description</p>
-                        <p>Price: @dish.Price.ToString("C")</p>
-                        <p>@(dish.IsAvailable ? "Available" : "Currently Unavailable")</p>
+                <div class="restaurant-card" data-aos="fade-up" data-aos-delay="@(i * 100)">
+                    <div class="restaurant-image">
+                        <img src="~/images/restaurant-placeholder.jpg" alt="Restaurant" />
+                        <div class="restaurant-rating">
+                            <i class="fas fa-star"></i>
+                            <span>4.5</span>
+                        </div>
+                        <div class="restaurant-overlay">
+                            <button class="btn btn-primary">View Menu</button>
+                        </div>
+                    </div>
+                    <div class="restaurant-info">
+                        <h3>Restaurant Name</h3>
+                        <p class="cuisine">Italian • Pizza • Pasta</p>
+                        <div class="restaurant-meta">
+                            <span><i class="fas fa-clock"></i> 25-35 min</span>
+                            <span><i class="fas fa-motorcycle"></i> $2.99</span>
+                        </div>
                     </div>
                 </div>
             }
@@ -228,111 +93,644 @@
     </div>
 </section>
 
-<section class="special-offers">
+<section class="categories-section" data-aos="fade-up">
     <div class="container">
-        <h2>Special Offers</h2>
-        <div class="row g-4 justify-content-center">
-            @foreach (var promo in Model.ActivePromotions)
+        <div class="section-header">
+            <h2>Food Categories</h2>
+            <a href="#" class="view-all">
+                <span>View All</span>
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        <div class="categories-grid">
+            @for (int i = 0; i < 6; i++)
             {
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="offer-card">
-                        <h3>@promo.Code</h3>
-                        <p>@promo.Description</p>
-                        <p>Discount: @(promo.IsPercentage? promo.DiscountValue + "%" : promo.DiscountValue.ToString("C"))
-                        </p>
-                        <p>Minimum Order: @promo.MinimumOrderAmount.ToString("C")</p>
-                        <p>Valid: @promo.StartDate.ToShortDateString() - @promo.EndDate.ToShortDateString()</p>
+                <div class="category-card" data-aos="fade-up" data-aos-delay="@(i * 100)">
+                    <div class="category-icon">
+                        <i class="fas fa-pizza-slice"></i>
                     </div>
+                    <h3>Category Name</h3>
                 </div>
             }
         </div>
     </div>
 </section>
 
-<section class="how-it-works">
+<section class="app-section" data-aos="fade-up">
     <div class="container">
-        <h2>How It Works</h2>
-        <ol class="steps-list">
-            <li>Search for your favorite food or restaurant</li>
-            <li>Place your order easily</li>
-            <li>Enjoy fast delivery at your doorstep</li>
-        </ol>
+        <div class="app-content">
+            <div class="app-text" data-aos="fade-right">
+                <h2>Get the FoodDeliveryApp Mobile App</h2>
+                <p>Download our mobile app for a better experience. Order food, track delivery, and more!</p>
+                <div class="app-buttons">
+                    <a href="#" class="app-button">
+                        <i class="fab fa-apple"></i>
+                        <div class="app-button-text">
+                            <span>Download on the</span>
+                            <strong>App Store</strong>
+                        </div>
+                    </a>
+                    <a href="#" class="app-button">
+                        <i class="fab fa-google-play"></i>
+                        <div class="app-button-text">
+                            <span>Get it on</span>
+                            <strong>Google Play</strong>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="app-image" data-aos="fade-left">
+                <img src="~/images/app-mockup.png" alt="Mobile App" />
+            </div>
+        </div>
     </div>
 </section>
 
-<section class="testimonials">
-    <div class="container">
-        <h2>What Our Customers Say</h2>
-        <blockquote>
-            "Fast delivery and delicious food! Highly recommend FoodDeliveryApp."
-            <footer>- Happy Customer</footer>
-        </blockquote>
-    </div>
-</section>
+<style>
+    /* Hero Section */
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/images/hero-bg.jpg');
+        background-size: cover;
+        background-position: center;
+        padding: 6rem 0;
+        color: white;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
 
-<section class="download-app">
-    <div class="container">
-        <h2>Get Our App</h2>
-        <p>Order food on the go with our mobile app.</p>
-        <img src="@Model.AppDownload.AppScreenshotUrl" alt="App Screenshot" class="img-fluid rounded" />
-        <a href="#" class="app-download-button">Download Now</a>
-    </div>
-</section>
+    .hero-shapes {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
 
-<section class="become-partner">
-    <div class="container">
-        <h2>Become a Partner</h2>
-        <p>Join FoodDeliveryApp and grow your restaurant business with us.</p>
-        <a href="/Partner/Join" class="partner-button">Join Now</a>
-    </div>
-</section>
+    .shape {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .shape-1 {
+        width: 300px;
+        height: 300px;
+        top: -150px;
+        right: -150px;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    .shape-2 {
+        width: 200px;
+        height: 200px;
+        bottom: -100px;
+        left: -100px;
+        animation: float 8s ease-in-out infinite;
+    }
+
+    .shape-3 {
+        width: 150px;
+        height: 150px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation: float 7s ease-in-out infinite;
+    }
+
+    @@keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+    }
+
+    .hero-content h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        opacity: 0;
+        animation: fadeInUp 1s ease forwards;
+    }
+
+    .hero-content p {
+        font-size: 1.25rem;
+        margin-bottom: 2rem;
+        opacity: 0;
+        animation: fadeInUp 1s ease 0.3s forwards;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .hero-search {
+        max-width: 600px;
+        margin: 0 auto;
+        opacity: 0;
+        animation: fadeInUp 1s ease 0.6s forwards;
+    }
+
+    .hero-search .search-box {
+        display: flex;
+        align-items: center;
+        background: white;
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .hero-search .search-box i {
+        color: var(--text-muted);
+        margin: 0 1rem;
+    }
+
+    .hero-search .search-box input {
+        flex: 1;
+        border: none;
+        padding: 0.75rem 0;
+        font-size: 1rem;
+        background: transparent;
+    }
+
+    .hero-search .search-box input:focus {
+        outline: none;
+    }
+
+    .hero-search .search-box .btn {
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: var(--transition-base);
+    }
+
+    .hero-search .search-box .btn:hover {
+        transform: translateX(5px);
+    }
+
+    /* Features Section */
+    .features-section {
+        padding: 4rem 0;
+        background: var(--secondary-color);
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+    }
+
+    .feature-card {
+        text-align: center;
+        padding: 2rem;
+        background: var(--card-background);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition-base);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .feature-icon {
+        width: 64px;
+        height: 64px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin: 0 auto 1.5rem;
+        transition: var(--transition-base);
+    }
+
+    .feature-card:hover .feature-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .feature-card h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-color);
+    }
+
+    .feature-card p {
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    /* Popular Section */
+    .popular-section {
+        padding: 4rem 0;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--text-color);
+    }
+
+    .view-all {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: var(--transition-base);
+    }
+
+    .view-all:hover {
+        color: var(--primary-hover);
+        transform: translateX(5px);
+    }
+
+    .restaurants-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+
+    .restaurant-card {
+        background: var(--card-background);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition-base);
+    }
+
+    .restaurant-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .restaurant-image {
+        position: relative;
+        height: 200px;
+        overflow: hidden;
+    }
+
+    .restaurant-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: var(--transition-base);
+    }
+
+    .restaurant-card:hover .restaurant-image img {
+        transform: scale(1.1);
+    }
+
+    .restaurant-rating {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: var(--card-background);
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: var(--text-color);
+    }
+
+    .restaurant-rating i {
+        color: #F59E0B;
+    }
+
+    .restaurant-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: var(--transition-base);
+    }
+
+    .restaurant-card:hover .restaurant-overlay {
+        opacity: 1;
+    }
+
+    .restaurant-info {
+        padding: 1rem;
+    }
+
+    .restaurant-info h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: var(--text-color);
+    }
+
+    .cuisine {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .restaurant-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .restaurant-meta span {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    /* Categories Section */
+    .categories-section {
+        padding: 4rem 0;
+        background: var(--secondary-color);
+    }
+
+    .categories-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 1.5rem;
+    }
+
+    .category-card {
+        background: var(--card-background);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition-base);
+        cursor: pointer;
+    }
+
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .category-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        margin: 0 auto 1rem;
+        transition: var(--transition-base);
+    }
+
+    .category-card:hover .category-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .category-card h3 {
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0;
+        color: var(--text-color);
+    }
+
+    /* App Section */
+    .app-section {
+        padding: 4rem 0;
+    }
+
+    .app-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+        align-items: center;
+    }
+
+    .app-text h2 {
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-color);
+    }
+
+    .app-text p {
+        color: var(--text-muted);
+        margin-bottom: 2rem;
+    }
+
+    .app-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .app-button {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: var(--text-color);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        transition: var(--transition-base);
+    }
+
+    .app-button:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-3px);
+    }
+
+    .app-button i {
+        font-size: 1.5rem;
+    }
+
+    .app-button-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+    }
+
+    .app-button-text span {
+        font-size: 0.75rem;
+    }
+
+    .app-button-text strong {
+        font-size: 1rem;
+    }
+
+    .app-image img {
+        width: 100%;
+        height: auto;
+        transition: var(--transition-base);
+    }
+
+    .app-image:hover img {
+        transform: translateY(-10px);
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 991px) {
+        .hero-content h1 {
+            font-size: 2.5rem;
+        }
+
+        .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .restaurants-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .categories-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .app-content {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+
+        .app-buttons {
+            justify-content: center;
+        }
+    }
+
+    @@media (max-width: 767px) {
+        .hero-content h1 {
+            font-size: 2rem;
+        }
+
+        .hero-search .search-box {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .hero-search .search-box .btn {
+            width: 100%;
+        }
+
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .restaurants-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .categories-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Dark Mode Support */
+    [data-bs-theme="dark"] {
+        .hero-section {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/hero-bg.jpg');
+        }
+
+        .feature-card,
+        .restaurant-card,
+        .category-card {
+            background: var(--card-background);
+        }
+
+        .app-button {
+            background: var(--primary-color);
+        }
+
+        .app-button:hover {
+            background: var(--primary-hover);
+        }
+    }
+</style>
 
 @section Scripts {
     <script>
+        // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', function() {
-            // Connect custom navigation buttons to carousel
-            const prevButton = document.getElementById('prevRestaurant');
-            const nextButton = document.getElementById('nextRestaurant');
-            const carousel = new bootstrap.Carousel(document.getElementById('popularRestaurantsCarousel'));
-            
-            prevButton.addEventListener('click', function() {
-                carousel.prev();
-            });
-            
-            nextButton.addEventListener('click', function() {
-                carousel.next();
-            });
-            
-            // Add animation to elements when they come into view
-            const animatedElements = document.querySelectorAll('.animate-fade-in');
-            
-            if ('IntersectionObserver' in window) {
-                const animationObserver = new IntersectionObserver((entries, observer) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const element = entry.target;
-                            const delay = element.dataset.delay || 0;
-                            
-                            setTimeout(() => {
-                                element.classList.add('fade-in');
-                            }, delay);
-                            
-                            animationObserver.unobserve(element);
-                        }
-                    });
-                }, {
-                    threshold: 0.1
-                });
-                
-                animatedElements.forEach(element => {
-                    animationObserver.observe(element);
-                });
-            } else {
-                // Fallback for browsers that don't support IntersectionObserver
-                animatedElements.forEach(element => {
-                    element.classList.add('fade-in');
+            // Initialize AOS
+            if (typeof AOS !== 'undefined') {
+                AOS.init({
+                    duration: 800,
+                    easing: 'ease-in-out',
+                    once: true,
+                    mirror: false,
+                    disable: 'mobile' // Disable on mobile devices
                 });
             }
+
+            // Animate text on scroll
+            const animateText = document.querySelectorAll('.animate-text');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            });
+
+            animateText.forEach(text => {
+                text.style.opacity = '0';
+                text.style.transform = 'translateY(20px)';
+                observer.observe(text);
+            });
+
+            // Restaurant card hover effect
+            const restaurantCards = document.querySelectorAll('.restaurant-card');
+            
+            restaurantCards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.querySelector('.restaurant-overlay').style.opacity = '1';
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    card.querySelector('.restaurant-overlay').style.opacity = '0';
+                });
+            });
+
+            // Category card hover effect
+            const categoryCards = document.querySelectorAll('.category-card');
+            
+            categoryCards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.querySelector('.category-icon').style.transform = 'scale(1.1) rotate(5deg)';
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    card.querySelector('.category-icon').style.transform = 'scale(1) rotate(0)';
+                });
+            });
         });
     </script>
 }

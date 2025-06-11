@@ -1,620 +1,309 @@
-﻿@model FoodDeliveryApp.ViewModels.Restaurant.RestaurantListViewModel
+@model FoodDeliveryApp.ViewModels.Restaurant.RestaurantListViewModel
 @{
+    Layout = "_Layout";
     ViewData["Title"] = "Restaurants";
-    ViewData["ActiveMenu"] = "Restaurants";
 }
 
-<!-- Hero Section with Search -->
-<section class="hero-section position-relative">
-    <div class="hero-bg"></div>
-    <div class="container position-relative py-5">
-        <div class="text-center mb-4">
-            <h1 class="display-4 fw-bold text-white mb-2">Discover Top Restaurants</h1>
-            <p class="lead text-white mb-4">Find the best dining options in your area</p>
+<!-- Hero Section -->
+<section class="hero-section py-5 bg-gradient-primary text-white position-relative overflow-hidden">
+    <div class="position-absolute top-0 end-0 w-100 h-100 opacity-10">
+        <div class="position-absolute top-0 end-0" style="width: 800px; height: 800px;">
+            <div class="position-absolute top-0 end-0 bg-white rounded-circle" style="width: 100%; height: 100%; transform: translate(30%, -30%);"></div>
         </div>
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="search-box bg-white p-3 rounded-pill shadow-lg">
-                    <form asp-action="Index" method="get" class="d-flex">
-                        <div class="input-group border-0">
-                            <span class="input-group-text bg-transparent border-0">
-                                <i class="fas fa-search text-primary"></i>
-                            </span>
-                            <input type="text" id="searchTerm" name="searchTerm" value="@Model.SearchTerm" 
-                                   class="form-control border-0 shadow-none" 
-                                   placeholder="Search restaurants, cuisines, or dishes..." />
-                            <button type="submit" class="btn btn-primary rounded-pill px-4">Search</button>
-                        </div>
+    </div>
+    <div class="container position-relative">
+        <div class="row align-items-center">
+            <div class="col-lg-6" data-aos="fade-right">
+                <h1 class="display-4 fw-bold mb-3 text-shadow">Discover Amazing Restaurants</h1>
+                <p class="lead mb-4 text-shadow">Find and order from the best restaurants in your area. Fast delivery, great prices, and delicious food.</p>
+                <div class="search-box bg-white rounded-pill p-2 shadow-lg">
+                    <form method="get" class="d-flex">
+                        <input type="text" class="form-control border-0 shadow-none" name="searchTerm" value="@Model.SearchTerm" 
+                               placeholder="Search restaurants, cuisines, or locations..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">
+                            <i class="fas fa-search me-2"></i>Search
+                        </button>
                     </form>
                 </div>
+            </div>
+            <div class="col-lg-6 d-none d-lg-block" data-aos="fade-left">
+                <img src="/images/hero-restaurant.svg" alt="Restaurant Illustration" class="img-fluid floating-animation">
             </div>
         </div>
     </div>
 </section>
 
 <!-- Main Content -->
-<div class="container py-5">
-    <!-- Filter Section -->
-    <div class="card shadow-sm mb-4 border-0 overflow-hidden">
-        <div class="card-header bg-white border-bottom-0 py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Filters</h5>
-                <button class="btn btn-link text-decoration-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
-                    <span class="d-none d-md-inline">Toggle Filters</span>
-                    <i class="fas fa-chevron-down ms-1"></i>
-                </button>
+<div class="restaurant-section py-5">
+    <div class="container">
+        <!-- Filters Section -->
+        <div class="filters-section mb-5" data-aos="fade-up">
+            <div class="card border-0 shadow-sm hover-lift">
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-lg-4 col-md-6">
+                            <label class="form-label fw-medium">Category</label>
+                            <select class="form-select shadow-sm" name="categoryId" id="categoryId" asp-items="@(new SelectList(ViewBag.Categories, "Id", "Name", Model.CategoryId))">
+                                <option value="">All Categories</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label fw-medium">Sort By</label>
+                            <select class="form-select shadow-sm" name="sortBy" id="sortBy">
+                                <option value="name" selected="@(Model.SortBy == "name")">Name (A-Z)</option>
+                                <option value="rating" selected="@(Model.SortBy == "rating")">Highest Rating</option>
+                                <option value="deliverytime" selected="@(Model.SortBy == "deliverytime")">Fastest Delivery</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label fw-medium">Price Range</label>
+                            <select class="form-select shadow-sm" name="priceRange" id="priceRange">
+                                <option value="">Any Price</option>
+                                <option value="1">$</option>
+                                <option value="2">$$</option>
+                                <option value="3">$$$</option>
+                                <option value="4">$$$$</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-6 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-primary w-100 shadow-sm hover-lift" id="clearFilters">
+                                <i class="fas fa-redo me-2"></i>Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="collapse show" id="filterCollapse">
-            <div class="card-body">
-                <form asp-action="Index" method="get" class="filter-form" id="filterForm">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label for="categoryId" class="form-label">Category</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-utensils text-muted"></i></span>
-                                <select id="categoryId" name="categoryId"  class="form-select border-start-0">
-                                    <option value="">All Categories</option>
-                                    @foreach (var category in Model.Categories)
-                                    {
-                                        <option value="@category.Value" >@category.Text</option>
-                                    }
-                                </select>
+
+        <!-- Results Header -->
+        <div class="results-header d-flex justify-content-between align-items-center mb-4" data-aos="fade-up">
+            <div class="d-flex align-items-center">
+                <span class="badge bg-primary rounded-pill px-3 py-2 me-3 shadow-sm">@Model.TotalItems</span>
+                <h5 class="mb-0 text-muted">Restaurants found</h5>
+            </div>
+            @if (User.IsInRole("Admin") || User.IsInRole("Owner"))
+            {
+                <a asp-action="Create" class="btn btn-primary shadow-sm hover-lift">
+                    <i class="fas fa-plus-circle me-2"></i>Add Restaurant
+                </a>
+            }
+        </div>
+
+        <!-- Restaurant Grid -->
+        <div class="row g-4">
+            @foreach (var restaurant in Model.Restaurants)
+            {
+                <div class="col-lg-4 col-md-6" data-aos="fade-up">
+                    <div class="restaurant-card card h-100 border-0 shadow-sm hover-lift">
+                        <div class="position-relative">
+                            <img src="@(string.IsNullOrEmpty(restaurant.ImageUrl) ? "/images/restaurants/default.jpg" : restaurant.ImageUrl)" 
+                                 class="card-img-top" alt="@restaurant.Name" style="height: 200px; object-fit: cover;">
+                            @if (restaurant.IsOpen)
+                            {
+                                <span class="badge bg-success position-absolute top-0 start-0 m-3 shadow-sm">
+                                    <i class="fas fa-clock me-1"></i>Open Now
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger position-absolute top-0 start-0 m-3 shadow-sm">
+                                    <i class="fas fa-clock me-1"></i>Closed
+                                </span>
+                            }
+                            @if (!restaurant.IsActive)
+                            {
+                                <span class="badge bg-warning position-absolute top-0 end-0 m-3 shadow-sm">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Inactive
+                                </span>
+                            }
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">@restaurant.Name</h5>
+                                <div class="rating">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <span class="fw-bold">@restaurant.Rating.ToString("0.0")</span>
+                                    <small class="text-muted">(@restaurant.ReviewCount)</small>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="sortOrder" class="form-label">Sort By</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-sort text-muted"></i></span>
-                                <select id="sortOrder" name="sortOrder" class="form-select border-start-0">
-                                    <option value="name" selected="@(Model.CurrentSortOrder == "name")">Name (A-Z)</option>
-                                    <option value="name_desc" selected="@(Model.CurrentSortOrder == "name_desc")">Name (Z-A)</option>
-                                    <option value="rating" selected="@(Model.CurrentSortOrder == "rating")">Highest Rating</option>
-                                    <option value="rating_asc" selected="@(Model.CurrentSortOrder == "rating_asc")">Lowest Rating</option>
-                                    <option value="delivery_fee" selected="@(Model.CurrentSortOrder == "delivery_fee")">Lowest Delivery Fee</option>
-                                </select>
+                            <div class="restaurant-info mb-3">
+                                <div class="d-flex align-items-center text-muted mb-2">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    <span>@restaurant.Address.City, @restaurant.Address.State</span>
+                                </div>
+                                <div class="d-flex align-items-center text-muted mb-2">
+                                    <i class="fas fa-utensils me-2"></i>
+                                    <span>@string.Join(", ", restaurant.Categories)</span>
+                                </div>
+                                <div class="d-flex align-items-center text-muted">
+                                    <i class="fas fa-truck me-2"></i>
+                                    <span>@(restaurant.DeliveryFee > 0 ? $"${restaurant.DeliveryFee:F2} delivery" : "Free Delivery")</span>
+                                </div>
                             </div>
+                            <p class="card-text text-muted">
+                                @(restaurant.Description?.Length > 100 ? 
+                                    restaurant.Description.Substring(0, 100) + "..." : 
+                                    restaurant.Description)
+                            </p>
                         </div>
-                        <div class="col-md-4">
-                            <label for="deliveryFee" class="form-label">Max Delivery Fee</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-truck text-muted"></i></span>
-                                <select id="deliveryFee" name="deliveryFee" class="form-select border-start-0">
-                                    <option value="" selected="@(string.IsNullOrEmpty(Model.MaxDeliveryFee))">Any Price</option>
-                                    <option value="0" selected="@(Model.MaxDeliveryFee == "0")">Free</option>
-                                    <option value="1" selected="@(Model.MaxDeliveryFee == "1")">Up to $1</option>
-                                    <option value="3" selected="@(Model.MaxDeliveryFee == "3")">Up to $3</option>
-                                    <option value="5" selected="@(Model.MaxDeliveryFee == "5")">Up to $5</option>
-                                    <option value="10" selected="@(Model.MaxDeliveryFee == "10")">Up to $10</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-3">
-                        <p class="mb-2">Dietary Options</p>
-                        <div class="btn-group flex-wrap" role="group">
-                            <input type="checkbox" class="btn-check" name="dietary" value="vegetarian" id="vegetarian" 
-                                   checked="@(Model.SelectedDietaryOptions != null && Model.SelectedDietaryOptions.Contains("vegetarian"))">
-                            <label class="btn btn-outline-success btn-sm rounded-pill me-2 mb-2" for="vegetarian">Vegetarian</label>
-                            
-                            <input type="checkbox" class="btn-check" name="dietary" value="vegan" id="vegan"
-                                   checked="@(Model.SelectedDietaryOptions != null && Model.SelectedDietaryOptions.Contains("vegan"))">
-                            <label class="btn btn-outline-success btn-sm rounded-pill me-2 mb-2" for="vegan">Vegan</label>
-                            
-                            <input type="checkbox" class="btn-check" name="dietary" value="glutenFree" id="glutenFree"
-                                   checked="@(Model.SelectedDietaryOptions != null && Model.SelectedDietaryOptions.Contains("glutenFree"))">
-                            <label class="btn btn-outline-success btn-sm rounded-pill me-2 mb-2" for="glutenFree">Gluten Free</label>
-                            
-                            <input type="checkbox" class="btn-check" name="dietary" value="halal" id="halal"
-                                   checked="@(Model.SelectedDietaryOptions != null && Model.SelectedDietaryOptions.Contains("halal"))">
-                            <label class="btn btn-outline-success btn-sm rounded-pill me-2 mb-2" for="halal">Halal</label>
+                        <div class="card-footer bg-transparent border-0 d-flex justify-content-between align-items-center">
+                            <a asp-action="Details" asp-route-id="@restaurant.Id" class="btn btn-primary shadow-sm hover-lift">
+                                <i class="fas fa-utensils me-2"></i>View Menu
+                            </a>
+                            @if (restaurant.IsAdminOrOwner)
+                            {
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary rounded-circle shadow-sm hover-lift" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                        <li>
+                                            <a class="dropdown-item" asp-action="Edit" asp-route-id="@restaurant.Id">
+                                                <i class="fas fa-edit me-2"></i>Edit
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item text-danger" 
+                                                    data-bs-toggle="modal" data-bs-target="#deleteModal" 
+                                                    data-restaurant-id="@restaurant.Id" 
+                                                    data-restaurant-name="@restaurant.Name">
+                                                <i class="fas fa-trash me-2"></i>Delete
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            }
                         </div>
                     </div>
-                    
-                    <div class="mt-3">
-                        <p class="mb-2">Cuisines</p>
-                        <div class="btn-group flex-wrap" role="group">
-                            <input type="checkbox" class="btn-check" name="cuisines" value="italian" id="italian"
-                                   checked="@(Model.SelectedCuisines != null && Model.SelectedCuisines.Contains("italian"))">
-                            <label class="btn btn-outline-primary btn-sm rounded-pill me-2 mb-2" for="italian">Italian</label>
-                            
-                            <input type="checkbox" class="btn-check" name="cuisines" value="chinese" id="chinese"
-                                   checked="@(Model.SelectedCuisines != null && Model.SelectedCuisines.Contains("chinese"))">
-                            <label class="btn btn-outline-primary btn-sm rounded-pill me-2 mb-2" for="chinese">Chinese</label>
-                            
-                            <input type="checkbox" class="btn-check" name="cuisines" value="mexican" id="mexican"
-                                   checked="@(Model.SelectedCuisines != null && Model.SelectedCuisines.Contains("mexican"))">
-                            <label class="btn btn-outline-primary btn-sm rounded-pill me-2 mb-2" for="mexican">Mexican</label>
-                            
-                            <input type="checkbox" class="btn-check" name="cuisines" value="indian" id="indian"
-                                   checked="@(Model.SelectedCuisines != null && Model.SelectedCuisines.Contains("indian"))">
-                            <label class="btn btn-outline-primary btn-sm rounded-pill me-2 mb-2" for="indian">Indian</label>
-                            
-                            <input type="checkbox" class="btn-check" name="cuisines" value="japanese" id="japanese"
-                                   checked="@(Model.SelectedCuisines != null && Model.SelectedCuisines.Contains("japanese"))">
-                            <label class="btn btn-outline-primary btn-sm rounded-pill me-2 mb-2" for="japanese">Japanese</label>
-                            
-                            <input type="checkbox" class="btn-check" name="cuisines" value="american" id="american"
-                                   checked="@(Model.SelectedCuisines != null && Model.SelectedCuisines.Contains("american"))">
-                            <label class="btn btn-outline-primary btn-sm rounded-pill me-2 mb-2" for="american">American</label>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between mt-4">
-                        <button type="button" class="btn btn-outline-secondary" id="clearFilters">
-                            <i class="fas fa-times me-1"></i> Clear Filters
-                        </button>
-                        <button type="submit" class="btn btn-primary px-4">
-                            <i class="fas fa-filter me-1"></i> Apply Filters
-                        </button>
-                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Empty State -->
+        @if (!Model.Restaurants.Any())
+        {
+            <div class="empty-state text-center py-5" data-aos="fade-up">
+                <div class="empty-state-icon mb-4">
+                    <i class="fas fa-utensils fa-4x text-primary"></i>
+                </div>
+                <h4 class="fw-bold mb-3">No Restaurants Found</h4>
+                <p class="text-muted mb-4">We couldn't find any restaurants matching your search criteria.</p>
+                <a asp-action="Index" class="btn btn-primary shadow-sm hover-lift">
+                    <i class="fas fa-redo me-2"></i>Reset Filters
+                </a>
+            </div>
+        }
+
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="mt-5" aria-label="Restaurant pagination" data-aos="fade-up">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link shadow-sm" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)" asp-route-searchTerm="@Model.SearchTerm" asp-route-categoryId="@Model.CategoryId" asp-route-sortBy="@Model.SortBy" asp-route-priceRange="@Model.PriceRange">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                            <a class="page-link shadow-sm" asp-action="Index" asp-route-page="@i" asp-route-searchTerm="@Model.SearchTerm" asp-route-categoryId="@Model.CategoryId" asp-route-sortBy="@Model.SortBy" asp-route-priceRange="@Model.PriceRange">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                        <a class="page-link shadow-sm" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)" asp-route-searchTerm="@Model.SearchTerm" asp-route-categoryId="@Model.CategoryId" asp-route-sortBy="@Model.SortBy" asp-route-priceRange="@Model.PriceRange">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="lead mb-3">Are you sure you want to delete <strong id="restaurantName" class="text-danger"></strong>?</p>
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading fw-bold mb-2">
+                        <i class="fas fa-exclamation-circle me-2"></i>Warning
+                    </h6>
+                    <p class="mb-2">This action cannot be undone and will remove:</p>
+                    <ul class="mb-0">
+                        <li>All menu items associated with this restaurant</li>
+                        <li>Customer reviews and ratings</li>
+                        <li>Order history and tracking information</li>
+                        <li>Promotional offers and discounts</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                <form asp-action="Delete" method="post" class="d-inline">
+                    <input type="hidden" id="restaurantId" name="id" />
+                    <button type="submit" class="btn btn-danger shadow-sm">
+                        <i class="fas fa-trash me-2"></i>Delete Restaurant
+                    </button>
                 </form>
             </div>
         </div>
     </div>
-
-    <!-- Restaurant Count and View Toggles -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="h4 mb-0">Found <span class="text-primary">@Model.Restaurants.Count()</span> restaurants</h2>
-            <p class="text-muted mb-0 small">
-                @if (!string.IsNullOrEmpty(Model.SearchTerm))
-                {
-                    <span>Search results for: <strong>@Model.SearchTerm</strong></span>
-                }
-                else
-                {
-                    <span>Showing all restaurants</span>
-                }
-            </p>
-        </div>
-        <div class="btn-group" role="group" aria-label="View toggle">
-            <button type="button" class="btn btn-outline-secondary active" id="gridView">
-                <i class="fas fa-th"></i>
-            </button>
-            <button type="button" class="btn btn-outline-secondary" id="listView">
-                <i class="fas fa-list"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Grid View -->
-    <div class="row g-4" id="restaurantsGrid">
-        @if (Model.Restaurants.Any())
-        {
-            foreach (var restaurant in Model.Restaurants)
-            {
-                <div class="col-lg-4 col-md-6">
-                    <div class="card h-100 restaurant-card border-0 shadow-sm">
-                        <div class="position-relative">
-                            <img src="@(string.IsNullOrEmpty(restaurant.LogoUrl) ? "/images/default-restaurant.jpg" : restaurant.LogoUrl)" 
-                                 class="card-img-top" alt="@restaurant.Name" 
-                                 style="height: 200px; object-fit: cover;">
-                            <div class="position-absolute top-0 start-0 m-3">
-                                @if (restaurant.IsOpen)
-                                {
-                                    <span class="badge bg-success fw-normal">Open</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-danger fw-normal">Closed</span>
-                                }
-                            </div>
-                            @if (restaurant.DeliveryFee == 0)
-                            {
-                                <div class="position-absolute top-0 end-0 m-3">
-                                    <span class="badge bg-primary fw-normal">Free Delivery</span>
-                                </div>
-                            }
-                        </div>
-                        <div class="card-body position-relative">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <h5 class="card-title mb-1">@restaurant.Name</h5>
-                                <div class="restaurant-rating">
-                                    <span class="badge bg-warning text-dark rounded-pill d-inline-flex align-items-center">
-                                        <i class="fas fa-star me-1"></i> @restaurant.Rating.ToString("0.0")
-                                    </span>
-                                </div>
-                            </div>
-                            <p class="text-muted mb-1 small">
-                                <i class="fas fa-utensils me-1 text-primary"></i> @restaurant.CategoryName
-                            </p>
-                            <p class="card-text text-muted small restaurant-description mb-2">@restaurant.Description</p>
-                            <div class="d-flex align-items-center text-muted small">
-                                <div class="me-3">
-                                    <i class="fas fa-truck me-1"></i> @(restaurant.DeliveryFee > 0 ? restaurant.DeliveryFee.ToString("C") : "Free")
-                                </div>
-                                <div>
-                                    <i class="far fa-clock me-1"></i> 30-45 min
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-white border-0 pt-0">
-                            <div class="d-grid gap-2 d-md-flex justify-content-between">
-                                <a asp-action="Details" asp-route-id="@restaurant.Id" class="btn btn-outline-primary">
-                                    View Menu <i class="fas fa-chevron-right ms-1"></i>
-                                </a>
-                                @if (restaurant.IsAdminOrOwner)
-                                {
-                                    <div class="dropdown">
-                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="restaurantActions_@restaurant.Id" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="fas fa-cog"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="restaurantActions_@restaurant.Id">
-                                            <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@restaurant.Id">
-                                                <i class="fas fa-edit me-2"></i> Edit</a></li>
-                                            <li><a class="dropdown-item" asp-action="Promotions" asp-route-restaurantId="@restaurant.Id">
-                                                <i class="fas fa-tags me-2"></i> Manage Promotions</a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><button class="dropdown-item text-@(restaurant.IsActive ? "danger" : "success")" 
-                                                       type="button" data-bs-toggle="modal" data-bs-target="#toggleStatusModal_@restaurant.Id">
-                                                <i class="fas fa-@(restaurant.IsActive ? "power-off" : "check-circle") me-2"></i>
-                                                @(restaurant.IsActive ? "Deactivate" : "Activate")
-                                                </button></li>
-                                        </ul>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="col-12">
-                <div class="text-center py-5">
-                    <i class="fas fa-utensils fa-4x text-muted mb-3"></i>
-                    <h3>No restaurants found</h3>
-                    <p class="text-muted">Try adjusting your search or filter criteria</p>
-                    <a asp-action="Index" class="btn btn-primary mt-2">Clear all filters</a>
-                </div>
-            </div>
-        }
-    </div>
-
-    <!-- List View (hidden by default) -->
-    <div class="d-none" id="restaurantsList">
-        @if (Model.Restaurants.Any())
-        {
-            <div class="list-group">
-                @foreach (var restaurant in Model.Restaurants)
-                {
-                    <div class="list-group-item list-group-item-action border-0 shadow-sm mb-3">
-                        <div class="row g-0">
-                            <div class="col-md-2">
-                                <img src="@(string.IsNullOrEmpty(restaurant.LogoUrl) ? "/images/default-restaurant.jpg" : restaurant.LogoUrl)" 
-                                     class="img-fluid rounded" alt="@restaurant.Name" style="height: 100px; object-fit: cover;">
-                            </div>
-                            <div class="col-md-8 ps-md-3">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="mb-0">@restaurant.Name</h5>
-                                    <span class="badge bg-warning text-dark rounded-pill">
-                                        <i class="fas fa-star me-1"></i> @restaurant.Rating.ToString("0.0")
-                                    </span>
-                                </div>
-                                <p class="text-muted mb-1 small">
-                                    <i class="fas fa-utensils me-1 text-primary"></i> @restaurant.CategoryName
-                                    <span class="mx-2">•</span>
-                                    <i class="fas fa-truck me-1"></i> @(restaurant.DeliveryFee > 0 ? restaurant.DeliveryFee.ToString("C") : "Free")
-                                    <span class="mx-2">•</span>
-                                    <i class="far fa-clock me-1"></i> 30-45 min
-                                </p>
-                                <p class="text-muted small mb-2 d-none d-md-block">@restaurant.Description</p>
-                                <div>
-                                    @if (restaurant.IsOpen)
-                                    {
-                                        <span class="badge bg-success fw-normal">Open</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger fw-normal">Closed</span>
-                                    }
-                                    
-                                    @if (restaurant.DeliveryFee == 0)
-                                    {
-                                        <span class="badge bg-primary fw-normal ms-2">Free Delivery</span>
-                                    }
-                                </div>
-                            </div>
-                            <div class="col-md-2 d-flex align-items-center justify-content-end">
-                                <div class="d-grid gap-2">
-                                    <a asp-action="Details" asp-route-id="@restaurant.Id" class="btn btn-outline-primary btn-sm">
-                                        View Menu <i class="fas fa-chevron-right ms-1"></i>
-                                    </a>
-                                    
-                                    @if (restaurant.IsAdminOrOwner)
-                                    {
-                                        <div class="dropdown">
-                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" 
-                                                    id="listRestaurantActions_@restaurant.Id" data-bs-toggle="dropdown" aria-expanded="false">
-                                                Actions
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="listRestaurantActions_@restaurant.Id">
-                                                <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@restaurant.Id">Edit</a></li>
-                                                <li><a class="dropdown-item" asp-action="Promotions" asp-route-restaurantId="@restaurant.Id">
-                                                    Manage Promotions</a></li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li><button class="dropdown-item" type="button" data-bs-toggle="modal"
-                                                           data-bs-target="#toggleStatusModal_@restaurant.Id">
-                                                    @(restaurant.IsActive ? "Deactivate" : "Activate")</button></li>
-                                            </ul>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="text-center py-5">
-                <i class="fas fa-utensils fa-4x text-muted mb-3"></i>
-                <h3>No restaurants found</h3>
-                <p class="text-muted">Try adjusting your search or filter criteria</p>
-                <a asp-action="Index" class="btn btn-primary mt-2">Clear all filters</a>
-            </div>
-        }
-    </div>
-
-    <!-- Pagination -->
-    @if (Model.TotalPages > 1)
-    {
-        <nav aria-label="Restaurant pagination" class="mt-5">
-            <ul class="pagination justify-content-center">
-                @if (Model.CurrentPage > 1)
-                {
-                    <li class="page-item">
-                        <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)" 
-                           asp-route-categoryId="@Model.CurrentCategoryId" asp-route-searchTerm="@Model.SearchTerm"
-                           asp-route-sortOrder="@Model.CurrentSortOrder" aria-label="Previous page">
-                            <i class="fas fa-chevron-left me-1"></i> Previous
-                        </a>
-                    </li>
-                }
-                
-                @{
-                    const int pagesToShow = 5;
-                    var startPage = Math.Max(1, Model.CurrentPage - (pagesToShow / 2));
-                    var endPage = Math.Min(Model.TotalPages, startPage + pagesToShow - 1);
-                    
-                    if (startPage > 1)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" asp-action="Index" asp-route-page="1" 
-                               asp-route-categoryId="@Model.CurrentCategoryId" asp-route-searchTerm="@Model.SearchTerm"
-                               asp-route-sortOrder="@Model.CurrentSortOrder">1</a>
-                        </li>
-                        if (startPage > 2)
-                        {
-                            <li class="page-item disabled">
-                                <span class="page-link">...</span>
-                            </li>
-                        }
-                    }
-                    
-                    for (int i = startPage; i <= endPage; i++)
-                    {
-                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                            <a class="page-link" asp-action="Index" asp-route-page="@i" 
-                               asp-route-categoryId="@Model.CurrentCategoryId" asp-route-searchTerm="@Model.SearchTerm" 
-                               asp-route-sortOrder="@Model.CurrentSortOrder">@i</a>
-                        </li>
-                    }
-                    
-                    if (endPage < Model.TotalPages)
-                    {
-                        if (endPage < Model.TotalPages - 1)
-                        {
-                            <li class="page-item disabled">
-                                <span class="page-link">...</span>
-                            </li>
-                        }
-                        <li class="page-item">
-                            <a class="page-link" asp-action="Index" asp-route-page="@Model.TotalPages" 
-                               asp-route-categoryId="@Model.CurrentCategoryId" asp-route-searchTerm="@Model.SearchTerm" 
-                               asp-route-sortOrder="@Model.CurrentSortOrder">@Model.TotalPages</a>
-                        </li>
-                    }
-                }
-                
-                @if (Model.CurrentPage < Model.TotalPages)
-                {
-                    <li class="page-item">
-                        <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)" 
-                           asp-route-categoryId="@Model.CurrentCategoryId" asp-route-searchTerm="@Model.SearchTerm" 
-                           asp-route-sortOrder="@Model.CurrentSortOrder" aria-label="Next page">
-                            Next <i class="fas fa-chevron-right ms-1"></i>
-                        </a>
-                    </li>
-                }
-            </ul>
-        </nav>
-    }
-    
-    @if (Model.IsAdmin)
-    {
-        <div class="text-center mt-5">
-            <a asp-action="Create" class="btn btn-success btn-lg rounded-pill">
-                <i class="fas fa-plus-circle me-2"></i> Create New Restaurant
-            </a>
-        </div>
-    }
 </div>
-
-<!-- Status Toggle Modals -->
-@foreach (var restaurant in Model.Restaurants.Where(r => r.IsAdminOrOwner))
-{
-    <div class="modal fade" id="toggleStatusModal_@restaurant.Id" tabindex="-1" 
-         aria-labelledby="toggleStatusModalLabel_@restaurant.Id" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header @(restaurant.IsActive ? "bg-danger text-white" : "bg-success text-white")">
-                    <h5 class="modal-title" id="toggleStatusModalLabel_@restaurant.Id">
-                        <i class="fas fa-@(restaurant.IsActive ? "power-off" : "check-circle") me-2"></i>
-                        @(restaurant.IsActive ? "Deactivate" : "Activate") Restaurant
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-0">
-                        Are you sure you want to @(restaurant.IsActive ? "deactivate" : "activate") 
-                        <strong>@restaurant.Name</strong>?
-                    </p>
-                    @if (restaurant.IsActive)
-                    {
-                        <div class="alert alert-warning mt-3 mb-0">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Deactivating this restaurant will hide it from customer searches and prevent new orders.
-                        </div>
-                    }
-                </div>
-                <div class="modal-footer">
-                    <form asp-action="ToggleStatus" asp-route-id="@restaurant.Id" method="post">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn @(restaurant.IsActive ? "btn-danger" : "btn-success")">
-                            <i class="fas fa-@(restaurant.IsActive ? "power-off" : "check-circle") me-1"></i>
-                            @(restaurant.IsActive ? "Deactivate" : "Activate")
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-@section Scripts {
-    <script>
-        $(document).ready(function() {
-            // Initialize tooltips
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-                new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-            
-            // Toggle between grid and list view
-            $('#gridView').click(function() {
-                $(this).addClass('active');
-                $('#listView').removeClass('active');
-                $('#restaurantsGrid').removeClass('d-none');
-                $('#restaurantsList').addClass('d-none');
-            });
-            
-            $('#listView').click(function() {
-                $(this).addClass('active');
-                $('#gridView').removeClass('active');
-                $('#restaurantsList').removeClass('d-none');
-                $('#restaurantsGrid').addClass('d-none');
-            });
-            
-            // Clear all filters
-            $('#clearFilters').click(function() {
-                $('#searchTerm').val('');
-                $('#categoryId').val('');
-                $('#sortOrder').val('name');
-                $('#deliveryFee').val('');
-                $('input[type="checkbox"]').prop('checked', false);
-                $('#filterForm').submit();
-            });
-        });
-    </script>
-}
 
 @section Styles {
     <style>
-        /* Hero section styling */
-        .hero-section {
-            overflow: hidden;
-            color: white;
+        .text-shadow {
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        .hero-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            z-index: -1;
+        .floating-animation {
+            animation: floating 3s ease-in-out infinite;
         }
         
-        .hero-section .container {
-            padding-top: 3rem;
-            padding-bottom: 3rem;
+        @@keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
         }
         
-        .search-box {
-            transition: all 0.3s ease;
+        .hover-lift {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
         
-        .search-box:focus-within {
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-        
-        /* Restaurant card styling */
-        .restaurant-card {
-            transition: all 0.3s ease;
-            border-radius: 0.75rem;
-            overflow: hidden;
-        }
-        
-        .restaurant-card:hover {
+        .hover-lift:hover {
             transform: translateY(-5px);
-            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
         }
         
-        .restaurant-description {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            height: 2.5em;
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
         }
         
-        .restaurant-rating {
-            white-space: nowrap;
+        .restaurant-card .card-img-top {
+            transition: transform 0.3s ease-in-out;
         }
         
-        /* List view styling */
-        #restaurantsList .list-group-item {
+        .restaurant-card:hover .card-img-top {
+            transform: scale(1.05);
+        }
+        
+        .page-link {
             border-radius: 0.5rem;
-            transition: all 0.3s ease;
+            margin: 0 0.2rem;
         }
         
-        #restaurantsList .list-group-item:hover {
-            transform: translateX(5px);
-            border-left: 3px solid var(--bs-primary);
-        }
-        
-        /* Pagination styling */
-        .pagination .page-item.active .page-link {
-            background-color: var(--bs-primary);
-            border-color: var(--bs-primary);
-        }
-        
-        .pagination .page-link {
-            color: var(--bs-primary);
-        }
-        
-        .pagination .page-link:hover {
-            background-color: rgba(var(--bs-primary-rgb), 0.1);
-        }
-        
-        /* Responsive adjustments */
-        @@media (max-width: 767.98px) {
-            .hero-section .container {
-                padding-top: 2rem;
-                padding-bottom: 2rem;
-            }
-            
-            .restaurant-card {
-                margin-bottom: 1rem;
-            }
+        .page-item.active .page-link {
+            background-color: #4e73df;
+            border-color: #4e73df;
         }
     </style>
-}
+} 

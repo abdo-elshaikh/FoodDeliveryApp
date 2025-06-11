@@ -1,280 +1,129 @@
-﻿@model FoodDeliveryApp.ViewModels.OrderViewModels.OrderCreateViewModel
-@using FoodDeliveryApp.Models
-
+﻿@model FoodDeliveryApp.ViewModels.Order.OrderCreateViewModel
 @{
-    ViewData["Title"] = "Checkout";
+    ViewData["Title"] = "Check Out Order";
 }
 
 <div class="container py-5">
-    <h1 class="h2 fw-bold mb-4" data-aos="fade-up">Checkout</h1>
-
-    <!-- Alerts -->
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert" data-aos="fade-up">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert" data-aos="fade-up">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    @if (!Model.CartItems.Any())
-    {
-        <div class="card border-0 shadow-sm rounded-3 text-center p-5" data-aos="fade-up">
-            <i class="bi bi-cart text-primary" style="font-size: 2rem;"></i>
-            <p class="text-muted mt-3">Your cart is empty. <a href="/restaurants">Browse restaurants</a> to add items.</p>
-        </div>
-    }
-    else
-    {
-        <form asp-controller="Order" asp-action="PlaceOrder" method="post" class="row g-4">
-            @Html.AntiForgeryToken()
-
-            <!-- Left Column: Cart, Address, Payment -->
-            <div class="col-lg-8">
-                <!-- Cart Items -->
-                <div class="card border-0 shadow-sm rounded-3 mb-4" data-aos="fade-up">
-                    <div class="card-header bg-light">
-                        <h3 class="h5 fw-bold mb-0">Cart Items</h3>
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm rounded-4" data-aos="fade-up">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 fw-bold mb-0">Create Order</h1>
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Orders
+                        </a>
                     </div>
-                    <div class="card-body">
-                        @foreach (var item in Model.CartItems)
-                        {
-                            <div class="d-flex align-items-center gap-3 border-bottom py-3">
-                                <img src="@item.ImageUrl" alt="@item.Name" class="rounded" style="width: 80px; height: 80px; object-fit: cover;" />
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">@item.Name</h6>
-                                    <p class="text-muted small mb-0">@item.Restaurant.Name</p>
-                                    <p class="fw-bold mb-0">@item.Price.ToString("C") x @item.Quantity = @item.Subtotal.ToString("C")</p>
-                                </div>
-                                <div>
-                                    <a href="/Cart/RemoveItem?cartItemId=@item.Id" class="btn btn-outline-danger btn-sm rounded-pill" title="Remove @item.Name" aria-label="Remove @item.Name">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
+
+                    <form asp-action="Create" method="post">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light rounded-4">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title mb-4">Delivery Information</h5>
+                                        <div class="mb-3">
+                                            <label asp-for="DeliveryAddressId" class="form-label fw-bold">Delivery
+                                                Address</label>
+                                            <select asp-for="DeliveryAddressId"
+                                                asp-items="@(new SelectList(Model.DeliveryAddresses, "Id", "FullAddress"))"
+                                                class="form-select rounded-pill">
+                                                <option value="">Select a delivery address</option>
+                                            </select>
+                                            <span asp-validation-for="DeliveryAddressId" class="text-danger"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label asp-for="PaymentMethod" class="form-label fw-bold">Payment
+                                                Method</label>
+                                            <select asp-for="PaymentMethod"
+                                                asp-items="@Html.GetEnumSelectList<PaymentMethod>()"
+                                                class="form-select rounded-pill">
+                                                <option value="">Select a payment method</option>
+                                            </select>
+                                            <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        }
-                    </div>
-                </div>
 
-                <!-- Delivery Address -->
-                <div class="card border-0 shadow-sm rounded-3 mb-4" data-aos="fade-up" data-aos-delay="200">
-                    <div class="card-header bg-light">
-                        <h3 class="h5 fw-bold mb-0">Delivery Address</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Select Address</label>
-                            <select asp-for="SelectedAddressId" class="form-select" aria-label="Select delivery address">
-                                <option value="">Choose an address</option>
-
-                            </select>
-                            <span class="text-danger" asp-validation-for="SelectedAddressId"></span>
-                        </div>
-                        <div class="form-check mb-3">
-                            <input asp-for="IsNewAddress" class="form-check-input" type="checkbox" id="isNewAddress" />
-                            <label class="form-check-label" for="isNewAddress">Add a new address</label>
-                        </div>
-                        <div id="newAddressForm" class="@(Model.IsNewAddress ? "" : "d-none")">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label asp-for="NewAddress.AddressLine" class="form-label">Street</label>
-                                    <input asp-for="NewAddress.AddressLine" class="form-control" />
-                                    <span class="text-danger" asp-validation-for="NewAddress.AddressLine"></span>
-                                </div>
-                                <div class="col-md-6">
-                                    <label asp-for="NewAddress.City" class="form-label">City</label>
-                                    <input asp-for="NewAddress.City" class="form-control" />
-                                    <span class="text-danger" asp-validation-for="NewAddress.City"></span>
-                                </div>
-                                <div class="col-md-4">
-                                    <label asp-for="NewAddress.State" class="form-label">State</label>
-                                    <input asp-for="NewAddress.State" class="form-control" />
-                                    <span class="text-danger" asp-validation-for="NewAddress.State"></span>
-                                </div>
-                                <div class="col-md-4">
-                                    <label asp-for="NewAddress.PostalCode" class="form-label">Postal Code</label>
-                                    <input asp-for="NewAddress.PostalCode" class="form-control" />
-                                    <span class="text-danger" asp-validation-for="NewAddress.PostalCode"></span>
-                                </div>
-                                <div class="col-md-4">
-                                    <label asp-for="NewAddress.Country" class="form-label">Country</label>
-                                    <input asp-for="NewAddress.Country" class="form-control" />
-                                    <span class="text-danger" asp-validation-for="NewAddress.Country"></span>
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light rounded-4">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title mb-4">Order Summary</h5>
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span class="text-muted">Subtotal</span>
+                                            <span class="fw-bold">$@Model.Subtotal.ToString("F2")</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span class="text-muted">Delivery Fee</span>
+                                            <span class="fw-bold">$@Model.DeliveryFee.ToString("F2")</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span class="text-muted">Tax</span>
+                                            <span class="fw-bold">$@Model.Tax.ToString("F2")</span>
+                                        </div>
+                                        <hr class="my-3">
+                                        <div class="d-flex justify-content-between mb-4">
+                                            <span class="fw-bold">Total</span>
+                                            <span class="fw-bold text-primary">$@Model.Total.ToString("F2")</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
+                            <div class="col-12">
+                                <div class="card border-0 bg-light rounded-4">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title mb-4">Order Items</h5>
+                                        @foreach (var item in Model.Items)
+                                        {
+                                            <div class="card border-0 bg-white rounded-4 mb-3 shadow-sm" data-aos="fade-up">
+                                                <div class="card-body p-4">
+                                                    <div class="row g-3 align-items-center">
+                                                        <div class="col-md-2 col-3">
+                                                            <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/default-menu-item.png" : item.ImageUrl)"
+                                                                alt="@item.MenuItemName" class="rounded-3 img-fluid"
+                                                                style="width: 100%; height: 80px; object-fit: cover;">
+                                                        </div>
+                                                        <div class="col-md-6 col-9">
+                                                            <h6 class="fw-bold mb-1">@item.MenuItemName</h6>
+                                                            <p class="text-muted small mb-2">@item.RestaurantName</p>
+                                                            <div class="d-flex align-items-center">
+                                                                <span class="fw-bold mx-2">@item.Quantity</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2 text-end d-none d-md-block">
+                                                            <div class="fw-bold text-primary mb-2">
+                                                                $@((item.UnitPrice * item.Quantity).ToString("F2"))
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                    <i class="fas fa-check me-2"></i>Place Order
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Payment Method -->
-                <div class="card border-0 shadow-sm rounded-3 mb-4" data-aos="fade-up" data-aos-delay="400">
-                    <div class="card-header bg-light">
-                        <h3 class="h5 fw-bold mb-0">Payment Method</h3>
-                    </div>
-                    <div class="card-body">
-                        @foreach (var method in Model.PaymentMethodOptions)
-                        {
-                            
-                        }
-                        <span class="text-danger" asp-validation-for="SelectedPaymentMethod"></span>
-                    </div>
-                </div>
-
-                <!-- Order Notes -->
-                <div class="card border-0 shadow-sm rounded-3" data-aos="fade-up" data-aos-delay="600">
-                    <div class="card-header bg-light">
-                        <h3 class="h5 fw-bold mb-0">Order Notes</h3>
-                    </div>
-                    <div class="card-body">
-                        <textarea asp-for="OrderNotes" class="form-control" rows="4" placeholder="Any special instructions? (e.g., No onions, contactless delivery)"></textarea>
-                        <span class="text-danger" asp-validation-for="OrderNotes"></span>
-                    </div>
+                    </form>
                 </div>
             </div>
-
-            <!-- Right Column: Order Summary -->
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-3 sticky-top" style="top: 20px;" data-aos="fade-up">
-                    <div class="card-header bg-light">
-                        <h3 class="h5 fw-bold mb-0">Order Summary</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal</span>
-                            <span>@Model.Subtotal.ToString("C")</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Delivery Fee</span>
-                            <span>@Model.DeliveryFee.ToString("C")</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Tax (8%)</span>
-                            <span>@Model.Tax.ToString("C")</span>
-                        </div>
-                        @if (Model.Discount > 0)
-                        {
-                            <div class="d-flex justify-content-between mb-2 text-success">
-                                <span>Discount (@Model.PromoCode)</span>
-                                <span>-@Model.Discount.ToString("C")</span>
-                            </div>
-                        }
-                        <div class="d-flex justify-content-between fw-bold border-top pt-2">
-                            <span>Total</span>
-                            <span>@Model.Total.ToString("C")</span>
-                        </div>
-                        <div class="mt-3">
-                            <label for="promoCode" class="form-label">Promo Code</label>
-                            <div class="input-group">
-                                <input asp-for="PromoCode" class="form-control" placeholder="Enter promo code" />
-                                <button type="button" class="btn btn-outline-primary rounded-pill apply-promo-btn">Apply</button>
-                            </div>
-                            <span class="text-danger" asp-validation-for="PromoCode"></span>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 rounded-pill mt-4 place-order-btn">
-                            <i class="bi bi-check-circle me-2"></i>Place Order
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </form>
-    }
-
+        </div>
+    </div>
 </div>
 
-@section Styles {
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
-    <style>
-        .sticky-top {
-            z-index: 100;
-        }
-
-        .form-check-input:checked + .form-check-label {
-            font-weight: bold;
-        }
-
-        .apply-promo-btn:hover, .place-order-btn:hover {
-            background-color: #0056b3;
-        }
-
-        .apply-promo-btn:active, .place-order-btn:active {
-            background-color: #004494;
-        }
-
-        .spin {
-            animation: spin 1s linear infinite;
-        }
-
-        @@keyframes spin {
-            0%
-
-        {
-            transform: rotate(0deg);
-        }
-
-        100% {
-            transform: rotate(360deg);
-        }
-
-        }
-    </style>
-}
-
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
-    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Initialize AOS
-            AOS.init({ duration: 800, once: true });
-
-            // Toggle new address form
-            const isNewAddressCheckbox = document.getElementById('isNewAddress');
-            const newAddressForm = document.getElementById('newAddressForm');
-            isNewAddressCheckbox.addEventListener('change', function () {
-                newAddressForm.classList.toggle('d-none', !this.checked);
-            });
-
-            // Apply promo code
-            document.querySelector('.apply-promo-btn').addEventListener('click', function () {
-                const promoCode = document.getElementById('PromoCode').value;
-                if (promoCode) {
-                    this.innerHTML = '<i class="bi bi-arrow-clockwise spin me-2"></i>Applying...';
-                    fetch('/Order/ApplyPromo', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ promoCode })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        this.innerHTML = 'Apply';
-                        if (data.success) {
-                            location.reload(); // Reload to update discount
-                        } else {
-                            alert(data.message || 'Invalid promo code');
-                        }
-                    })
-                    .catch(() => {
-                        this.innerHTML = 'Apply';
-                        alert('Error applying promo code');
-                    });
-                }
-            });
-
-            // Place order loading state
-            document.querySelector('.place-order-btn').addEventListener('click', function () {
-                if (document.querySelector('form').checkValidity()) {
-                    this.disabled = true;
-                    this.innerHTML = '<i class="bi bi-arrow-clockwise spin me-2"></i>Placing Order...';
-                }
-            });
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
         });
     </script>
- }
+}

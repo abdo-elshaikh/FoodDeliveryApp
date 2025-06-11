@@ -1,148 +1,107 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FoodDeliveryApp.Models
 {
-    public enum OrderStatus
+    public enum PaymentMethod
     {
-        Placed,
-        Confirmed,
-        InPreparation,
-        ReadyForPickup,
-        OutForDelivery,
-        Delivered,
-        Canceled
+        CashOnDelivery,
+        VodafoneCash,
+        Visa,
+        MasterCard
     }
 
-    
-
-    public class Order
+    public enum PaymentStatus
     {
-        [Key]
-        public int Id { get; set; }
+        Pending,
+        Processing,
+        Completed,
+        Failed,
+        Refunded
+    }
+
+    public class Order : BaseEntity
+    {
+        [Required]
+        [StringLength(50)]
+        public string OrderNumber { get; set; } = string.Empty;
 
         [Required]
+        [ForeignKey("User")]
         public string UserId { get; set; } = string.Empty;
+
+        [ForeignKey("Driver")]
+        public int? DriverId { get; set; }
+
+        [Required]
+        public int DeliveryAddressId { get; set; }
+
+        [Required]
+        public OrderStatus Status { get; set; }
 
         [Required]
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 
-        [Required]
-        public OrderStatus Status { get; set; } = OrderStatus.Placed;
+        public DateTime? ActualDeliveryTime { get; set; }
 
+        public DateTime? EstimatedDeliveryTime { get; set; }
+
+        [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Subtotal { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal DeliveryFee { get; set; }
-
+        [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Tax { get; set; }
 
+        [Required]
         [Column(TypeName = "decimal(18,2)")]
-        public decimal Discount { get; set; }
-
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Total { get; set; }
-
-        [ForeignKey("Restaurant")]
-        public int RestaurantId { get; set; }
-
-        [ForeignKey("Address")]
-        public int? DeliveryAddressId { get; set; }
-
-        [StringLength(500)]
-        public string? SpecialInstructions { get; set; }
+        public decimal DeliveryFee { get; set; }
 
         [Required]
-        public PaymentMethodType PaymentMethodType { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Discount { get; set; } = 0;
 
-        [StringLength(100)]
-        public string? PaymentDetails { get; set; }
+        [Required]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Total { get; set; } = 0;
 
-        [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy hh:mm tt}", NullDisplayText = "Not delivered")]
-        public DateTime? DeliveryDate { get; set; }
+        [Required]
+        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.CashOnDelivery;
 
-        [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy hh:mm tt}", NullDisplayText = "Not available")]
-        public DateTime? EstimatedDeliveryTime { get; set; }
+        [Required]
+        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
 
         [StringLength(500)]
-        public string? DeliveryInstructions { get; set; }
+        public string? Notes { get; set; } = string.Empty;
 
-        [Url]
-        [StringLength(200)]
+        [StringLength(255)]
         public string? TrackingUrl { get; set; }
+
+        public bool IsDelayed { get; set; }
+
+        [StringLength(200)]
+        public string? DelayReason { get; set; }
+
+        public bool RequiresSignature { get; set; }
+
+        [StringLength(255)]
+        public string? SignatureImageUrl { get; set; }
+
+        [StringLength(255)]
+        public string? DeliveryPhotos { get; set; }
+
+        [NotMapped]
+        [Column(TypeName = "jsonb")]
+        public Dictionary<string, string> CustomFields { get; set; } = new Dictionary<string, string>();
 
         // Navigation properties
         public virtual ApplicationUser User { get; set; } = null!;
-        public virtual Restaurant Restaurant { get; set; } = null!;
-        public virtual Address? Address { get; set; }
-        public virtual Payment? Payment { get; set; }
+        public virtual Driver? Driver { get; set; }
+        public virtual Address DeliveryAddress { get; set; } = null!;
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new HashSet<OrderItem>();
-        public virtual ICollection<Review> Reviews { get; set; } = new HashSet<Review>();
+        public virtual ICollection<OrderTracking> TrackingHistory { get; set; } = new HashSet<OrderTracking>();
     }
-
-    public class OrderItem
-    {
-        [Key]
-        public int Id { get; set; }
-
-        [Required]
-        [ForeignKey("Order")]
-        public int OrderId { get; set; }
-
-        [Required]
-        [ForeignKey("MenuItem")]
-        public int MenuItemId { get; set; }
-
-        [Required]
-        [ForeignKey("Restaurant")]
-        public int RestaurantId { get; set; }
-
-        [Required]
-        [Range(1, 100)]
-        public int Quantity { get; set; }
-
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Price { get; set; }
-
-        [StringLength(500)]
-        public string? SpecialInstructions { get; set; }
-
-        // Navigation properties
-        public virtual Order Order { get; set; } = null!;
-        public virtual MenuItem MenuItem { get; set; } = null!;
-        public virtual Restaurant Restaurant { get; set; } = null!;
-        public virtual ICollection<OrderCustomization> Customizations { get; set; } = new HashSet<OrderCustomization>();
-    }
-
-    public class OrderCustomization
-    {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
-
-        [Required]
-        [ForeignKey("OrderItem")]
-        public int OrderItemId { get; set; }
-
-        [Required]
-        [ForeignKey("CustomizationOption")]
-        public int OptionId { get; set; }
-
-        [Required]
-        [ForeignKey("CustomizationChoice")]
-        public int ChoiceId { get; set; }
-
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Price { get; set; }
-
-        // Navigation properties
-        public virtual OrderItem OrderItem { get; set; } = null!;
-        public virtual CustomizationOption CustomizationOption { get; set; } = null!;
-        public virtual CustomizationChoice CustomizationChoice { get; set; } = null!;
-    }
-
 }

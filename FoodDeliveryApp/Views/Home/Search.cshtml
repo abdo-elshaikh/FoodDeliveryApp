@@ -1,0 +1,251 @@
+@model FoodDeliveryApp.ViewModels.Home.SearchViewModel
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Search Results";
+}
+
+<div class="container py-5">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4" data-aos="fade-up">
+        <ol class="breadcrumb glassmorphic p-3 rounded-3">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Search Results</li>
+        </ol>
+    </nav>
+
+    <!-- Search Header -->
+    <div class="row justify-content-center mb-5" data-aos="fade-up">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-4">
+                    <form asp-controller="Home" asp-action="Search" method="get" class="search-form">
+                        <div class="input-group input-group-lg">
+                            <input type="text" name="query" value="@Model.Query" 
+                                   class="form-control rounded-pill-start" 
+                                   placeholder="Search for restaurants or cuisines..." required>
+                            <button type="submit" class="btn btn-primary rounded-pill-end px-4">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 mb-4" data-aos="fade-up">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white py-3 px-4 border-0">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-filter text-primary me-2"></i>
+                        Filters
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    @* <form id="filterForm" method="get">
+                        <input type="hidden" name="query" value="@Model.Query">
+                        
+                        <!-- Price Range -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3">Price Range</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="priceRange" value="1" 
+                                       id="price1" @(Model.SelectedPriceRanges.Contains(1) ? "checked" : "")>
+                                <label class="form-check-label" for="price1">$</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="priceRange" value="2" 
+                                       id="price2" @(Model.SelectedPriceRanges.Contains(2) ? "checked" : "")>
+                                <label class="form-check-label" for="price2">$$</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="priceRange" value="3" 
+                                       id="price3" @(Model.SelectedPriceRanges.Contains(3) ? "checked" : "")>
+                                <label class="form-check-label" for="price3">$$$</label>
+                            </div>
+                        </div>
+
+                        <!-- Categories -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3">Categories</h6>
+                            @foreach (var category in Model.Categories)
+                            {
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="categories" 
+                                           value="@category.Id" id="category@(category.Id)"
+                                           @(Model.SelectedCategories.Contains(category.Id) ? "checked" : "")>
+                                    <label class="form-check-label" for="category@(category.Id)">
+                                        @category.Name
+                                    </label>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Rating -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3">Minimum Rating</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="rating" value="4" 
+                                       id="rating4" @(Model.SelectedRating == 4 ? "checked" : "")>
+                                <label class="form-check-label" for="rating4">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-muted"></i>
+                                    & Up
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="rating" value="3" 
+                                       id="rating3" @(Model.SelectedRating == 3 ? "checked" : "")>
+                                <label class="form-check-label" for="rating3">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-muted"></i>
+                                    <i class="fas fa-star text-muted"></i>
+                                    & Up
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rating" value="0" 
+                                       id="rating0" @(Model.SelectedRating == 0 ? "checked" : "")>
+                                <label class="form-check-label" for="rating0">All Ratings</label>
+                            </div>
+                        </div>
+
+                        <!-- Sort By -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3">Sort By</h6>
+                            <select class="form-select" name="sortBy">
+                                <option value="relevance" selected="@(Model.SortBy == "relevance")">Relevance</option>
+                                <option value="rating" selected="@(Model.SortBy == "rating")">Rating</option>
+                                <option value="deliveryTime" selected="@(Model.SortBy == "deliveryTime")">Delivery Time</option>
+                                <option value="priceLow" selected="@(Model.SortBy == "priceLow")">Price: Low to High</option>
+                                <option value="priceHigh" selected="@(Model.SortBy == "priceHigh")">Price: High to Low</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill">
+                            <i class="fas fa-filter me-2"></i>Apply Filters
+                        </button>
+                    </form> *@
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="col-lg-9">
+            <!-- Results Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-up">
+                <h2 class="h4 fw-bold mb-0">
+                    <i class="fas fa-search text-primary me-2"></i>
+                    Search Results
+                </h2>
+                @* <span class="text-muted">@Model.TotalResults results found</span> *@
+            </div>
+
+            @if (Model.Restaurants.Any())
+            {
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    @foreach (var restaurant in Model.Restaurants)
+                    {
+                        <div class="col" data-aos="fade-up" data-aos-delay="@(Model.Restaurants.IndexOf(restaurant) * 100)">
+                            <div class="card h-100 border-0 rounded-4 shadow-sm hover-lift">
+                                <div class="position-relative">
+                                    @if (!string.IsNullOrEmpty(restaurant.ImageUrl))
+                                    {
+                                        <img src="@restaurant.ImageUrl" class="card-img-top rounded-top-4" 
+                                             alt="@restaurant.Name" style="height: 200px; object-fit: cover;">
+                                    }
+                                    else
+                                    {
+                                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center rounded-top-4" 
+                                             style="height: 200px;">
+                                            <i class="fas fa-utensils fa-3x text-muted"></i>
+                                        </div>
+                                    }
+                                    <span class="position-absolute top-0 end-0 m-3 badge bg-primary rounded-pill px-3 py-2">
+                                        @restaurant.CategoryName
+                                    </span>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h5 class="card-title fw-bold mb-0">@restaurant.Name</h5>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-star text-warning me-1"></i>
+                                            <span class="fw-bold">@restaurant.Rating.ToString("F1")</span>
+                                        </div>
+                                    </div>
+                                    <p class="card-text text-muted mb-4">@restaurant.Description</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center text-muted">
+                                            <i class="fas fa-clock me-2"></i>
+                                            <span>@restaurant.DeliveryTime min</span>
+                                        </div>
+                                        <a asp-controller="Restaurant" asp-action="Details" asp-route-id="@restaurant.Id" 
+                                           class="btn btn-outline-primary rounded-pill">
+                                            <i class="fas fa-store me-2"></i>View Menu
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center my-5">
+                    <i class="fas fa-search me-2"></i>
+                    <span>No results found</span>
+                </div>
+            }
+        }
+    </div>
+
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .hover-lift {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+        .page-link {
+            border: none;
+            padding: 0.5rem 1rem;
+        }
+        .page-item.active .page-link {
+            background-color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+
+        // Auto-submit form when filters change
+        document.querySelectorAll('#filterForm input, #filterForm select').forEach(element => {
+            element.addEventListener('change', () => {
+                document.getElementById('filterForm').submit();
+            });
+        });
+    </script>
+}

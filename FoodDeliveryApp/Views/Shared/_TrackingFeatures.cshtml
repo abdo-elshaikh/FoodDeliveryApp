@@ -1,0 +1,286 @@
+@model FoodDeliveryApp.Models.Order
+
+<div class="tracking-features">
+    <div class="tracking-header">
+        <h4 class="mb-3">Order Tracking</h4>
+        <div class="order-status @Model.Status.ToString().ToLower()">
+            <i class="fas fa-circle me-2"></i>
+            @Model.Status
+        </div>
+    </div>
+
+    <div class="tracking-timeline">
+        @{
+            var pendingTracking = Model.TrackingHistory.FirstOrDefault(t => t.Status == OrderStatus.Pending);
+            var confirmedTracking = Model.TrackingHistory.FirstOrDefault(t => t.Status == OrderStatus.Confirmed);
+            var inPrepTracking = Model.TrackingHistory.FirstOrDefault(t => t.Status == OrderStatus.InPreparation);
+            var readyTracking = Model.TrackingHistory.FirstOrDefault(t => t.Status == OrderStatus.ReadyForPickup);
+            var outForDeliveryTracking = Model.TrackingHistory.FirstOrDefault(t => t.Status == OrderStatus.OutForDelivery);
+            var deliveredTracking = Model.TrackingHistory.FirstOrDefault(t => t.Status == OrderStatus.Delivered);
+        }
+
+        <div class="timeline-item @(Model.Status >= OrderStatus.Pending ? "completed" : "")">
+            <div class="timeline-icon">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="timeline-content">
+                <h6>Order Placed</h6>
+                <p>@(pendingTracking?.Timestamp.ToString("MMM dd, yyyy HH:mm") ?? Model.CreatedAt.ToString("MMM dd, yyyy HH:mm"))</p>
+            </div>
+        </div>
+
+        <div class="timeline-item @(Model.Status >= OrderStatus.Confirmed ? "completed" : "")">
+            <div class="timeline-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="timeline-content">
+                <h6>Order Confirmed</h6>
+                <p>@(confirmedTracking?.Timestamp.ToString("MMM dd, yyyy HH:mm") ?? "Pending")</p>
+            </div>
+        </div>
+
+        <div class="timeline-item @(Model.Status >= OrderStatus.InPreparation ? "completed" : "")">
+            <div class="timeline-icon">
+                <i class="fas fa-utensils"></i>
+            </div>
+            <div class="timeline-content">
+                <h6>Preparing Order</h6>
+                <p>@(inPrepTracking?.Timestamp.ToString("MMM dd, yyyy HH:mm") ?? "Pending")</p>
+            </div>
+        </div>
+
+        <div class="timeline-item @(Model.Status >= OrderStatus.ReadyForPickup ? "completed" : "")">
+            <div class="timeline-icon">
+                <i class="fas fa-box"></i>
+            </div>
+            <div class="timeline-content">
+                <h6>Ready for Pickup</h6>
+                <p>@(readyTracking?.Timestamp.ToString("MMM dd, yyyy HH:mm") ?? "Pending")</p>
+            </div>
+        </div>
+
+        <div class="timeline-item @(Model.Status >= OrderStatus.OutForDelivery ? "completed" : "")">
+            <div class="timeline-icon">
+                <i class="fas fa-motorcycle"></i>
+            </div>
+            <div class="timeline-content">
+                <h6>On The Way</h6>
+                <p>@(outForDeliveryTracking?.Timestamp.ToString("MMM dd, yyyy HH:mm") ?? "Pending")</p>
+            </div>
+        </div>
+
+        <div class="timeline-item @(Model.Status == OrderStatus.Delivered ? "completed" : "")">
+            <div class="timeline-icon">
+                <i class="fas fa-home"></i>
+            </div>
+            <div class="timeline-content">
+                <h6>Delivered</h6>
+                <p>@(deliveredTracking?.Timestamp.ToString("MMM dd, yyyy HH:mm") ?? "Pending")</p>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Status == OrderStatus.OutForDelivery && Model.Driver != null)
+    {
+        <div class="driver-info mt-4">
+            <h5 class="mb-3">Driver Information</h5>
+            <div class="driver-card">
+                <div class="driver-avatar">
+                    <img src="@(string.IsNullOrEmpty(Model.Driver.User.ProfilePictureUrl) ? "/images/default-driver.png" : Model.Driver.User.ProfilePictureUrl)" 
+                         alt="@Model.Driver.User.FullName" class="rounded-circle">
+                </div>
+                <div class="driver-details">
+                    <h6>@Model.Driver.User.FullName</h6>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-phone me-2"></i>@Model.Driver.User.PhoneNumber
+                    </p>
+                    <p class="text-muted">
+                        <i class="fas fa-motorcycle me-2"></i>@Model.Driver.VehicleInfo
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model.Status != OrderStatus.Delivered && Model.Status != OrderStatus.Canceled)
+    {
+        <div class="estimated-delivery mt-4">
+            <h5 class="mb-3">Estimated Delivery</h5>
+            <div class="delivery-info">
+                @if (Model.EstimatedDeliveryTime.HasValue)
+                {
+                    var remainingTime = Model.EstimatedDeliveryTime.Value - DateTime.UtcNow;
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-primary" role="progressbar" 
+                                     style="width: @(Math.Min(100, Math.Max(0, 100 - (remainingTime.TotalMinutes / 30 * 100))))%" 
+                                     aria-valuenow="@(Math.Min(100, Math.Max(0, 100 - (remainingTime.TotalMinutes / 30 * 100))))" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <span class="badge bg-primary">
+                                @(remainingTime.TotalMinutes > 0 ? $"{Math.Ceiling(remainingTime.TotalMinutes)} min" : "Arriving soon")
+                            </span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Estimated delivery time not available</p>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .tracking-features {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .tracking-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .order-status {
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .order-status.pending { background: #fff3cd; color: #856404; }
+    .order-status.confirmed { background: #cce5ff; color: #004085; }
+    .order-status.inpreparation { background: #d4edda; color: #155724; }
+    .order-status.readyforpickup { background: #d1ecf1; color: #0c5460; }
+    .order-status.outfordelivery { background: #e2e3e5; color: #383d41; }
+    .order-status.delivered { background: #d4edda; color: #155724; }
+    .order-status.canceled { background: #f8d7da; color: #721c24; }
+
+    .tracking-timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+
+    .tracking-timeline::before {
+        content: '';
+        position: absolute;
+        left: 25px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-left: 50px;
+        margin-bottom: 30px;
+    }
+
+    .timeline-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .timeline-icon {
+        position: absolute;
+        left: 15px;
+        width: 24px;
+        height: 24px;
+        background: #fff;
+        border: 2px solid #e9ecef;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+    }
+
+    .timeline-item.completed .timeline-icon {
+        background: #28a745;
+        border-color: #28a745;
+        color: #fff;
+    }
+
+    .timeline-content h6 {
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+
+    .timeline-content p {
+        margin: 0;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .driver-info {
+        border-top: 1px solid #e9ecef;
+        padding-top: 20px;
+    }
+
+    .driver-card {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    .driver-avatar img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+    }
+
+    .driver-details h6 {
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+
+    .driver-details p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .estimated-delivery {
+        border-top: 1px solid #e9ecef;
+        padding-top: 20px;
+    }
+
+    .delivery-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    @@media (max-width: 576px) {
+        .tracking-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .timeline-item {
+            padding-left: 40px;
+        }
+
+        .timeline-icon {
+            left: 10px;
+        }
+
+        .driver-card {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+</style> 

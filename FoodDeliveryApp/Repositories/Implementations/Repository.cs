@@ -1,98 +1,188 @@
 ﻿using FoodDeliveryApp.Data;
 using FoodDeliveryApp.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 
 namespace FoodDeliveryApp.Repositories.Implementations
 {
     public class Repository<TEntity> : IRepository<TEntity> where TEntity : class
     {
-        private readonly ApplicationDbContext _context;
-        private readonly DbSet<TEntity> _dbSet;
-        public Repository(ApplicationDbContext context)
+        protected readonly ApplicationDbContext _context;
+        protected readonly DbSet<TEntity> _dbSet;
+        protected readonly ILogger<Repository<TEntity>> _logger;
+
+        public Repository(ApplicationDbContext context, ILogger<Repository<TEntity>> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _dbSet = context.Set<TEntity>();
         }
-        public async Task<TEntity?> GetByIdAsync(int id)
+
+        public virtual async Task<TEntity?> GetByIdAsync(int id)
         {
-            return await _dbSet.FindAsync(id);
-        }
-        public async Task<TEntity?> GetByIdAsync(string id)
-        {
-            return await _dbSet.FindAsync(id);
-        }
-        public async Task<IEnumerable<TEntity>> GetAllAsync(params Expression<Func<TEntity, object>>[] includes)
-        {
-            IQueryable<TEntity> query = _dbSet;
-            foreach (var include in includes)
+            try
             {
-                query = query.Include(include);
+                return await _dbSet.FindAsync(id);
             }
-            return await query.ToListAsync();
-        }
-        public async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
-        {
-            IQueryable<TEntity> query = _dbSet.Where(predicate);
-            foreach (var include in includes)
+            catch (Exception ex)
             {
-                query = query.Include(include);
+                _logger.LogError(ex, "Error retrieving entity of type {EntityType} with ID {Id}", typeof(TEntity).Name, id);
+                throw;
             }
-            return await query.ToListAsync();
         }
-        public async Task AddAsync(TEntity entity)
+
+        public virtual async Task<TEntity?> GetByIdAsync(string id)
         {
-            await _dbSet.AddAsync(entity);
-        }
-        public async Task AddRangeAsync(IEnumerable<TEntity> entities)
-        {
-            await _dbSet.AddRangeAsync(entities);
-        }
-        public Task UpdateAsync(TEntity entity)
-        {
-            _dbSet.Update(entity);
-            return Task.CompletedTask;
-        }
-        public Task UpdateRangeAsync(IEnumerable<TEntity> entities)
-        {
-            _dbSet.UpdateRange(entities);
-            return Task.CompletedTask;
-        }
-        public Task RemoveAsync(TEntity entity)
-        {
-            _dbSet.Remove(entity);
-            return Task.CompletedTask;
-        }
-        public Task RemoveRangeAsync(IEnumerable<TEntity> entities)
-        {
-            _dbSet.RemoveRange(entities);
-            return Task.CompletedTask;
-        }
-        public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate)
-        {
-            return await _dbSet.AnyAsync(predicate);
-        }
-        public async Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate)
-        {
-            return await _dbSet.CountAsync(predicate);
-        }
-        public async Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
-        {
-            IQueryable<TEntity> query = _dbSet;
-            foreach (var include in includes)
+            try
             {
-                query = query.Include(include);
+                var entity = await _dbSet.FindAsync(id);
+                return entity;
             }
-            return await query.FirstOrDefaultAsync(predicate);
-        }
-        public async Task<TEntity?> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
-        {
-            IQueryable<TEntity> query = _dbSet;
-            foreach (var include in includes)
+            catch (Exception ex)
             {
-                query = query.Include(include);
+                _logger.LogError(ex, "Error retrieving entity of type {EntityType} with User ID {Id}", typeof(TEntity).Name, id);
+                throw;
             }
-            return await query.SingleOrDefaultAsync(predicate);
+        }
+
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync(params Expression<Func<TEntity, object>>[] includes)
+        {
+            try
+            {
+                IQueryable<TEntity> query = _dbSet;
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+                return await query.ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving all entities of type {EntityType}", typeof(TEntity).Name);
+                throw;
+            }
+        }
+
+        public virtual async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
+        {
+            try
+            {
+                IQueryable<TEntity> query = _dbSet.Where(predicate);
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+                return await query.ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error finding entities of type {EntityType}", typeof(TEntity).Name);
+                throw;
+            }
+        }
+
+        public virtual async Task AddAsync(TEntity entity)
+        {
+            try
+            {
+                await _dbSet.AddAsync(entity);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding entity of type {EntityType}", typeof(TEntity).Name);
+                throw;
+            }
+        }
+
+        public virtual Task UpdateAsync(TEntity entity)
+        {
+            try
+            {
+                _dbSet.Update(entity);
+                return Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating entity of type {EntityType}", typeof(TEntity).Name);
+                throw;
+            }
+        }
+
+        public virtual Task DeleteAsync(TEntity entity)
+        {
+            try
+            {
+                _dbSet.Remove(entity);
+                return Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting entity of type {EntityType}", typeof(TEntity).Name);
+                throw;
+            }
+        }
+
+        public virtual async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate)
+        {
+            try
+            {
+                return await _dbSet.AnyAsync(predicate);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking existence of entity of type {EntityType}", typeof(TEntity).Name);
+                throw;
+            }
+        }
+
+        public virtual async Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate)
+        {
+            try
+            {
+                return await _dbSet.CountAsync(predicate);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error counting entities of type {EntityType}", typeof(TEntity).Name);
+                throw;
+            }
+        }
+
+        public virtual async Task<TEntity?> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
+        {
+            try
+            {
+                IQueryable<TEntity> query = _dbSet;
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+                return await query.FirstOrDefaultAsync(predicate);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error finding first entity of type {EntityType}", typeof(TEntity).Name);
+                throw;
+            }
+        }
+
+        public virtual async Task<TEntity?> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
+        {
+            try
+            {
+                IQueryable<TEntity> query = _dbSet;
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+                return await query.SingleOrDefaultAsync(predicate);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error finding single entity of type {EntityType}", typeof(TEntity).Name);
+                throw;
+            }
         }
     }
 }

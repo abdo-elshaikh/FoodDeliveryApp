@@ -1,152 +1,310 @@
-﻿@model FoodDeliveryApp.ViewModels.Restaurant.EditRestaurantViewModel
+@model FoodDeliveryApp.ViewModels.Restaurant.RestaurantEditViewModel
+@{
+    ViewData["Title"] = "Edit Restaurant";
+}
 
-<div class="container my-5">
-    <h1 id="editRestaurantHeading" class="mb-4">Edit Restaurant</h1>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-5" data-aos="fade-up">
+                <div>
+                    <h1 class="h2 mb-2 fw-bold">Edit Restaurant</h1>
+                    <p class="text-muted mb-0">Update the details of your restaurant below</p>
+                </div>
+                <a asp-action="Index" class="btn btn-outline-primary rounded-pill shadow-sm hover-lift">
+                    <i class="fas fa-arrow-left me-2"></i>Back to List
+                </a>
+            </div>
 
-    <!-- Success/Error Messages -->
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert" data-bs-animate="fade">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" aria-label="Close alert"></button>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert" data-bs-animate="fade">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" aria-label="Close alert"></button>
-        </div>
-    }
+            <form asp-action="Edit" enctype="multipart/form-data" method="post" class="needs-validation" novalidate>
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-    <div class="card">
-        <div class="card-body">
-            <form asp-action="Edit" method="post" enctype="multipart/form-data" aria-labelledby="editRestaurantHeading">
-                <input asp-for="Id" type="hidden">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label asp-for="Name" class="form-label"></label>
-                        <input asp-for="Name" class="form-control" placeholder="Enter restaurant name" aria-required="true" />
-                        <span asp-validation-for="Name" class="text-danger"></span>
+                <!-- Basic Information Card -->
+                <div class="card shadow-sm mb-4 rounded-4 border-0" data-aos="fade-up">
+                    <div class="card-header bg-primary text-white py-3 px-4">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-info-circle me-2"></i>Basic Information
+                        </h5>
                     </div>
-                    <div class="col-md-6">
-                        <label asp-for="CategoryId" class="form-label">Category</label>
-                        <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select" aria-required="true">
-                            <option value="">Select a category</option>
-                        </select>
-                        <span asp-validation-for="CategoryId" class="text-danger"></span>
-                    </div>
-                    <div class="col-12">
-                        <label asp-for="Description" class="form-label"></label>
-                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Describe the restaurant"></textarea>
-                        <span asp-validation-for="Description" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="PhoneNumber" class="form-label"></label>
-                        <input asp-for="PhoneNumber" class="form-control" placeholder="Enter phone number" />
-                        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="Address" class="form-label"></label>
-                        <input asp-for="Address" class="form-control" placeholder="Enter address" />
-                        <span asp-validation-for="Address" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-4">
-                        <label asp-for="City" class="form-label"></label>
-                        <input asp-for="City" class="form-control" placeholder="Enter city" />
-                        <span asp-validation-for="City" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-4">
-                        <label asp-for="State" class="form-label"></label>
-                        <input asp-for="State" class="form-control" placeholder="Enter state" />
-                        <span asp-validation-for="State" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-4">
-                        <label asp-for="PostalCode" class="form-label"></label>
-                        <input asp-for="PostalCode" class="form-control" placeholder="Enter postal code" />
-                        <span asp-validation-for="PostalCode" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="OpeningTime" class="form-label"></label>
-                        <input asp-for="OpeningTime" class="form-control" type="time" aria-required="true" />
-                        <span asp-validation-for="OpeningTime" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="ClosingTime" class="form-label"></label>
-                        <input asp-for="ClosingTime" class="form-control" type="time" aria-required="true" />
-                        <span asp-validation-for="ClosingTime" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="DeliveryFee" class="form-label"></label>
-                        <input asp-for="DeliveryFee" class="form-control" type="number" step="0.01" placeholder="Enter delivery fee" />
-                        <span asp-validation-for="DeliveryFee" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="TaxRate" class="form-label"></label>
-                        <input asp-for="TaxRate" class="form-control" type="number" step="0.01" placeholder="Enter tax rate" />
-                        <span asp-validation-for="TaxRate" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="Website" class="form-label"></label>
-                        <input asp-for="Website" class="form-control" placeholder="Enter website URL" />
-                        <span asp-validation-for="Website" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="LocationUrl" class="form-label"></label>
-                        <input asp-for="LocationUrl" class="form-control" placeholder="Enter map URL" />
-                        <span asp-validation-for="LocationUrl" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="ImageFile" class="form-label">Upload New Image</label>
-                        <input asp-for="ImageFile" class="form-control" type="file" accept="image/*" />
-                        <span asp-validation-for="ImageFile" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="ImageUrl" class="form-label">Or Image URL</label>
-                        <input asp-for="ImageUrl" class="form-control" placeholder="Enter image URL" />
-                        <span asp-validation-for="ImageUrl" class="text-danger"></span>
-                        @if (!string.IsNullOrEmpty(Model.ImageUrl))
-                        {
-                            <img src="@Model.ImageUrl" class="img-fluid mt-2" style="max-height: 100px;" alt="Current restaurant image" />
-                        }
-                    </div>
-                    @if (User.IsInRole("Admin"))
-                    {
-                        <div class="col-md-6">
-                            <label asp-for="OwnerId" class="form-label">Owner</label>
-                            <select asp-for="OwnerId" asp-items="Model.Owners" class="form-select" aria-required="true">
-                                <option value="">Select an owner</option>
-                            </select>
-                            <span asp-validation-for="OwnerId" class="text-danger"></span>
-                        </div>
-                    }
-                    else
-                    {
-                        <input asp-for="OwnerId" type="hidden" />
-                    }
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input asp-for="IsActive" class="form-check-input" type="checkbox" id="isActive" />
-                            <label asp-for="IsActive" class="form-check-label" for="isActive"></label>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Name" class="form-label fw-semibold"></label>
+                                <input asp-for="Name" class="form-control shadow-sm"
+                                    placeholder="Enter restaurant name" />
+                                <span asp-validation-for="Name" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label fw-semibold"></label>
+                                <input asp-for="PhoneNumber" class="form-control shadow-sm"
+                                    placeholder="Enter phone number" />
+                                <span asp-validation-for="PhoneNumber" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="CategoryId" class="form-label fw-semibold"></label>
+                                <select asp-for="CategoryId" asp-items="@ViewBag.Categories"
+                                    class="form-select shadow-sm">
+                                    <option value="">Select a category</option>
+                                </select>
+                                <span asp-validation-for="CategoryId" class="text-danger mt-1 d-block"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="Description" class="form-label fw-semibold"></label>
+                                <textarea asp-for="Description" class="form-control shadow-sm" rows="4"
+                                    placeholder="Describe your restaurant, cuisine type, specialties, etc."></textarea>
+                                <span asp-validation-for="Description" class="text-danger mt-1 d-block"></span>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-12 mt-4">
-                        <button type="submit" class="btn btn-primary" data-bs-toggle="tooltip" title="Save changes">Save</button>
-                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary" data-bs-toggle="tooltip" title="Cancel and view details" aria-label="Cancel">Cancel</a>
+                </div>
+
+                <!-- Business Details Card -->
+                <div class="card shadow-sm mb-4 rounded-4 border-0" data-aos="fade-up" data-aos-delay="100">
+                    <div class="card-header bg-secondary text-white py-3 px-4">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-business-time me-2"></i>Business Details
+                        </h5>
                     </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="OpeningTime" class="form-label fw-semibold"></label>
+                                <input asp-for="OpeningTime" class="form-control shadow-sm" type="time" />
+                                <span asp-validation-for="OpeningTime" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ClosingTime" class="form-label fw-semibold"></label>
+                                <input asp-for="ClosingTime" class="form-control shadow-sm" type="time" />
+                                <span asp-validation-for="ClosingTime" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="DeliveryFee" class="form-label fw-semibold"></label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input asp-for="DeliveryFee" class="form-control" type="number" step="0.01"
+                                        min="0" />
+                                </div>
+                                <span asp-validation-for="DeliveryFee" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="TaxRate" class="form-label fw-semibold"></label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text">%</span>
+                                    <input asp-for="TaxRate" class="form-control" type="number" step="1" min="0"
+                                        max="30" />
+                                </div>
+                                <span asp-validation-for="TaxRate" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="EstimatedTime" class="form-label fw-semibold"></label>
+                                <input asp-for="EstimatedTime" class="form-control shadow-sm"
+                                    placeholder="e.g., 30-45 min" />
+                                <span asp-validation-for="EstimatedTime" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" />
+                                    <label asp-for="IsActive" class="form-check-label fw-semibold"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address Card -->
+                <div class="card shadow-sm mb-4 rounded-4 border-0" data-aos="fade-up" data-aos-delay="200">
+                    <div class="card-header bg-info text-white py-3 px-4">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-map-marker-alt me-2"></i>Address Information
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label asp-for="Address.Street" class="form-label fw-semibold"></label>
+                                <input asp-for="Address.Street" class="form-control shadow-sm"
+                                    placeholder="Enter street address" />
+                                <span asp-validation-for="Address.Street" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Address.City" class="form-label fw-semibold"></label>
+                                <input asp-for="Address.City" class="form-control shadow-sm" placeholder="Enter city" />
+                                <span asp-validation-for="Address.City" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Address.State" class="form-label fw-semibold"></label>
+                                <input asp-for="Address.State" class="form-control shadow-sm"
+                                    placeholder="Enter state" />
+                                <span asp-validation-for="Address.State" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Address.PostalCode" class="form-label fw-semibold"></label>
+                                <input asp-for="Address.PostalCode" class="form-control shadow-sm"
+                                    placeholder="Enter postal code" />
+                                <span asp-validation-for="Address.PostalCode" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Address.Country" class="form-label fw-semibold"></label>
+                                <input asp-for="Address.Country" class="form-control shadow-sm"
+                                    placeholder="Enter country" />
+                                <span asp-validation-for="Address.Country" class="text-danger mt-1 d-block"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Website & location -->
+                <div class="card shadow-sm mb-4 rounded-4 border-0" data-aos="fade-up" data-aos-delay="400">
+                    <div class="card-header bg-warning text-white py-3 px-4">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-globe me-2"></i>Website and Location
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Website" class="form-label fw-semibold"></label>
+                                <input asp-for="Website" class="form-control shadow-sm"
+                                    placeholder="Enter website URL" />
+                                <span asp-validation-for="Website" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="LocationUrl" class="form-label fw-semibold"></label>
+                                <input asp-for="LocationUrl" class="form-control shadow-sm"
+                                    placeholder="Enter location" />
+                                <span asp-validation-for="LocationUrl" class="text-danger mt-1 d-block"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Upload Card -->
+                <div class="card shadow-sm mb-4 rounded-4 border-0" data-aos="fade-up" data-aos-delay="300">
+                    <div class="card-header bg-success text-white py-3 px-4">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-image me-2"></i>Restaurant Images
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
+                                {
+                                    <div class="current-image mb-3">
+                                        <label class="form-label fw-semibold">Current Image</label>
+                                        <img src="@Model.CurrentImageUrl" alt="@Model.Name"
+                                            class="img-fluid rounded shadow-sm" style="max-height: 200px;" />
+                                    </div>
+                                }
+                                <label asp-for="NewImageFile" class="form-label fw-semibold">Update Image</label>
+                                <div class="input-group shadow-sm">
+                                    <input asp-for="NewImageFile" id="imageInput" class="form-control" type="file"
+                                        accept="image/*" />
+                                    <button class="btn btn-outline-secondary" type="button" id="clearImage">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">Upload a high-quality image of your restaurant (recommended size:
+                                    1200x800 pixels)</div>
+                                <span asp-validation-for="NewImageFile" class="text-danger mt-1 d-block"></span>
+                            </div>
+                            <div class="col-12">
+                                <div id="imagePreview" class="d-none">
+                                    <img src="#" alt="Preview" class="img-fluid rounded shadow-sm"
+                                        style="max-height: 200px;" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center" data-aos="fade-up" data-aos-delay="400">
+                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm hover-lift">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+@section Styles {
+    <style>
+        .hover-lift {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        }
+
+        .card {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .form-check-input:checked {
+            background-color: #198754;
+            border-color: #198754;
+        }
+    </style>
+}
+
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
     <script>
-        // Initialize Bootstrap tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-            new bootstrap.Tooltip(tooltipTriggerEl);
+        // Image preview
+        var imagePreview = document.getElementById('imagePreview');
+        var imageInput = document.getElementById('imageInput');
+
+        imageInput.addEventListener('change', function () {
+            var file = this.files[0];
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                imagePreview.classList.remove('d-none');
+                imagePreview.querySelector('img').src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+            imagePreview.querySelector('img').alt = file.name;
+            imagePreview.querySelector('img').title = file.name;
+            imagePreview.querySelector('img').style.maxHeight = '200px';
+            imagePreview.querySelector('img').style.objectFit = 'cover';
         });
+
+        // Clear image
+        document.getElementById('clearImage').addEventListener('click', function () {
+            document.getElementById('ImageFile').value = '';
+            document.getElementById('imagePreview').classList.add('d-none');
+        });
+
+        // Form validation
+        (function () {
+            'use strict';
+
+            const forms = document.querySelectorAll('.needs-validation');
+
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
     </script>
 }

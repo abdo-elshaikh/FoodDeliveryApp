@@ -2,105 +2,77 @@ using System.Collections.Generic;
 
 namespace FoodDeliveryApp.ViewModels.Home
 {
-    public class HomeViewModel : ViewModelBase
+    public class HomeViewModelBase
     {
-        public HeroSection Hero { get; set; }
-        public List<HomeCategoryVM> Categories { get; set; } = new List<HomeCategoryVM>();
-        public List<FeaturedDishViewModel> FeaturedDishes { get; set; } = new List<FeaturedDishViewModel>();
-        public AppDownloadSection AppDownload { get; set; }
-        public List<string> PopularSearches { get; set; } = new List<string>();
-        public List<PromotionViewModel> ActivePromotions { get; set; } = new List<PromotionViewModel>();
-        public List<HomeRestaurantViewModel> TopRatedRestaurants { get; set; } = new List<HomeRestaurantViewModel>();
-        // Search
-        public SearchViewModel Search { get; set; }
+        public List<RestaurantHomeViewModel> FeaturedRestaurants { get; set; } = new();
+        public List<CategoryHomeViewModel> PopularCategories { get; set; } = new();
     }
 
-
-    // Search
-    public class SearchViewModel
-    {
-        public List<string> PopularSearches { get; set; } = new List<string>();
-    }
-
-
-    public class HeroSection
-    {
-        public string Title { get; set; } = "Order Food Online from Your Favorite Restaurants";
-        public string Subtitle { get; set; } = "Fast delivery, great deals, and a wide variety of cuisines at your fingertips.";
-        public string BackgroundImageUrl { get; set; }
-    }
-
-    public class HomeCategoryVM
+    public class RestaurantHomeViewModel
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string Icon { get; set; }
-        public string ImageUrl { get; set; }
-        public string Description { get; set; }
-        public int RestaurantCount { get; set; }
-    }
-
-    public class FeaturedDishViewModel
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public decimal Price { get; set; }
-        public string ImageUrl { get; set; }
-        public string RestaurantName { get; set; }
-        public int RestaurantId { get; set; }
+        public string Name { get; set; } = "Restaurant name here.";
+        public string ImageUrl { get; set; } = "restaurant-image.jpg";
+        public string CuisineType { get; set; } = "Cuisine type here.";
+        // description is optional
+        public string Description { get; set; } = string.Empty;
         public double Rating { get; set; }
-        public bool IsAvailable { get; set; }
-    }
-
-    public class AppDownloadSection
-    {
-        public string Title { get; set; } = "Get the FoodFast App";
-        public string Description { get; set; } = "Download our mobile app for a better experience and exclusive deals.";
-        public string AppStoreUrl { get; set; } = "#";
-        public string PlayStoreUrl { get; set; } = "#";
-        public string AppScreenshotUrl { get; set; }
-        public List<AppFeature> Features { get; set; } = new List<AppFeature>
-        {
-            new AppFeature { Title = "Real-time tracking", Icon = "bi bi-geo-alt" },
-            new AppFeature { Title = "Exclusive deals", Icon = "bi bi-tag" },
-            new AppFeature { Title = "Faster ordering", Icon = "bi bi-lightning" },
-            new AppFeature { Title = "Loyalty rewards", Icon = "bi bi-star" }
-        };
-    }
-
-    public class AppFeature
-    {
-        public string Title { get; set; }
-        public string Icon { get; set; }
-    }
-
-    public class PromotionViewModel
-    {
-        public int Id { get; set; }
-        public string Code { get; set; }
-        public string Description { get; set; }
-        public decimal DiscountValue { get; set; }
-        public bool IsPercentage { get; set; }
-        public decimal MinimumOrderAmount { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-        public int? RestaurantId { get; set; }
-        public string RestaurantName { get; set; }
-    }
-
-    public class HomeRestaurantViewModel
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string ImageUrl { get; set; }
-        public double Rating { get; set; }
-        public int ReviewCount { get; set; }
-        public string CategoryName { get; set; }
+        public int DeliveryTime { get; set; }
         public decimal DeliveryFee { get; set; }
-        public TimeSpan EstimatedDeliveryTime { get; set; }
-        public bool IsOpen { get; set; }
-        public List<string> Tags { get; set; }
     }
-}
+
+    public class CategoryHomeViewModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "Category name here.";
+        public string Icon { get; set; } = "fa fa-circle";
+        public int RestaurantCount { get; set; }
+        // imageUrl is optional
+        public string ImageUrl { get; set; } = string.Empty;
+    }
+
+    public class HomeViewModel : HomeViewModelBase
+    {
+        public List<PromotionHomeViewModel> ActivePromotions { get; set; } = new();
+        public List<ReviewHomeViewModel> RecentReviews { get; set; } = new();
+        public List<RestaurantHomeViewModel> TrendingRestaurants { get; set; } = new();
+        public List<CategoryHomeViewModel> FeaturedCategories { get; set; } = new();
+        public UserLocationViewModel UserLocation { get; set; } = new();
+    }
+
+    public class PromotionHomeViewModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "Promotion title here.";
+        public string Description { get; set; } = "Promotion description here.";
+        public string ImageUrl { get; set; } = "promotion-image.jpg";
+        public string Code { get; set; } = string.Empty;
+        public decimal DiscountAmount { get; set; }
+        public string DiscountType { get; set; } = string.Empty;
+        public System.DateTime ExpiryDate { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    public class ReviewHomeViewModel
+    {
+        public int Id { get; set; }
+        public string UserName { get; set; } = "User";
+        public string UserAvatar { get; set; } = "user-avatar.jpg";
+        public int Rating { get; set; }
+        public string Comment { get; set; } = "Review content here.";
+        public string RestaurantName { get; set; } = "Restaurant Name";
+        public DateTime CreatedAt { get; set; }
+        public List<string> Images { get; set; } = new();
+    }
+
+    public class UserLocationViewModel
+    {
+        public string Address { get; set; } = "User's Address";
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public string City { get; set; } = "User's City";
+        public string State { get; set; } = "User's State";
+        public string ZipCode { get; set; } = "User's Zip Code";
+        public bool IsDeliveryAvailable { get; set; }
+    }
+} 

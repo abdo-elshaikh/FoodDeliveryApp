@@ -1,0 +1,337 @@
+@model FoodDeliveryApp.ViewModels.MenuItem.MenuItemDetailsViewModel
+
+<div class="modal fade" id="menuItemModal" tabindex="-1" aria-labelledby="menuItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="row g-0">
+                    <!-- Item Image -->
+                    <div class="col-md-6">
+                        <div class="item-image-container">
+                            <img src="@Model.ImageUrl" alt="@Model.Name" class="item-image" loading="lazy">
+                            @if (Model.IsPopular)
+                            {
+                                <span class="badge badge-popular">Popular</span>
+                            }
+                        </div>
+                    </div>
+                    
+                    <!-- Item Details -->
+                    <div class="col-md-6">
+                        <div class="item-details p-4">
+                            <h2 class="item-title mb-2">@Model.Name</h2>
+                            
+                            <div class="item-meta mb-3">
+                                <div class="rating">
+                                    <div class="stars">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            if (i <= Math.Floor(Model.Rating ?? 0))
+                                            {
+                                                <i class="fas fa-star"></i>
+                                            }
+                                            else if (i - Model.Rating < 1 && i - Model.Rating > 0)
+                                            {
+                                                <i class="fas fa-star-half-alt"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="far fa-star"></i>
+                                            }
+                                        }
+                                    </div>
+                                    <span class="rating-value">@Model.Rating.ToString()</span>
+                                    <span class="review-count">(@Model.ReviewCount reviews)</span>
+                                </div>
+                            </div>
+                            
+                            <p class="item-description mb-4">@Model.Description</p>
+                            
+                            <div class="item-price mb-4">
+                                <span class="price-label">Price:</span>
+                                <span class="price-value">$@Model.Price.ToString("F2")</span>
+                            </div>
+                                                        
+                            <div class="special-instructions mb-4">
+                                <label for="specialInstructions" class="form-label">Special Instructions</label>
+                                <textarea class="form-control" id="specialInstructions" rows="2" 
+                                          placeholder="Any special requests or allergies?"></textarea>
+                            </div>
+                            
+                            <div class="quantity-selector mb-4">
+                                <label class="form-label">Quantity</label>
+                                <div class="quantity-controls">
+                                    <button type="button" class="btn btn-outline-primary quantity-btn decrease">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" class="form-control quantity-input" value="1" min="1" max="10">
+                                    <button type="button" class="btn btn-outline-primary quantity-btn increase">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="total-price mb-4">
+                                <span class="total-label">Total:</span>
+                                <span class="total-value">$@Model.Price.ToString("F2")</span>
+                            </div>
+                            
+                            <button type="button" class="btn btn-primary btn-lg w-100 add-to-cart-btn">
+                                <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .item-image-container {
+        position: relative;
+        height: 100%;
+        min-height: 300px;
+    }
+
+    .item-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .badge-popular {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+    }
+
+    .item-details {
+        height: 100%;
+        overflow-y: auto;
+    }
+
+    .item-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+
+    .item-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .rating {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stars {
+        color: #ffc107;
+    }
+
+    .rating-value {
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .review-count {
+        color: var(--text-muted);
+    }
+
+    .item-description {
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    .item-price {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .price-label {
+        color: var(--text-muted);
+    }
+
+    .price-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+
+    .options-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .option-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .option-label {
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .option-choices {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-check-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        color: var(--text-color);
+    }
+
+    .choice-price {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .quantity-input {
+        width: 60px;
+        text-align: center;
+    }
+
+    .total-price {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .total-label {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .total-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+
+    @@media (max-width: 768px) {
+        .item-image-container {
+            min-height: 200px;
+        }
+
+        .item-details {
+            padding: 1.5rem;
+        }
+
+        .item-title {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('menuItemModal');
+        const quantityInput = modal.querySelector('.quantity-input');
+        const decreaseBtn = modal.querySelector('.quantity-btn.decrease');
+        const increaseBtn = modal.querySelector('.quantity-btn.increase');
+        const addToCartBtn = modal.querySelector('.add-to-cart-btn');
+        let basePrice = @Model.Price;
+
+        // Update total price when quantity changes
+        function updateTotalPrice() {
+            const quantity = parseInt(quantityInput.value);
+            const selectedOptions = Array.from(modal.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked'))
+                .reduce((sum, input) => sum + parseFloat(input.dataset.price || 0), 0);
+            const total = (basePrice + selectedOptions) * quantity;
+            modal.querySelector('.total-value').textContent = `$${total.toFixed(2)}`;
+        }
+
+        // Quantity controls
+        decreaseBtn.addEventListener('click', function() {
+            const currentValue = parseInt(quantityInput.value);
+            if (currentValue > 1) {
+                quantityInput.value = currentValue - 1;
+                updateTotalPrice();
+            }
+        });
+
+        increaseBtn.addEventListener('click', function() {
+            const currentValue = parseInt(quantityInput.value);
+            if (currentValue < 10) {
+                quantityInput.value = currentValue + 1;
+                updateTotalPrice();
+            }
+        });
+
+        quantityInput.addEventListener('change', function() {
+            let value = parseInt(this.value);
+            if (isNaN(value) || value < 1) value = 1;
+            if (value > 10) value = 10;
+            this.value = value;
+            updateTotalPrice();
+        });
+
+        // Update total when options are selected
+        modal.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(input => {
+            input.addEventListener('change', updateTotalPrice);
+        });
+
+        // Add to cart
+        addToCartBtn.addEventListener('click', function() {
+            const quantity = parseInt(quantityInput.value);
+            const specialInstructions = modal.querySelector('#specialInstructions').value;
+            const selectedOptions = Array.from(modal.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked'))
+                .map(input => ({
+                    id: input.value,
+                    name: input.closest('label').textContent.trim(),
+                    price: parseFloat(input.dataset.price || 0)
+                }));
+
+            const item = {
+                id: '@Model.Id',
+                name: '@Model.Name',
+                price: basePrice,
+                quantity: quantity,
+                image: '@Model.ImageUrl',
+                specialInstructions: specialInstructions,
+                options: selectedOptions
+            };
+
+            // Add to cart and close modal
+            if (typeof addToCart === 'function') {
+                addToCart(item);
+            }
+            bootstrap.Modal.getInstance(modal).hide();
+        });
+    });
+</script> 

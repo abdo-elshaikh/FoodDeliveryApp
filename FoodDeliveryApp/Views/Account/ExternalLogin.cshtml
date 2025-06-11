@@ -1,0 +1,158 @@
+@model FoodDeliveryApp.ViewModels.Account.ExternalLoginViewModel
+@{
+    ViewData["Title"] = "External Login";
+    ViewData["Subtitle"] = "Sign in with your social account";
+    Layout = "_LayoutAccount";
+}
+
+<div class="external-login-form">
+    <form asp-action="ExternalLogin" method="post" class="needs-validation" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+        <div class="social-login-buttons">
+            @foreach (var provider in Model.ExternalLogins)
+            {
+                <button type="submit" class="btn btn-social" name="provider" value="@provider.Name"
+                    title="Log in using your @provider.DisplayName account">
+                    <i class="fab fa-@provider.IconClass"></i> @provider.DisplayName
+                    <span class="social-login-text">@provider.Name</span>
+                </button>
+            }
+
+        </div>
+
+        <div class="divider">
+            <span>or</span>
+        </div>
+
+        <div class="input-group">
+            <span class="input-group-text" id="inputGroupPrepend">
+                <i class="fas fa-user"></i>
+            </span>
+            <input type="text" class="form-control" placeholder="Email" aria-label="Email" aria-describedby="inputGroupPrepend" required>
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg">
+            <i class="fas fa-sign-in-alt me-2"></i>Continue
+        </button>
+    </form>
+
+    <div class="account-links">
+        <a asp-action="Login">
+            <i class="fas fa-arrow-left me-1"></i>Back to Sign In
+        </a>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .external-login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .social-login-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-social {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .btn-social:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-google {
+            color: #DB4437;
+        }
+
+        .btn-google:hover {
+            background-color: #DB4437;
+            color: white;
+            border-color: #DB4437;
+        }
+
+        .btn-facebook {
+            color: #4267B2;
+        }
+
+        .btn-facebook:hover {
+            background-color: #4267B2;
+            color: white;
+            border-color: #4267B2;
+        }
+
+        .btn-microsoft {
+            color: #00A4EF;
+        }
+
+        .btn-microsoft:hover {
+            background-color: #00A4EF;
+            color: white;
+            border-color: #00A4EF;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: var(--text-muted);
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .divider span {
+            padding: 0 1rem;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group-text {
+            background-color: transparent;
+            border-right: none;
+            color: var(--text-muted);
+        }
+
+        .input-group .form-control {
+            border-left: none;
+        }
+
+        .input-group .form-control:focus {
+            border-color: var(--border-color);
+            box-shadow: none;
+        }
+
+        .input-group:focus-within {
+            box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+            border-radius: var(--border-radius);
+        }
+
+        .input-group:focus-within .input-group-text,
+        .input-group:focus-within .form-control {
+            border-color: var(--primary-color);
+        }
+    </style>
+}

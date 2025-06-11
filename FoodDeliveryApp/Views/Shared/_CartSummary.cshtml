@@ -1,7 +1,70 @@
-@model int
+@model FoodDeliveryApp.ViewModels.Cart.CartSummaryViewModel
 
 <div class="cart-summary">
-    <a href="/cart">
-        Cart (@Model)
+    <a href="/Cart" class="text-decoration-none position-relative">
+        <i class="fas fa-shopping-cart fs-5"></i>
+        @if (Model.ItemCount > 0)
+        {
+            <span class="cart-count">@Model.ItemCount</span>
+        }
+        <span class="cart-total">@Model.Total.ToString("C")</span>
     </a>
 </div>
+
+<style>
+    .cart-summary {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .cart-summary:hover {
+        transform: translateY(-2px);
+    }
+
+    .cart-summary a {
+        color: inherit;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .cart-count {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: var(--bs-primary);
+        color: white;
+        border-radius: 50%;
+        padding: 0.15rem 0.4rem;
+        font-size: 0.7rem;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        animation: pulse 1.5s infinite;
+    }
+
+    @@keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .cart-total {
+        font-weight: 500;
+        color: var(--bs-primary);
+    }
+
+    @@media (max-width: 768px) {
+        .cart-total {
+            display: none;
+        }
+    }
+</style>

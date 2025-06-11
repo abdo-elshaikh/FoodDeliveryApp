@@ -1,19 +1,25 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FoodDeliveryApp.Models
 {
-    public class MenuItemCategory
+    public class MenuItemCategory : BaseEntity
     {
-        [Key]
-        public int Id { get; set; }
-
-        [Required, StringLength(100)]
+        [Required]
+        [StringLength(100)]
         public string Name { get; set; } = string.Empty;
 
         [StringLength(255)]
-        public string? Description { get; set; }
+        public string ImageUrl { get; set; } = string.Empty;
 
-        public virtual ICollection<MenuItem> MenuItems { get; set; } = new List<MenuItem>();
+        [StringLength(500)]
+        public string Description { get; set; } = string.Empty;
+
+        public virtual ICollection<MenuItem> MenuItems { get; set; } = new HashSet<MenuItem>();
+
+        [NotMapped]
+        public int MenuItemCount => MenuItems.Count;
+        
     }
 }

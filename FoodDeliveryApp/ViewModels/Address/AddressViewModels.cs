@@ -1,19 +1,18 @@
 using System.ComponentModel.DataAnnotations;
+using FoodDeliveryApp.Models;
 
 namespace FoodDeliveryApp.ViewModels.Address
 {
-    public class AddressViewModel
+    public class AddressViewModel : BaseViewModel
     {
-        public int Id { get; set; }
 
-        [Required(ErrorMessage = "Address line is required")]
-        [StringLength(100, ErrorMessage = "Address line cannot exceed 100 characters")]
-        [Display(Name = "Address Line")]
-        public string AddressLine { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Street address is required")]
+        [StringLength(200, ErrorMessage = "Street address cannot exceed 200 characters")]
+        [Display(Name = "Street Address")]
+        public string StreetAddress { get; set; } = string.Empty;
 
-        
         [Required(ErrorMessage = "City is required")]
-        [StringLength(50, ErrorMessage = "City name cannot exceed 50 characters")]
+        [StringLength(100, ErrorMessage = "City name cannot exceed 100 characters")]
         public string City { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "State is required")]
@@ -21,76 +20,70 @@ namespace FoodDeliveryApp.ViewModels.Address
         public string State { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Postal code is required")]
-        [StringLength(10, ErrorMessage = "Postal code cannot exceed 10 characters")]
+        [StringLength(20, ErrorMessage = "Postal code cannot exceed 20 characters")]
+        [RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid postal code format")]
         [Display(Name = "Postal Code")]
         public string PostalCode { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Country is required")]
-        [StringLength(50, ErrorMessage = "Country name cannot exceed 50 characters")]
-        public string Country { get; set; } = string.Empty;
+        [StringLength(100, ErrorMessage = "Country name cannot exceed 100 characters")]
+        public string Country { get; set; } = "United States";
 
-        [Display(Name = "Is Default")]
+        [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters")]
+        public new string? Notes { get; set; }
+
         public bool IsDefault { get; set; }
 
+        [Required(ErrorMessage = "Address type is required")]
         [Display(Name = "Address Type")]
-        public AddressType AddressType { get; set; }
+        public Models.AddressType AddressType { get; set; }
 
-        [Display(Name = "Additional Instructions")]
-        [StringLength(200, ErrorMessage = "Additional instructions cannot exceed 200 characters")]
-        public string? AdditionalInstructions { get; set; }
-
-        public string FullAddress => $"{AddressLine}, {City}, {State} {PostalCode}, {Country}";
-    }
-
-    public class CreateAddressViewModel
-    {
-        [Required(ErrorMessage = "Address line is required")]
-        [StringLength(100, ErrorMessage = "Address line cannot exceed 100 characters")]
-        [Display(Name = "Address Line")]
-        public string AddressLine { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "City is required")]
-        [StringLength(50, ErrorMessage = "City name cannot exceed 50 characters")]
-        public string City { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "State is required")]
-        [StringLength(50, ErrorMessage = "State name cannot exceed 50 characters")]
-        public string State { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Postal code is required")]
-        [StringLength(10, ErrorMessage = "Postal code cannot exceed 10 characters")]
-        [Display(Name = "Postal Code")]
-        public string PostalCode { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Country is required")]
-        [StringLength(50, ErrorMessage = "Country name cannot exceed 50 characters")]
-        public string Country { get; set; } = string.Empty;
-
-        [Display(Name = "Is Default")]
-        public bool IsDefault { get; set; }
-
-        [Display(Name = "Address Type")]
-        public AddressType AddressType { get; set; }
-
-        [Display(Name = "Additional Instructions")]
-        [StringLength(200, ErrorMessage = "Additional instructions cannot exceed 200 characters")]
-        public string? AdditionalInstructions { get; set; }
-    }
-
-    public class EditAddressViewModel : CreateAddressViewModel
-    {
-        public int Id { get; set; }
+        public string FormattedAddress => $"{StreetAddress}, {City}, {State} {PostalCode}";
     }
 
     public class AddressListViewModel
     {
-        public List<AddressViewModel> Addresses { get; set; } = new List<AddressViewModel>();
+        public List<AddressViewModel> Addresses { get; set; } = new();
+        public bool HasDefaultAddress => Addresses.Any(a => a.IsDefault);
     }
 
-    public enum AddressType
+    public class AddressCreateViewModel
     {
-        Home,
-        Work,
-        Other
+        [Required(ErrorMessage = "Street address is required")]
+        [StringLength(200, ErrorMessage = "Street address cannot exceed 200 characters")]
+        [Display(Name = "Street Address")]
+        public string StreetAddress { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "City is required")]
+        [StringLength(100, ErrorMessage = "City name cannot exceed 100 characters")]
+        public string City { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "State is required")]
+        [StringLength(50, ErrorMessage = "State name cannot exceed 50 characters")]
+        public string State { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Postal code is required")]
+        [StringLength(20, ErrorMessage = "Postal code cannot exceed 20 characters")]
+        [RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Invalid postal code format")]
+        [Display(Name = "Postal Code")]
+        public string PostalCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Country is required")]
+        [StringLength(100, ErrorMessage = "Country name cannot exceed 100 characters")]
+        public string Country { get; set; } = "United States";
+
+        [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters")]
+        public string? Notes { get; set; }
+
+        public bool IsDefault { get; set; }
+
+        [Required(ErrorMessage = "Address type is required")]
+        [Display(Name = "Address Type")]
+        public AddressType AddressType { get; set; }
     }
-} 
+
+    public class AddressEditViewModel : AddressCreateViewModel
+    {
+        public int Id { get; set; }
+    }
+}

@@ -1,0 +1,75 @@
+@model FoodDeliveryApp.Models.OrderTracking
+@{
+    ViewData["Title"] = "Edit Order Tracking";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm rounded-4" data-aos="fade-up">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 fw-bold mb-0">Edit Order Tracking</h1>
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Tracking
+                        </a>
+                    </div>
+
+                    <form asp-action="Edit" method="post">
+                        <div class="card border-0 bg-light rounded-4 mb-4">
+                            <div class="card-body p-4">
+                                <h5 class="card-title mb-4">Order Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <p class="mb-2"><strong>Order ID:</strong> @Model.OrderId</p>
+                                        <p class="mb-2"><strong>Status:</strong> <span class="badge bg-@(Model.Status == OrderStatus.Delivered ? "success" : "warning")">@Model.Status</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2"><strong>Updated At:</strong> @Model.UpdatedAt</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 bg-light rounded-4">
+                            <div class="card-body p-4">
+                                <h5 class="card-title mb-4">Tracking Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label asp-for="Location" class="form-label fw-bold">Location</label>
+                                            <input asp-for="Location" class="form-control rounded-pill" />
+                                            <span asp-validation-for="Location" class="text-danger"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label asp-for="Notes" class="form-label fw-bold">Notes</label>
+                                            <textarea asp-for="Notes" class="form-control rounded-pill" rows="3"></textarea>
+                                            <span asp-validation-for="Notes" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-4">
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+    </script>
+} 

@@ -1,0 +1,165 @@
+@model FoodDeliveryApp.ViewModels.Driver.DriverViewModel
+@{
+    ViewData["Title"] = "Driver Profile";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Profile Information</h5>
+                    <form id="profileForm">
+                        <div class="mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="firstName" value="@Model.FirstName" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="lastName" value="@Model.LastName" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" value="@Model.Email" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="phoneNumber" value="@Model.PhoneNumber" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">License Number</label>
+                            <input type="text" class="form-control" id="licenseNumber" value="@Model.LicenseNumber" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Vehicle Information</label>
+                            <input type="text" class="form-control" id="vehicleInfo" value="@Model.VehicleInfo" readonly />
+                        </div>
+                        <button type="button" class="btn btn-primary" id="editProfileBtn">Edit Profile</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Current Status</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="badge bg-@(Model.Status == DriverStatus.Available ? "success" : 
+                                               Model.Status == DriverStatus.Busy ? "warning" : "secondary")">
+                                @Model.Status
+                            </span>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" id="updateStatusBtn">Update Status</button>
+                        </div>
+                    </div>
+                    <div id="statusUpdateForm" style="display: none;">
+                        <select class="form-select mb-2" id="statusSelect">
+                            <option value="Offline">Offline</option>
+                            <option value="Available">Available</option>
+                            <option value="Busy">Busy</option>
+                        </select>
+                        <button class="btn btn-success" id="saveStatusBtn">Save</button>
+                        <button class="btn btn-secondary" id="cancelStatusBtn">Cancel</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Location</h5>
+                    <p class="card-text">
+                        <strong>Current Address:</strong> @(Model.CurrentAddress ?? "Not available")<br />
+                        <strong>Last Update:</strong> @(Model.LastActive?.ToString("g") ?? "Never")
+                    </p>
+                    <button class="btn btn-primary" id="updateLocationBtn">Update Location</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#editProfileBtn').click(function() {
+                const inputs = $('#profileForm input');
+                inputs.prop('readonly', false);
+                $(this).text('Save Changes').removeClass('btn-primary').addClass('btn-success');
+                $(this).off('click').click(function() {
+                    const model = {
+                        licenseNumber: $('#licenseNumber').val(),
+                        vehicleInfo: $('#vehicleInfo').val(),
+                        status: $('#statusSelect').val()
+                    };
+
+                    $.ajax({
+                        url: '/api/driver/@Model.Id',
+                        type: 'PUT',
+                        contentType: 'application/json',
+                        data: JSON.stringify(model),
+                        success: function() {
+                            location.reload();
+                        },
+                        error: function() {
+                            alert('Failed to update profile');
+                        }
+                    });
+                });
+            });
+
+            $('#updateStatusBtn').click(function() {
+                $('#statusUpdateForm').show();
+                $(this).hide();
+            });
+
+            $('#cancelStatusBtn').click(function() {
+                $('#statusUpdateForm').hide();
+                $('#updateStatusBtn').show();
+            });
+
+            $('#saveStatusBtn').click(function() {
+                const newStatus = $('#statusSelect').val();
+                $.ajax({
+                    url: '/api/driver/@Model.Id/status',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(newStatus),
+                    success: function() {
+                        location.reload();
+                    },
+                    error: function() {
+                        alert('Failed to update status');
+                    }
+                });
+            });
+
+            $('#updateLocationBtn').click(function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        const location = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            address: 'Current Location'
+                        };
+
+                        $.ajax({
+                            url: '/api/driver/@Model.Id/location',
+                            type: 'PUT',
+                            contentType: 'application/json',
+                            data: JSON.stringify(location),
+                            success: function() {
+                                location.reload();
+                            },
+                            error: function() {
+                                alert('Failed to update location');
+                            }
+                        });
+                    });
+                } else {
+                    alert('Geolocation is not supported by your browser');
+                }
+            });
+        });
+    </script>
+} 

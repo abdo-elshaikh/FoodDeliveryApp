@@ -1,0 +1,7 @@
+@model FoodDeliveryApp.ViewModels.Cart.CartSummaryViewModel
+
+<a href="@Url.Action("Index", "Cart")" class="cart-link">
+    <i class="fas fa-shopping-cart"></i>
+    <span class="cart-count">@Model.ItemCount</span>
+    <span class="cart-total">$@Model.Total.ToString("N2")</span>
+</a> 

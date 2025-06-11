@@ -1,0 +1,133 @@
+@model FoodDeliveryApp.Models.MenuItemCategory
+@{
+    ViewData["Title"] = "Category Details";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm rounded-4" data-aos="fade-up">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 fw-bold mb-0">Category Details</h1>
+                        <div class="btn-group">
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary rounded-pill">
+                                <i class="fas fa-edit me-2"></i>Edit
+                            </a>
+                            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Categories
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- Category Image -->
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center p-4">
+                                    <img src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/default-category.png" : Model.ImageUrl)" 
+                                         alt="@Model.Name" class="rounded-3 img-thumbnail mb-3"
+                                         style="width: 100%; height: 200px; object-fit: cover;">
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category Information -->
+                        <div class="col-md-8">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title mb-4">Category Information</h5>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Name</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-tag text-muted"></i>
+                                            </span>
+                                            <input type="text" class="form-control border-start-0" value="@Model.Name" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Description</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-align-left text-muted"></i>
+                                            </span>
+                                            <textarea class="form-control border-start-0" rows="4" readonly>@Model.Description</textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Menu Items</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-utensils text-muted"></i>
+                                            </span>
+                                            <input type="text" class="form-control border-start-0" 
+                                                   value="@Model.MenuItems?.Count() Items" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Menu Items List -->
+                    @if (Model.MenuItems?.Any() == true)
+                    {
+                        <div class="mt-4">
+                            <h5 class="fw-bold mb-4">Menu Items in this Category</h5>
+                            <div class="row g-4">
+                                @foreach (var item in Model.MenuItems)
+                                {
+                                    <div class="col-md-6 col-lg-4" data-aos="fade-up">
+                                        <div class="card border-0 shadow-sm rounded-4 h-100">
+                                            <div class="position-relative">
+                                                <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/default-menu-item.png" : item.ImageUrl)" 
+                                                     class="card-img-top rounded-top-4" alt="@item.Name"
+                                                     style="height: 160px; object-fit: cover;">
+                                                <div class="position-absolute top-0 end-0 p-3">
+                                                    <span class="badge bg-@(item.IsAvailable ? "success" : "danger") rounded-pill">
+                                                        @(item.IsAvailable ? "Available" : "Unavailable")
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-4">
+                                                <h6 class="card-title fw-bold mb-2">@item.Name</h6>
+                                                <p class="card-text text-muted small mb-3">
+                                                    @(string.IsNullOrEmpty(item.Description) ? "No description available" : item.Description)
+                                                </p>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div class="text-primary fw-bold">
+                                                        $@item.Price.ToString("F2")
+                                                    </div>
+                                                    <a asp-controller="MenuItem" asp-action="Details" asp-route-id="@item.Id" 
+                                                       class="btn btn-sm btn-outline-primary rounded-pill">
+                                                        <i class="fas fa-eye me-1"></i>View
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+    </script>
+}

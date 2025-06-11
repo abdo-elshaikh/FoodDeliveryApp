@@ -1,18 +1,21 @@
-﻿using FoodDeliveryApp.Models;
+﻿﻿using FoodDeliveryApp.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace FoodDeliveryApp.Repositories.Interfaces
 {
     public interface IMenuItemRepository : IRepository<MenuItem>
     {
-        Task<IEnumerable<MenuItem>> GetByRestaurantAsync(int restaurantId);
-        Task<IEnumerable<MenuItem>> GetAvailableItemsByRestaurantAsync(int restaurantId);
-        Task<IEnumerable<MenuItem>> GetPopularItemsAsync(int count, int restaurantId);
-        Task<IEnumerable<MenuItem>> GetByRestaurantCategoryAsync(int categoryId);
+        Task<IEnumerable<MenuItem>> GetByRestaurantIdAsync(int restaurantId);
+        Task<IEnumerable<MenuItem>> GetByCategoryIdAsync(int categoryId);
+        Task<IEnumerable<MenuItem>> GetPopularItemsAsync(int count = 8);
+        Task<IEnumerable<MenuItemCategory>> GetPopularCategoriesAsync(int count = 6);
+        Task<MenuItem> GetByIdWithDetailsAsync(int id);
+        Task<MenuItem> GetByIdWithRestaurantAsync(int id);
+        Task<bool> UpdateAvailabilityAsync(int id, bool isAvailable);
+        Task<IEnumerable<MenuItem>> SearchMenuItemsAsync(string searchTerm);
 
-        Task<List<MenuItem>> GetRelatedItemsAsync(int menuItemId, int restaurantId, int take);
-        Task<List<CustomizationOption>> GetCustomizationOptionsAsync(int menuItemId);
-        
-        Task<IEnumerable<MenuItem>> SearchMenuItemsAsync(string searchQuery, int? restaurantId, int? categoryId, int pageNumber, int pageSize);
-        Task<IEnumerable<MenuItem>> GetPopularDishesAsync(int count);
+        Task<IEnumerable<MenuItem>> GetByIdsAsync(IEnumerable<int> ids);
     }
+
 }

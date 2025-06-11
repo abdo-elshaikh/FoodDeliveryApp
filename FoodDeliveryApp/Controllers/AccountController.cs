@@ -1,31 +1,29 @@
-﻿﻿﻿﻿﻿﻿using FoodDeliveryApp.Models;
+﻿using FoodDeliveryApp.Models;
 using FoodDeliveryApp.Repositories.Interfaces;
 using FoodDeliveryApp.Services;
+using FoodDeliveryApp.Services.Interfaces;
 using FoodDeliveryApp.ViewModels.Account;
+using FoodDeliveryApp.ViewModels.Address;
+using FoodDeliveryApp.ViewModels.Order;
+using FoodDeliveryApp.ViewModels.Restaurant;
+using FoodDeliveryApp.ViewModels.Review;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
-using System;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Threading.Tasks;
 
 namespace FoodDeliveryApp.Controllers
 {
-    /// <summary>
-    /// Controller responsible for user account management including registration, login, logout, email confirmation, and password management.
-    /// </summary>
-    [Authorize]
-    [Route("[controller]/[action]")]
-    [AutoValidateAntiforgeryToken]
-    // [RequireHttps]
     public class AccountController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IEmailSender _emailSender;
+        private readonly IFileService _fileService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<AccountController> _logger;
 
@@ -35,7 +33,9 @@ namespace FoodDeliveryApp.Controllers
             RoleManager<IdentityRole> roleManager,
             IEmailSender emailSender,
             IUnitOfWork unitOfWork,
-            ILogger<AccountController> logger)
+            IFileService fileService,
+            ILogger<AccountController> logger
+            )
         {
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
@@ -43,11 +43,9 @@ namespace FoodDeliveryApp.Controllers
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _fileService = fileService?? throw new ArgumentNullException(nameof(fileService));
         }
 
-        /// <summary>
-        /// Displays the registration form.
-        /// </summary>
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Register(string? returnUrl = null)
@@ -56,104 +54,133 @@ namespace FoodDeliveryApp.Controllers
             return View(new RegisterViewModel());
         }
 
-        /// <summary>
-        /// Handles user registration.
-        /// </summary>
         [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> RegisterAsync(RegisterViewModel model, string? returnUrl = null)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterViewModel model, string? returnUrl = null, CancellationToken cancellationToken = default)
         {
             ViewData["ReturnUrl"] = returnUrl;
 
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Please correct the errors in the form.";
+                ModelState.AddModelError(string.Empty, "Please correct the errors in the form.");
                 return View(model);
             }
 
-            var existingUser = await _userManager.FindByEmailAsync(model.Email);
-            if (existingUser != null)
+            try
             {
-                ModelState.AddModelError(string.Empty, "Email is already registered.");
-                return View(model);
-            }
-
-            var user = new ApplicationUser
-            {
-                UserName = model.Email,
-                Email = model.Email,
-                Role = model.UserType,
-                IsActive = false,
-                CreatedAt = DateTime.UtcNow,
-            };
-
-            var result = await _userManager.CreateAsync(user, model.Password);
-            if (!result.Succeeded)
-            {
-                foreach (var error in result.Errors)
+                // Check for existing user
+                var existingUser = await _userManager.FindByEmailAsync(model.Email);
+                if (existingUser != null)
                 {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-                TempData["ErrorMessage"] = "Registration failed. Please check the errors below.";
-                return View(model);
-            }
-
-            var roleName = model.UserType.ToString();
-            if (!await _roleManager.RoleExistsAsync(roleName))
-            {
-                var roleResult = await _roleManager.CreateAsync(new IdentityRole(roleName));
-                if (!roleResult.Succeeded)
-                {
-                    _logger.LogError("Failed to create role {RoleName}", roleName);
-                    ModelState.AddModelError(string.Empty, "Failed to create user role.");
+                    ModelState.AddModelError(string.Empty, "Email is already registered.");
                     return View(model);
                 }
+                
+                // Create user
+                var user = new ApplicationUser
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    PhoneNumber = model.PhoneNumber,
+                    Role = model.Role,
+                    IsActive = model.Role == UserType.Customer? true : false,
+                    CreatedAt = DateTime.UtcNow,
+                    Notes = $"Created by {model.FirstName} {model.LastName} on {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}.",
+                };
+
+                var result = await _userManager.CreateAsync(user, model.Password);
+                if (!result.Succeeded)
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                    ModelState.AddModelError(string.Empty, "Registration failed. Please check the errors below.");
+                    return View(model);
+                }
+
+                // Create and assign role
+                var roleName = model.Role.ToString();
+                if (!await _roleManager.RoleExistsAsync(roleName))
+                {
+                    var roleResult = await _roleManager.CreateAsync(new IdentityRole(roleName));
+                    if (!roleResult.Succeeded)
+                    {
+                        _logger.LogError("Failed to create role {RoleName}", roleName);
+                        ModelState.AddModelError(string.Empty, "Failed to create user role.");
+                        return View(model);
+                    }
+                }
+
+                await _userManager.AddToRoleAsync(user, roleName);
+
+                // Send confirmation email
+                try
+                {
+                    await SendEmailConfirmationAsync(user);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send confirmation email to user {Email}. Deleting user.", model.Email);
+                    // Delete the user if email sending fails
+                    var deleteResult = await _userManager.DeleteAsync(user);
+                    if (!deleteResult.Succeeded)
+                    {
+                        _logger.LogError("Failed to delete user {Email} after email sending failure.", model.Email);
+                    }
+                    ModelState.AddModelError(string.Empty, "Registration failed: unable to send confirmation email. Please try again later.");
+                    return View(model);
+                }
+
+                // Save all changes
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("User {Email} registered successfully with role {Role}", model.Email, model.Role);
+                TempData["Success"] = "Registration successful! Please check your email to confirm your account.";
+                return RedirectToAction(nameof(RegisterConfirmation), new { email = model.Email });
             }
-
-            await _userManager.AddToRoleAsync(user, roleName);
-            await _unitOfWork.SaveChangesAsync();
-
-            await SendEmailConfirmationAsync(user);
-
-            _logger.LogInformation("User {Email} registered successfully.", model.Email);
-            TempData["SuccessMessage"] = "Registration successful! Please check your email to confirm your account.";
-            return RedirectToAction(nameof(RegisterConfirmation), new { email = model.Email });
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during registration for user {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "An unexpected error occurred during registration. Please try again later.");
+                return View(model);
+            }
         }
 
-        /// <summary>
-        /// Displays registration confirmation page.
-        /// </summary>
+
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult RegisterConfirmation(string email)
+        public async Task<IActionResult> RegisterConfirmation(string email)
         {
             if (string.IsNullOrEmpty(email))
             {
-                TempData["ErrorMessage"] = "Email is required.";
+                TempData["Error"] = "Email is required.";
                 return BadRequest();
             }
+
             ViewData["Title"] = "Registration Complete";
             ViewData["SubTitle"] = "Please check your email to confirm your account.";
             return View(new { Email = email });
         }
 
-        /// <summary>
-        /// Confirms user email.
-        /// </summary>
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> ConfirmEmail(string userId, string code)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(code))
             {
-                TempData["ErrorMessage"] = "Invalid email confirmation link.";
+                TempData["Error"] = "Invalid email confirmation link.";
                 return RedirectToAction("Index", "Home");
             }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                TempData["ErrorMessage"] = "Unable to find user account.";
+                TempData["Error"] = "Unable to find user account.";
                 return RedirectToAction("Index", "Home");
             }
 
@@ -163,25 +190,25 @@ namespace FoodDeliveryApp.Controllers
                 var result = await _userManager.ConfirmEmailAsync(user, decodedCode);
                 if (result.Succeeded)
                 {
+                    await _unitOfWork.Carts.CreateUserCartAsync(user.Id.ToString());
+
                     _logger.LogInformation("Email confirmed for user {Email}", user.Email);
-                    TempData["SuccessMessage"] = "Email confirmed successfully! Please complete your profile.";
-                    return RedirectToProfileCompletion(user.Role, user.Email);
+                    TempData["Success"] = "Email confirmed successfully!";
+                    return RedirectToAction("Index", "Home");
                 }
 
-                TempData["ErrorMessage"] = "Error confirming email. The link may be invalid or expired.";
+                TempData["Error"] = "Error confirming email. The link may be invalid or expired.";
                 return View("Error");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error confirming email for user {UserId}", userId);
-                TempData["ErrorMessage"] = "An error occurred during email confirmation.";
+                TempData["Error"] = "An error occurred during email confirmation.";
                 return View("Error");
             }
         }
 
-        /// <summary>
-        /// Displays login form.
-        /// </summary>
+
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Login(string? returnUrl = null)
@@ -190,81 +217,70 @@ namespace FoodDeliveryApp.Controllers
             return View(new LoginViewModel());
         }
 
-        /// <summary>
-        /// Handles user login.
-        /// </summary>
+
         [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> LoginAsync(LoginViewModel model, string? returnUrl = null)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null, CancellationToken cancellationToken = default)
         {
             ViewData["ReturnUrl"] = returnUrl;
 
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Please correct the errors in the form.";
+                ModelState.AddModelError(string.Empty, "Please correct the errors in the form.");
                 return View(model);
             }
 
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                TempData["ErrorMessage"] = "Invalid login attempt. Account does not exist.";
+                ModelState.AddModelError(string.Empty, "Invalid login attempt. Account does not exist.");
                 return View(model);
             }
 
             if (!user.EmailConfirmed)
             {
-                TempData["ErrorMessage"] = "Please confirm your email before logging in.";
+                ModelState.AddModelError(string.Empty, "Please confirm your email before logging in.");
                 return View(model);
             }
 
-            var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, lockoutOnFailure: true);
+            var result = await _signInManager.PasswordSignInAsync(user, model.Password, false, lockoutOnFailure: true);
             if (result.Succeeded)
             {
-            bool hasProfile = user.Role == UserType.Customer
-                ? await _unitOfWork.Customers.GetByUserIdAsync(user.Id) != null
-                : await _unitOfWork.Employees.GetByUserIdAsync(user.Id) != null;
-
-            if (!hasProfile || !user.IsActive)
-            {
-                TempData["ErrorMessage"] = "Please complete your profile before proceeding.";
-                    // log the user out
-                    //await _signInManager.SignOutAsync();
-                return RedirectToProfileCompletion(user.Role, user.Email ?? string.Empty);
-            }
-
+                if (!user.IsActive)
+                {
+                    ModelState.AddModelError(string.Empty, "Your account is not active.");
+                    return View(model);
+                }
 
                 _logger.LogInformation("User {Email} logged in successfully.", model.Email);
-                TempData["SuccessMessage"] = "Login successful!";
+                TempData["Success"] = "Login successful!";
                 return RedirectToLocal(returnUrl);
             }
 
             if (result.IsLockedOut)
             {
                 _logger.LogWarning("User {Email} account locked out.", model.Email);
-                TempData["ErrorMessage"] = "Your account is locked out. Please try again later.";
+                ModelState.AddModelError(string.Empty, "Your account is locked out. Please try again later.");
                 return RedirectToAction(nameof(Lockout));
             }
 
-            TempData["ErrorMessage"] = "Invalid login attempt. Please check your email or password.";
+            ModelState.AddModelError(string.Empty, "Invalid login attempt. Please check your email or password.");
             return View(model);
         }
 
-        /// <summary>
-        /// Handles user logout.
-        /// </summary>
+
         [HttpPost]
-        public async Task<IActionResult> LogoutAsync()
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LogoutAsync(CancellationToken cancellationToken = default)
         {
             await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out.");
-            TempData["SuccessMessage"] = "Logout successful!";
+            TempData["Success"] = "Logout successful!";
             return RedirectToAction("Index", "Home");
         }
 
-        /// <summary>
-        /// Displays account lockout page.
-        /// </summary>
+
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Lockout()
@@ -274,24 +290,21 @@ namespace FoodDeliveryApp.Controllers
             return View();
         }
 
-        /// <summary>
-        /// Displays change password form.
-        /// </summary>
+
         [HttpGet]
         public IActionResult ChangePassword()
         {
             return View(new ChangePasswordViewModel());
         }
 
-        /// <summary>
-        /// Handles password change.
-        /// </summary>
+
         [HttpPost]
-        public async Task<IActionResult> ChangePasswordAsync(ChangePasswordViewModel model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePasswordAsync(ChangePasswordViewModel model, CancellationToken cancellationToken = default)
         {
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Please correct the errors in the form.";
+                ModelState.AddModelError(string.Empty, "Please correct the errors in the form.");
                 return View(model);
             }
 
@@ -301,26 +314,24 @@ namespace FoodDeliveryApp.Controllers
                 return NotFound("User not found.");
             }
 
-            var result = await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
+            var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
             if (result.Succeeded)
             {
                 await _signInManager.RefreshSignInAsync(user);
                 _logger.LogInformation("User {Email} changed password successfully.", user.Email);
-                TempData["SuccessMessage"] = "Password changed successfully!";
-                return RedirectToAction("Index", "Home");
+                TempData["Success"] = "Password changed successfully!";
+                return RedirectToAction(nameof(Index), "Home");
             }
 
             foreach (var error in result.Errors)
             {
                 ModelState.AddModelError(string.Empty, error.Description);
             }
-            TempData["ErrorMessage"] = "Failed to change password. Please check the errors.";
+            ModelState.AddModelError(string.Empty, "Failed to change password. Please check the errors.");
             return View(model);
         }
 
-        /// <summary>
-        /// Displays forgot password form.
-        /// </summary>
+
         [HttpGet]
         [AllowAnonymous]
         public IActionResult ForgotPassword()
@@ -328,12 +339,11 @@ namespace FoodDeliveryApp.Controllers
             return View();
         }
 
-        /// <summary>
-        /// Handles forgot password request.
-        /// </summary>
+
         [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model, CancellationToken cancellationToken = default)
         {
             if (!ModelState.IsValid)
             {
@@ -350,7 +360,7 @@ namespace FoodDeliveryApp.Controllers
             var code = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
             var callbackUrl = Url.Action(
-                "ResetPassword",
+                nameof(ResetPassword),
                 "Account",
                 new { userId = user.Id, code = encodedCode },
                 protocol: Request.Scheme);
@@ -369,9 +379,7 @@ namespace FoodDeliveryApp.Controllers
             return RedirectToAction(nameof(ForgotPasswordConfirmation));
         }
 
-        /// <summary>
-        /// Displays forgot password confirmation page.
-        /// </summary>
+
         [HttpGet]
         [AllowAnonymous]
         public IActionResult ForgotPasswordConfirmation()
@@ -379,9 +387,7 @@ namespace FoodDeliveryApp.Controllers
             return View();
         }
 
-        /// <summary>
-        /// Displays reset password form.
-        /// </summary>
+
         [HttpGet]
         [AllowAnonymous]
         public IActionResult ResetPassword(string code = null)
@@ -394,12 +400,11 @@ namespace FoodDeliveryApp.Controllers
             return View(model);
         }
 
-        /// <summary>
-        /// Handles reset password request.
-        /// </summary>
+
         [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model, CancellationToken cancellationToken = default)
         {
             if (!ModelState.IsValid)
             {
@@ -427,9 +432,7 @@ namespace FoodDeliveryApp.Controllers
             return View(model);
         }
 
-        /// <summary>
-        /// Displays reset password confirmation page.
-        /// </summary>
+
         [HttpGet]
         [AllowAnonymous]
         public IActionResult ResetPasswordConfirmation()
@@ -440,25 +443,12 @@ namespace FoodDeliveryApp.Controllers
         #region Helpers
 
         private IActionResult RedirectToLocal(string? returnUrl)
-
-
         {
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
             }
             return RedirectToAction("Index", "Home");
-        }
-
-        private IActionResult RedirectToProfileCompletion(UserType role, string email)
-        {
-            var routeValues = new { email = email };
-            return role switch
-            {
-                UserType.Customer => RedirectToAction("CompleteCustomerProfile", "Profile", routeValues),
-                UserType.Employee or UserType.Admin or UserType.Owner => RedirectToAction("CompleteEmployeeProfile", "Profile", routeValues),
-                _ => RedirectToAction("Index", "Home")
-            };
         }
 
         private async Task SendEmailConfirmationAsync(ApplicationUser user)
@@ -484,5 +474,331 @@ namespace FoodDeliveryApp.Controllers
         }
 
         #endregion
+
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ManageUsers()
+        {
+            var users = await _userManager.Users.ToListAsync();
+            return View(users);
+        }
+
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UserList()
+        {
+            var users = await _userManager.Users.ToListAsync();
+            return View(users);
+        }
+
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> EditUser(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return BadRequest("User ID is required.");
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            return View(user);
+        }
+
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditUser(ApplicationUser model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _userManager.FindByIdAsync(model.Id);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            user.Email = model.Email;
+            user.UserName = model.Email;
+            user.Role = model.Role;
+            user.IsActive = model.IsActive;
+
+            var emailToken = await _userManager.GenerateChangeEmailTokenAsync(user, model.Email);
+            var emailChangeResult = await _userManager.ChangeEmailAsync(user, model.Email, emailToken);
+            if (!emailChangeResult.Succeeded)
+            {
+                foreach (var error in emailChangeResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+                return View(model);
+            }
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                foreach (var error in updateResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+                return View(model);
+            }
+
+            _logger.LogInformation("User {Email} updated successfully.", model.Email);
+            TempData["Success"] = "User updated successfully.";
+            return RedirectToAction(nameof(ManageUsers));
+        }
+
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> UserProfile(string activeTab = "profile-info")
+        {
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found when accessing UserProfile");
+                    return NotFound("User not found.");
+                }
+
+                // Load user addresses
+                var userAddresses = await _unitOfWork.Addresses.GetUserAddressesAsync(user.Id);
+                var selectedAddress = userAddresses.FirstOrDefault(a => a.IsDefault);
+
+                // Load user reviews
+                var userReviews = await _unitOfWork.Reviews.GetByUserIdAsync(user.Id);
+
+                // Load user orders with related data
+                var userOrders = _unitOfWork.Orders.GetUserOrders(user.Id, o => o.OrderItems, o => o.TrackingHistory)
+                    .OrderByDescending(o => o.OrderDate)
+                    .ToList();
+
+                // Load restaurants owned by the user
+                var restaurants = (await _unitOfWork.Restaurants.GetAllAsync())
+                    .Where(r => r.IsOwner(user.Id))
+                    .ToList();
+
+                // Create and populate the view model
+                var model = new UserProfileViewModel
+                {
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    PhoneNumber = user.PhoneNumber,
+                    ExistingProfilePicturePath = user.ProfilePictureUrl,
+                    AccountCreatedDate = user.CreatedAt,
+                    LastLoginDate = user.DateOfBirth ?? DateTime.Now ,
+                    ActiveTab = activeTab,
+                    Addresses = userAddresses.Select(a => new AddressViewModel
+                    {
+                        Id = a.Id,
+                        StreetAddress = a.StreetAddress,
+                        City = a.City,
+                        State = a.State,
+                        Country = a.Country,
+                        PostalCode = a.PostalCode,
+                        IsDefault = a.IsDefault
+                    }).ToList(),
+                    SelectedAddressId = selectedAddress?.Id,
+                    Reviews = userReviews.Select(r => new RestaurantReviewViewModel
+                    {
+                        Id = r.Id,
+                        RestaurantName = r.Restaurant.Name,
+                        Rating = (double)r.Rating,
+                        Content = r.Content,
+                        UserName = r.User.UserName,
+                        CreatedAt = r.CreatedAt,
+                    }).ToList(),
+                    Orders = userOrders.Select(o => new OrderSummaryViewModel
+                    {
+                        OrderId = o.Id,
+                        OrderNumber = o.OrderNumber,
+                        CreatedAt = o.OrderDate,
+                        Status = o.Status,
+                        TotalAmount = o.Total,
+                        PaymentMethod = o.PaymentMethod,
+                    }).ToList(),
+                    Restaurants = restaurants.Select(r => new RestaurantViewModel
+                    {
+                        Id = r.Id,
+                        Name = r.Name,
+                        Description = r.Description,
+                        PhoneNumber = r.PhoneNumber,
+                        ImageUrl = r.ImageUrl,
+                    }).ToList(),
+                };
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading user profile");
+                TempData["Error"] = "An error occurred while loading your profile. Please try again later.";
+                return RedirectToAction("Index", "Home");
+            }
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateProfile(UserProfileViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                // Reload related data to properly display the form again
+                await ReloadUserProfileRelatedData(model);
+                return View("UserProfile", model);
+            }
+
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found when updating profile");
+                    return Challenge();
+                }
+
+                // Handle email change if needed
+                if (user.Email != model.Email)
+                {
+                    var emailToken = await _userManager.GenerateChangeEmailTokenAsync(user, model.Email);
+                    var emailChangeResult = await _userManager.ChangeEmailAsync(user, model.Email, emailToken);
+                    if (!emailChangeResult.Succeeded)
+                    {
+                        foreach (var error in emailChangeResult.Errors)
+                        {
+                            ModelState.AddModelError(string.Empty, error.Description);
+                        }
+                        await ReloadUserProfileRelatedData(model);
+                        return View("UserProfile", model);
+                    }
+                }
+
+                // Update user properties
+                user.FirstName = model.FirstName;
+                user.LastName = model.LastName;
+                user.PhoneNumber = model.PhoneNumber;
+
+                // Handle profile picture upload
+                if (model.ProfilePicture != null && model.ProfilePicture.Length > 0)
+                {
+                    try
+                    {
+                        var (fileName, filePath) = await _fileService.SaveFileAsync(model.ProfilePicture, "ProfilePictures");
+                        user.ProfilePictureUrl = filePath;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error uploading profile picture for user {UserId}", user.Id);
+                        ModelState.AddModelError("ProfilePicture", "Failed to upload profile picture. Please try again.");
+                        await ReloadUserProfileRelatedData(model);
+                        return View("UserProfile", model);
+                    }
+                }
+
+                // Save user changes
+                var updateResult = await _userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                {
+                    foreach (var error in updateResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                    await ReloadUserProfileRelatedData(model);
+                    return View("UserProfile", model);
+                }
+
+                // Update default address if selected
+                if (model.SelectedAddressId.HasValue)
+                {
+                    await _unitOfWork.Addresses.SetDefaultAddressAsync( model.SelectedAddressId.Value, user.Id);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                _logger.LogInformation("User {Email} updated their profile successfully", model.Email);
+                TempData["Success"] = "Profile updated successfully.";
+                return RedirectToAction(nameof(UserProfile), new { activeTab = model.ActiveTab });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating user profile");
+                ModelState.AddModelError(string.Empty, "An error occurred while updating your profile. Please try again.");
+                await ReloadUserProfileRelatedData(model);
+                return View("UserProfile", model);
+            }
+        }
+
+        // Helper method to reload related data for the user profile
+        private async Task ReloadUserProfileRelatedData(UserProfileViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return;
+
+            var userAddresses = await _unitOfWork.Addresses.GetUserAddressesAsync(user.Id);
+            var userReviews = await _unitOfWork.Reviews.GetByUserIdAsync(user.Id);
+            var userOrders = _unitOfWork.Orders.GetUserOrders(user.Id, o => o.OrderItems, o => o.TrackingHistory);
+            var restaurants = (await _unitOfWork.Restaurants.GetAllAsync())
+                .Where(r => r.IsOwner(user.Id))
+                .ToList();
+
+            model.Addresses = userAddresses.Select(a => new AddressViewModel
+            {
+                Id = a.Id,
+                StreetAddress = a.StreetAddress,
+                City = a.City,
+                State = a.State,
+                Country = a.Country,
+                PostalCode = a.PostalCode,
+                IsDefault = a.IsDefault
+            }).ToList();
+
+            model.Reviews = userReviews.Select(r => new RestaurantReviewViewModel
+            {
+                Id = r.Id,
+                RestaurantName = r.Restaurant.Name,
+                Rating = (double)r.Rating,
+                Content = r.Content,
+                UserName = r.User.UserName,
+                CreatedAt = r.CreatedAt,
+            }).ToList();
+
+            model.Orders = userOrders.Select(o => new OrderSummaryViewModel
+            {
+                OrderId = o.Id,
+                OrderNumber = o.OrderNumber,
+                CreatedAt = o.OrderDate,
+                Status = o.Status,
+                TotalAmount = o.Total,
+                PaymentMethod = o.PaymentMethod,
+                
+            }).ToList();
+
+            model.Restaurants = restaurants.Select(r => new RestaurantViewModel
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Description = r.Description,
+                PhoneNumber = r.PhoneNumber,
+                ImageUrl = r.ImageUrl,
+            }).ToList();
+
+            model.ExistingProfilePicturePath = user.ProfilePictureUrl;
+            model.AccountCreatedDate = user.CreatedAt;
+            model.LastLoginDate = user.DateOfBirth ?? user.CreatedAt;
+        }
     }
 }

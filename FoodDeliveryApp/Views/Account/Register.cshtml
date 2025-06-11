@@ -1,139 +1,316 @@
 ﻿@model FoodDeliveryApp.ViewModels.Account.RegisterViewModel
 @{
-    ViewData["Title"] = "Register";
-    Layout = "~/Views/Shared/_LayoutAccount.cshtml";
+    ViewData["Title"] = "Create Account";
+    ViewData["Subtitle"] = "Join us and start ordering your favorite food";
+    Layout = "_LayoutAccount";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow-lg border-0 animate__animated animate__fadeInUp">
-            <div class="card-body p-4">
-                <h2 class="text-center mb-4">
-                    <i class="fas fa-user-plus me-2 text-primary"></i>@ViewData["Title"]
-                </h2>
+<div class="register-form">
+    <form asp-action="Register" method="post" class="needs-validation" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-                <form asp-action="Register" method="post" id="registerForm" class="needs-validation" novalidate>
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" role="alert"></div>
-
-                    <div class="mb-4">
-                        <label asp-for="Email" class="form-label">Email Address</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-envelope"></i>
-                            </span>
-                            <input asp-for="Email" class="form-control" placeholder="Enter your email"
-                                   aria-label="Email" aria-describedby="email-validation" />
-                        </div>
-                        <span asp-validation-for="Email" class="text-danger" id="email-validation"></span>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="FirstName" class="form-label">First Name</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <input asp-for="FirstName" class="form-control" placeholder="Enter your first name" required />
                     </div>
-
-                    <div class="mb-4">
-                        <label asp-for="Password" class="form-label">Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-lock"></i>
-                            </span>
-                            <input asp-for="Password" class="form-control" placeholder="Enter your password"
-                                   aria-label="Password" aria-describedby="password-validation" />
-                            <button class="btn btn-outline-secondary" type="button" id="togglePassword"
-                                    aria-label="Toggle password visibility">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        <span asp-validation-for="Password" class="text-danger" id="password-validation"></span>
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="LastName" class="form-label">Last Name</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <input asp-for="LastName" class="form-control" placeholder="Enter your last name" required />
                     </div>
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
 
-                    <div class="mb-4">
-                        <label asp-for="ConfirmPassword" class="form-label">Confirm Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-lock"></i>
-                            </span>
-                            <input asp-for="ConfirmPassword" class="form-control" placeholder="Confirm your password"
-                                   aria-label="Confirm Password" aria-describedby="confirm-password-validation" />
-                            <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword"
-                                    aria-label="Toggle confirm password visibility">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        <span asp-validation-for="ConfirmPassword" class="text-danger" id="confirm-password-validation"></span>
-                    </div>
+        <div class="form-group">
+            <label asp-for="Email" class="form-label">Email Address</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-envelope"></i>
+                </span>
+                <input asp-for="Email" class="form-control" type="email" placeholder="Enter your email" required />
+            </div>
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
 
-                    <div class="mb-4">
-                        <label asp-for="UserType" class="form-label">User Type</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-user-tag"></i>
-                            </span>
-                            <select asp-for="UserType" class="form-select" asp-items="Html.GetEnumSelectList<UserType>()" aria-label="User Type"></select>
-                        </div>
-                        <span asp-validation-for="UserType" class="text-danger"></span>
-                    </div>
+        <div class="form-group">
+            <label asp-for="PhoneNumber" class="form-label">Phone Number</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-phone"></i>
+                </span>
+                <input asp-for="PhoneNumber" class="form-control" type="tel" placeholder="Enter your phone number" required />
+            </div>
+            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        </div>
 
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg" id="registerButton">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            <i class="fas fa-user-plus me-2"></i>Register
-                        </button>
-                    </div>
+        <div class="form-group">
+            <label asp-for="Password" class="form-label">Password</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-lock"></i>
+                </span>
+                <input asp-for="Password" class="form-control" type="password" placeholder="Create a password" required />
+                <button type="button" class="password-toggle-btn" onclick="togglePassword('Password')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            <span asp-validation-for="Password" class="text-danger"></span>
+            <div class="password-strength mt-2">
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+                <small class="text-muted">Password strength: <span class="strength-text">None</span></small>
+            </div>
+        </div>
 
-                    <div class="text-center mt-4">
-                        <p class="mb-0">Already have an account? <a href="/Account/Login" class="text-primary fw-bold">Login here</a></p>
-                    </div>
-                </form>
+        <div class="form-group">
+            <label asp-for="ConfirmPassword" class="form-label">Confirm Password</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-lock"></i>
+                </span>
+                <input asp-for="ConfirmPassword" class="form-control" type="password" placeholder="Confirm your password" required />
+                <button type="button" class="password-toggle-btn" onclick="togglePassword('ConfirmPassword')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+        </div>
+
+        <div class="form-check mb-4">
+            <input asp-for="AcceptTerms" class="form-check-input" required />
+            <label asp-for="AcceptTerms" class="form-check-label">
+                I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a>
+            </label>
+            <span asp-validation-for="AcceptTerms" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg">
+            <i class="fas fa-user-plus me-2"></i>Create Account
+        </button>
+
+        <div class="divider">
+            <span>or sign up with</span>
+        </div>
+
+        <div class="social-login">
+            <a asp-action="ExternalLogin" asp-route-provider="Google" class="btn btn-social btn-google">
+                <i class="fab fa-google"></i>
+                <span>Google</span>
+            </a>
+            <a asp-action="ExternalLogin" asp-route-provider="Facebook" class="btn btn-social btn-facebook">
+                <i class="fab fa-facebook-f"></i>
+                <span>Facebook</span>
+            </a>
+        </div>
+    </form>
+
+    <div class="account-links">
+        <p class="text-center mb-0">
+            Already have an account? 
+            <a asp-action="Login" class="text-primary">Sign in</a>
+        </p>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Acceptance of Terms</h6>
+                <p>By accessing and using this application, you accept and agree to be bound by the terms and provision of this agreement.</p>
+
+                <h6>2. Use License</h6>
+                <p>Permission is granted to temporarily download one copy of the application per device for personal, non-commercial transitory viewing only.</p>
+
+                <h6>3. User Account</h6>
+                <p>You are responsible for maintaining the confidentiality of your account and password and for restricting access to your computer.</p>
+
+                <h6>4. Privacy Policy</h6>
+                <p>Your use of the application is also governed by our Privacy Policy, which is incorporated into these terms by reference.</p>
+
+                <h6>5. Disclaimer</h6>
+                <p>The materials on the application are provided on an 'as is' basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
 
+@section Styles {
+    <style>
+        .register-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .password-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.625rem 0.875rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--primary-color);
+        }
+
+        .password-strength .progress {
+            height: 4px;
+            border-radius: 2px;
+            background-color: var(--border-color);
+        }
+
+        .password-strength .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        .password-strength small {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: var(--text-muted);
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .divider span {
+            padding: 0 1rem;
+            font-size: 0.875rem;
+        }
+
+        .social-login {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-social {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: var(--background-color);
+            color: var(--text-color);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-social:hover {
+            background: var(--secondary-color);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+
+        .btn-google i {
+            color: #DB4437;
+        }
+
+        .btn-facebook i {
+            color: #4267B2;
+        }
+
+        .account-links {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .account-links a {
+            color: var(--primary-color);
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .account-links a:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+
+        @@media (max-width: 480px) {
+            .social-login {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
     <script>
-        $(document).ready(function() {
-            // Toggle password visibility
-            $('#togglePassword').click(function() {
-                const passwordInput = $('#Password');
-                const icon = $(this).find('i');
-                
-                if (passwordInput.attr('type') === 'password') {
-                    passwordInput.attr('type', 'text');
-                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
-                } else {
-                    passwordInput.attr('type', 'password');
-                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
-                }
-            });
+        // Password strength meter
+        const passwordInput = document.getElementById('Password');
+        const strengthBar = document.querySelector('.progress-bar');
+        const strengthText = document.querySelector('.strength-text');
 
-            $('#toggleConfirmPassword').click(function() {
-                const passwordInput = $('#ConfirmPassword');
-                const icon = $(this).find('i');
-                
-                if (passwordInput.attr('type') === 'password') {
-                    passwordInput.attr('type', 'text');
-                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
-                } else {
-                    passwordInput.attr('type', 'password');
-                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
-                }
-            });
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            let strength = 0;
+            let feedback = '';
 
-            // Form submission handling
-            $('#registerForm').on('submit', function() {
-                if ($(this).valid()) {
-                    const button = $('#registerButton');
-                    const spinner = button.find('.spinner-border');
-                    const icon = button.find('.fas');
-                    
-                    button.prop('disabled', true);
-                    spinner.removeClass('d-none');
-                    icon.addClass('d-none');
-                }
-            });
+            if (password.length >= 8) strength += 25;
+            if (password.match(/[a-z]/)) strength += 25;
+            if (password.match(/[A-Z]/)) strength += 25;
+            if (password.match(/[0-9]/)) strength += 25;
 
-            // Enhanced validation feedback
-            $('input, select').on('input change', function() {
-                $(this).valid();
-            });
+            strengthBar.style.width = strength + '%';
+
+            if (strength <= 25) {
+                strengthBar.className = 'progress-bar bg-danger';
+                feedback = 'Weak';
+            } else if (strength <= 50) {
+                strengthBar.className = 'progress-bar bg-warning';
+                feedback = 'Fair';
+            } else if (strength <= 75) {
+                strengthBar.className = 'progress-bar bg-info';
+                feedback = 'Good';
+            } else {
+                strengthBar.className = 'progress-bar bg-success';
+                feedback = 'Strong';
+            }
+
+            strengthText.textContent = feedback;
         });
     </script>
 }

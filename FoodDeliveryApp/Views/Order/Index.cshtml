@@ -1,17 +1,19 @@
-﻿@model FoodDeliveryApp.ViewModels.OrderViewModels.OrdersListViewModel
+﻿@model FoodDeliveryApp.ViewModels.Order.OrderListViewModel
 @using FoodDeliveryApp.Models
 
 @{
-    ViewData["Title"] = "My Orders";
+    ViewData["Title"] = "Orders";
 }
 
-<!-- Page Header -->
 <div class="container-fluid bg-light py-4 mb-3">
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-8">
-                <h1 class="fw-bold text-primary mb-0">My Orders</h1>
-                <p class="text-muted mb-0">Track and manage all your food orders</p>
+                <h1 class="fw-bold text-primary mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>
+                    @(Model.IsAdmin ? "All Orders" : Model.IsRestaurantOwner ? "Restaurant Orders" : "My Orders")
+                </h1>
+                <p class="text-muted mb-0">Track and manage your food orders</p>
             </div>
             <div class="col-lg-4">
                 <nav aria-label="breadcrumb" class="float-lg-end">
@@ -25,173 +27,81 @@
     </div>
 </div>
 
-<div class="container py-4">
-    <!-- Display success/error messages -->
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-circle-fill me-2"></i> @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    <!-- Filters & Quick Actions -->
-    <div class="card shadow-sm border-0 rounded-3 mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-lg-6 mb-3 mb-lg-0">
-                    <h5 class="mb-0">
-                        <i class="bi bi-list-check me-2 text-primary"></i>
-                        <span>@Model.TotalOrders Orders</span>
-                    </h5>
-                </div>
-                <div class="col-lg-6">
-                    <div class="d-flex justify-content-lg-end">
-                        <a asp-controller="Order" asp-action="History" class="btn btn-outline-primary me-2">
-                            <i class="bi bi-clock-history me-1"></i> Order History
-                        </a>
-                        <a asp-controller="Order" asp-action="Track" class="btn btn-primary">
-                            <i class="bi bi-geo-alt me-1"></i> Track Current Order
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm rounded-4" data-aos="fade-up">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 fw-bold mb-0">Orders</h1>
+                        <a asp-action="Create" class="btn btn-primary rounded-pill">
+                            <i class="fas fa-plus me-2"></i>Create New Order
                         </a>
                     </div>
+
+                    @if (Model.Orders.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Status</th>
+                                        <th>Created At</th>
+                                        <th>Total</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var order in Model.Orders)
+                                    {
+                                        <tr data-aos="fade-up">
+                                            <td>@order.OrderId</td>
+                                            <td>
+                                                <span class="badge bg-@(order.Status == OrderStatus.Delivered ? "success" : "warning")">
+                                                    @order.Status
+                                                </span>
+                                            </td>
+                                            <td>@order.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                            <td>$@order.TotalAmount.ToString("F2")</td>
+                                            <td>
+                                                <a asp-action="Details" asp-route-id="@order.OrderId" class="btn btn-sm btn-outline-primary rounded-pill">
+                                                    <i class="fas fa-eye me-1"></i>Details
+                                                </a>
+                                                <a asp-action="Edit" asp-route-id="@order.OrderId" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                                    <i class="fas fa-edit me-1"></i>Edit
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@order.OrderId" class="btn btn-sm btn-outline-danger rounded-pill">
+                                                    <i class="fas fa-trash me-1"></i>Delete
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>No orders found.
+                        </div>
+                    }
                 </div>
             </div>
         </div>
     </div>
-
-    @if (!Model.Orders.Any())
-    {
-        <!-- Empty State -->
-        <div class="text-center py-5">
-            <div class="mb-4">
-                <i class="bi bi-bag-x text-muted" style="font-size: 4rem;"></i>
-            </div>
-            <h3>No Orders Found</h3>
-            <p class="text-muted">You haven't placed any orders yet.</p>
-            <a asp-controller="Restaurants" asp-action="Index" class="btn btn-primary mt-3">
-                <i class="bi bi-shop me-1"></i> Browse Restaurants
-            </a>
-        </div>
-    }
-    else
-    {
-        <!-- Orders List -->
-        <div class="row g-4">
-            @foreach (var order in Model.Orders)
-            {
-                <div class="col-lg-6">
-                    <div class="card h-100 shadow-sm border-0 hover-shadow">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="card-title mb-0">Order #@order.Id</h5>
-                                <span class="badge @GetStatusBadgeClass(order.Status)">@order.Status</span>
-                            </div>
-                            <p class="text-muted mb-2">
-                                <i class="bi bi-calendar3 me-1"></i>
-                                @order.OrderDate.ToString("MMM dd, yyyy h:mm tt")
-                            </p>
-                            <p class="mb-0">
-                                <strong>Total:</strong> $@order.Total.ToString("0.00")
-                            </p>
-                            <hr class="my-3" />
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="badge bg-light text-dark">
-                                    <i class="bi bi-credit-card me-1"></i>
-                                    @order.PaymentStatus
-                                </span>
-                                <div class="btn-group">
-                                    <a asp-action="Details" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye me-1"></i> Details
-                                    </a>
-                                    @if (order.Status == OrderStatus.Placed)
-                                    {
-                                        <form asp-action="Cancel" asp-route-id="@order.Id" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to cancel this order?')">
-                                                <i class="bi bi-x-circle me-1"></i> Cancel
-                                            </button>
-                                        </form>
-                                    }
-                                    @if (order.Status == OrderStatus.OutForDelivery)
-                                    {
-                                        <a asp-action="Track" asp-route-orderId="@order.Id" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-geo-alt me-1"></i> Track
-                                        </a>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-
-        <!-- Pagination -->
-        @if (Model.TotalPages > 1)
-        {
-            <div class="d-flex justify-content-center mt-4">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination">
-                        @if (Model.CurrentPage > 1)
-                        {
-                            <li class="page-item">
-                                <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)" aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </a>
-                            </li>
-                        }
-
-                        @{
-                            int startPage = Math.Max(1, Model.CurrentPage - 2);
-                            int endPage = Math.Min(Model.TotalPages, startPage + 4);
-
-                            if (endPage - startPage < 4 && Model.TotalPages > 5)
-                            {
-                                startPage = Math.Max(1, endPage - 4);
-                            }
-                        }
-
-                        @for (int i = startPage; i <= endPage; i++)
-                        {
-                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                <a class="page-link" asp-action="Index" asp-route-page="@i">@i</a>
-                            </li>
-                        }
-
-                        @if (Model.CurrentPage < Model.TotalPages)
-                        {
-                            <li class="page-item">
-                                <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)" aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                </nav>
-            </div>
-        }
-    }
 </div>
 
-@functions
-{
-    private string GetStatusBadgeClass(OrderStatus status) => status switch
-    {
-        OrderStatus.Placed => "badge-primary",
-        OrderStatus.Confirmed => "badge-success",
-        OrderStatus.OutForDelivery => "badge-warning",
-        OrderStatus.Delivered => "badge-secondary",
-        OrderStatus.Canceled => "badge-danger",
-        _ => "badge-light"
-    };
+@section Scripts {
+    <script>
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+    </script>
 }
 
 <style>

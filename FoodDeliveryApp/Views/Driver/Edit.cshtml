@@ -1,0 +1,58 @@
+@model FoodDeliveryApp.Models.Driver
+@{
+    ViewData["Title"] = "Edit Driver";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm rounded-4" data-aos="fade-up">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 fw-bold mb-0">Edit Driver</h1>
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Drivers
+                        </a>
+                    </div>
+
+                    <form asp-action="Edit" method="post">
+                        <div class="card border-0 bg-light rounded-4 mb-4">
+                            <div class="card-body p-4">
+                                <h5 class="card-title mb-4">Driver Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        
+                                        <div class="mb-3">
+                                            <label asp-for="Status" class="form-label fw-bold">Status</label>
+                                            <select asp-for="Status" asp-items="@Html.GetEnumSelectList<DriverStatus>()" class="form-select rounded-pill">
+                                                <option value="">Select a status</option>
+                                            </select>
+                                            <span asp-validation-for="Status" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-4">
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+    </script>
+} 

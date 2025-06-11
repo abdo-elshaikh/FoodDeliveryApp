@@ -1,113 +1,107 @@
-﻿@model FoodDeliveryApp.ViewModels.OrderViewModels.OrderDetailsViewModel
-
+@model FoodDeliveryApp.ViewModels.Order.OrderDetailsViewModel
 @{
-    ViewData["Title"] = "Order Details";
+    ViewData["Title"] = $"Order #{Model.OrderNumber}";
 }
 
 <div class="container py-5">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <h2 class="h3 fw-bold mb-4 text-center">Order Details</h2>
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm rounded-4" data-aos="fade-up">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 fw-bold mb-0">Order Details</h1>
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Orders
+                        </a>
+                    </div>
 
-            @if (TempData["ErrorMessage"] != null)
-            {
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    @TempData["ErrorMessage"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-            @if (TempData["SuccessMessage"] != null)
-            {
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    @TempData["SuccessMessage"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-
-            <div class="card border-0 shadow-sm rounded">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Order #@Model.Id</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <strong>Restaurant:</strong> @Model.Items.First().Name
-                    </div>
-                    <div class="mb-3">
-                        <strong>Order Date:</strong> @Model.OrderDate.ToString("MMM dd, yyyy HH:mm")
-                    </div>
-                    <div class="mb-3">
-                        <strong>Status:</strong>
-                        <span class="badge bg-@(Model.Status == OrderStatus.Delivered ? "success" : Model.Status == OrderStatus.Canceled ? "danger" : "warning")">
-                            @Model.Status
-                        </span>
-                    </div>
-                    <div class="mb-3">
-                        <strong>Delivery Address:</strong> @(Model.Address?.FullAddress ?? "N/A")
-                    </div>
-                    @if (!string.IsNullOrEmpty(Model.SpecialInstructions))
-                    {
-                        <div class="mb-3">
-                            <strong>Special Instructions:</strong> @Model.SpecialInstructions
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light rounded-4">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title mb-4">Order Information</h5>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Order ID</span>
+                                        <span class="fw-bold">#@Model.OrderId</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Status</span>
+                                        <span class="badge bg-@(Model.Status switch {
+                                            OrderStatus.Pending => "warning",
+                                            OrderStatus.Confirmed => "info",
+                                            OrderStatus.InPreparation => "primary",
+                                            OrderStatus.ReadyForPickup => "secondary",
+                                            OrderStatus.Delivered => "success",
+                                            OrderStatus.Canceled => "danger",
+                                            _ => "secondary"
+                                        }) rounded-pill">@Model.Status</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Created At</span>
+                                        <span class="fw-bold">@Model.CreatedAt.ToString("MMM dd, yyyy")</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Total</span>
+                                        <span class="fw-bold">$@Model.TotalAmount.ToString("F2")</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    }
-                    <div class="mb-3">
-                        <strong>Payment Method:</strong> @Model.PaymentDetails
-                    </div>
-                    <div class="mb-3">
-                        <strong>Payment Status:</strong>
-                        <span class="badge bg-@(Model.PaymentStatus == PaymentStatus.Paid ? "success" : Model.PaymentStatus == PaymentStatus.Refunded ? "danger" : "warning")">
-                            @Model.PaymentStatus
-                        </span>
-                    </div>
 
-                    <h5 class="mt-4 mb-3">Items</h5>
-                    @foreach (var item in Model.Items)
-                    {
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div class="d-flex align-items-center">
-                                <img src="@item.ImageUrl" alt="@item.Name" class="rounded" style="width: 60px; height: 60px; object-fit: cover; margin-right: 15px;" />
-                                <div>
-                                    <h6 class="mb-1">@item.Name</h6>
-                                    <small class="text-muted">Quantity: @item.Quantity</small>
-                                    @if (item.Customizations.Any())
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light rounded-4">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title mb-4">Delivery Information</h5>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Address</span>
+                                        <span class="fw-bold">@Model.DeliveryAddress.StreetAddress, @Model.DeliveryAddress.City, @Model.DeliveryAddress.State @Model.DeliveryAddress.PostalCode</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Payment Method</span>
+                                        <span class="fw-bold">@Model.PaymentMethod</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="card border-0 bg-light rounded-4">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title mb-4">Order Items</h5>
+                                    @foreach (var item in Model.Items)
                                     {
-                                        <small class="d-block text-muted">
-                                            Customizations: @string.Join(", ", item.Customizations)
-                                        </small>
+                                        <div class="card border-0 bg-white rounded-4 mb-3 shadow-sm" data-aos="fade-up">
+                                            <div class="card-body p-4">
+                                                <div class="row g-3 align-items-center">
+                                                    <div class="col-md-2 col-3">
+                                                        <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/default-menu-item.png" : item.ImageUrl)" 
+                                                             alt="@item.Name" class="rounded-3 img-fluid"
+                                                             style="width: 100%; height: 80px; object-fit: cover;">
+                                                    </div>
+                                                    <div class="col-md-6 col-9">
+                                                        <h6 class="fw-bold mb-1">@item.Name</h6>
+                                                        <p class="text-muted small mb-2">@item.Restaurant.Name</p>
+                                                        @if (!string.IsNullOrEmpty(item.SpecialInstructions))
+                                                        {
+                                                            <div class="d-flex align-items-center">
+                                                                <i class="fas fa-info-circle me-1"></i>
+                                                                <span class="text-muted small">@item.SpecialInstructions</span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                    <div class="col-md-2 text-end d-none d-md-block">
+                                                        <div class="fw-bold text-primary mb-2">
+                                                            $@((item.Price * item.Quantity).ToString("F2"))
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     }
                                 </div>
                             </div>
-                            <span class="fw-bold">@((item.Price * item.Quantity).ToString("C"))</span>
                         </div>
-                    }
-
-                    <hr />
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal</span>
-                        <span>@Model.Subtotal.ToString("C")</span>
                     </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Delivery Fee</span>
-                        <span>@Model.DeliveryFee.ToString("C")</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Tax</span>
-                        <span>@Model.Tax.ToString("C")</span>
-                    </div>
-                    <div class="d-flex justify-content-between fw-bold">
-                        <span>Total</span>
-                        <span>@Model.Total.ToString("C")</span>
-                    </div>
-                </div>
-                <div class="card-footer text-end">
-                    @if (Model.Status == OrderStatus.Placed)
-                    {
-                        <form asp-action="Cancel" method="post" class="d-inline">
-                            <input type="hidden" name="id" value="@Model.Id" />
-                            <button type="submit" class="btn btn-danger rounded-pill me-2">Cancel Order</button>
-                        </form>
-                    }
-                    <a asp-action="History" class="btn btn-outline-primary rounded-pill">Back to History</a>
                 </div>
             </div>
         </div>
@@ -116,6 +110,11 @@
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', updateCartCount);
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
     </script>
 }

@@ -1,0 +1,109 @@
+@model FoodDeliveryApp.ViewModels.Category.CategoryCreateViewModel
+@{
+    ViewData["Title"] = "Create Category";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4" data-aos="fade-up">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 fw-bold mb-0">Create Category</h1>
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Categories
+                        </a>
+                    </div>
+
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+                        <div class="row g-4">
+                            <!-- Category Image -->
+                            <div class="col-md-4">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body text-center p-4">
+                                        <div class="mb-3">
+                                            <img src="/images/default-category.png" alt="Category Image" 
+                                                 class="rounded-3 img-thumbnail" id="imagePreview" 
+                                                 style="width: 100%; height: 200px; object-fit: cover;">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label asp-for="ImageFile" class="form-label">Category Image</label>
+                                            <input asp-for="ImageFile" class="form-control" accept="image/*" 
+                                                   onchange="previewImage(this)">
+                                        </div>
+                                        <small class="text-muted">Recommended size: 800x600 pixels</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Category Information -->
+                            <div class="col-md-8">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title mb-4">Category Information</h5>
+                                        
+                                        <div class="mb-3">
+                                            <label asp-for="Name" class="form-label fw-bold">Name</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-light border-end-0">
+                                                    <i class="fas fa-tag text-muted"></i>
+                                                </span>
+                                                <input asp-for="Name" class="form-control border-start-0" 
+                                                       placeholder="Enter category name">
+                                            </div>
+                                            <span asp-validation-for="Name" class="text-danger small"></span>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label asp-for="Description" class="form-label fw-bold">Description</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-light border-end-0">
+                                                    <i class="fas fa-align-left text-muted"></i>
+                                                </span>
+                                                <textarea asp-for="Description" class="form-control border-start-0" 
+                                                          rows="4" placeholder="Enter category description"></textarea>
+                                            </div>
+                                            <span asp-validation-for="Description" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="fas fa-save me-2"></i>Create Category
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+
+        // Image preview
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}

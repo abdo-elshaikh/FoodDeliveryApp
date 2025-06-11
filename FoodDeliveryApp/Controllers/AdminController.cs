@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace FoodDeliveryApp.Controllers
 {
     [Authorize(Roles = "Admin,Owner")]
-    [Route("[controller]/[action]")]
+    [Route("Dashboard")]
     public class AdminController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -27,40 +27,37 @@ namespace FoodDeliveryApp.Controllers
             _logger = logger;
         }
 
+        [HttpGet("")]
+        public async Task<IActionResult> Dashboard()
+        {
+            var viewModel = new AdminDashboardViewModel();
+            return View(viewModel);
+        }
+
         [HttpGet]
         public async Task<IActionResult> UserList()
         {
             try
             {
-                var customers = await _unitOfWork.Customers.GetAllAsync();
-                var employees = await _unitOfWork.Employees.GetAllAsync();
-
-                var userViewModels = customers.Select(c => new UserViewModel
+                var users = await _userManager.GetUsersInRoleAsync("Customer");
+                var userViewModels = users.Select(user => new UserViewModel
                 {
-                    UserId = c.UserId,
-                    Email = _userManager.FindByIdAsync(c.UserId).Result?.Email,
+                    UserId = user.Id,
+                    Email = user.Email,
                     Role = UserType.Customer,
-                    FirstName = c.FirstName,
-                    LastName = c.LastName,
-                    PhoneNumber = c.PhoneNumber,
-                    IsActive = _userManager.FindByIdAsync(c.UserId).Result?.IsActive ?? false
-                }).Concat(employees.Select(e => new UserViewModel
-                {
-                    UserId = e.UserId,
-                    Email = _userManager.FindByIdAsync(e.UserId).Result?.Email,
-                    Role = UserType.Employee,
-                    FirstName = e.FirstName,
-                    LastName = e.LastName,
-                    PhoneNumber = e.PhoneNumber,
-                    IsActive = _userManager.FindByIdAsync(e.UserId).Result?.IsActive ?? false
-                })).ToList();
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    PhoneNumber = user.PhoneNumber,
+                    IsActive = user.IsActive
+                }).ToList();
+
 
                 return View(userViewModels);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading user list");
-                TempData["ErrorMessage"] = "An error occurred while loading the user list.";
+                TempData["Error"] = "An error occurred while loading the user list.";
                 return StatusCode(500);
             }
         }
@@ -76,18 +73,12 @@ namespace FoodDeliveryApp.Controllers
                     return NotFound("User not found.");
                 }
 
-                var customer = await _unitOfWork.Customers.GetByUserIdAsync(userId);
-                var employee = await _unitOfWork.Employees.GetByUserIdAsync(userId);
-
                 var viewModel = new UserViewModel
                 {
                     UserId = userId,
                     Email = user.Email,
                     Role = user.Role,
                     IsActive = user.IsActive,
-                    FirstName = customer?.FirstName ?? employee?.FirstName,
-                    LastName = customer?.LastName ?? employee?.LastName,
-                    PhoneNumber = customer?.PhoneNumber ?? employee?.PhoneNumber
                 };
 
                 return View(viewModel);
@@ -95,7 +86,7 @@ namespace FoodDeliveryApp.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading user {UserId} for editing", userId);
-                TempData["ErrorMessage"] = "An error occurred while loading the user.";
+                TempData["Error"] = "An error occurred while loading the user.";
                 return StatusCode(500);
             }
         }
@@ -106,7 +97,7 @@ namespace FoodDeliveryApp.Controllers
         {
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Please correct the errors in the form.";
+                TempData["Error"] = "Please correct the errors in the form.";
                 return View(model);
             }
 
@@ -120,40 +111,16 @@ namespace FoodDeliveryApp.Controllers
 
                 user.IsActive = model.IsActive;
                 await _userManager.UpdateAsync(user);
-
-                if (model.Role == UserType.Customer)
-                {
-                    var customer = await _unitOfWork.Customers.GetByUserIdAsync(model.UserId);
-                    if (customer != null)
-                    {
-                        customer.FirstName = model.FirstName;
-                        customer.LastName = model.LastName;
-                        customer.PhoneNumber = model.PhoneNumber;
-                        await _unitOfWork.Customers.UpdateAsync(customer);
-                    }
-                }
-                else
-                {
-                    var employee = await _unitOfWork.Employees.GetByUserIdAsync(model.UserId);
-                    if (employee != null)
-                    {
-                        employee.FirstName = model.FirstName;
-                        employee.LastName = model.LastName;
-                        employee.PhoneNumber = model.PhoneNumber;
-                        await _unitOfWork.Employees.UpdateAsync(employee);
-                    }
-                }
-
                 await _unitOfWork.SaveChangesAsync();
 
                 _logger.LogInformation("User {UserId} updated successfully.", model.UserId);
-                TempData["SuccessMessage"] = "User updated successfully!";
+                TempData["Success"] = "User updated successfully!";
                 return RedirectToAction(nameof(UserList));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating user {UserId}", model.UserId);
-                TempData["ErrorMessage"] = "An error occurred while updating the user.";
+                TempData["Error"] = "An error occurred while updating the user.";
                 return View(model);
             }
         }
@@ -170,29 +137,16 @@ namespace FoodDeliveryApp.Controllers
                     return NotFound("User not found.");
                 }
 
-                var customer = await _unitOfWork.Customers.GetByUserIdAsync(userId);
-                var employee = await _unitOfWork.Employees.GetByUserIdAsync(userId);
-
-                if (customer != null)
-                {
-                    await _unitOfWork.Customers.RemoveAsync(customer);
-                }
-                else if (employee != null)
-                {
-                    await _unitOfWork.Employees.RemoveAsync(employee);
-                }
-
                 await _userManager.DeleteAsync(user);
-                await _unitOfWork.SaveChangesAsync();
 
                 _logger.LogInformation("User {UserId} deleted successfully.", userId);
-                TempData["SuccessMessage"] = "User deleted successfully!";
+                TempData["Success"] = "User deleted successfully!";
                 return RedirectToAction(nameof(UserList));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting user {UserId}", userId);
-                TempData["ErrorMessage"] = "An error occurred while deleting the user.";
+                TempData["Error"] = "An error occurred while deleting the user.";
                 return RedirectToAction(nameof(UserList));
             }
         }

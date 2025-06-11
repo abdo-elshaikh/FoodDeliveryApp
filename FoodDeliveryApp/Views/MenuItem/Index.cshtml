@@ -1,0 +1,421 @@
+@model FoodDeliveryApp.ViewModels.MenuItem.MenuItemListViewModel
+@{ Layout = "_Layout"; }
+
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1">Menu Items</h1>
+                    <p class="text-muted">Discover delicious dishes from our restaurants</p>
+                </div>
+                @if (User.IsInRole("Admin") || User.IsInRole("Owner"))
+                {
+                    <a asp-action="Create" asp-route-restaurantId="@Model.SelectedRestaurantId" 
+                       class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i> Add New Item
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 mb-4 sticky-top" style="top: 1rem; z-index: 100;">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2 text-primary"></i>
+                        Filters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="filterForm">
+                        <input type="hidden" name="pageNumber" value="1" id="pageNumberInput" />
+                        
+                        <!-- Search -->
+                        <div class="mb-3">
+                            <label for="searchQuery" class="form-label">Search</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" id="searchQuery" name="searchQuery" 
+                                       value="@Model.SearchQuery" placeholder="Search menu items...">
+                            </div>
+                        </div>
+
+                        <!-- Restaurant Filter -->
+                        <div class="mb-3">
+                            <label for="restaurantId" class="form-label">Restaurant</label>
+                            <select class="form-select" id="restaurantId" name="restaurantId">
+                                <option value="">All Restaurants</option>
+                                @foreach (var restaurant in Model.Restaurants)
+                                {
+                                    <option value="@restaurant.Id" selected="@(Model.SelectedRestaurantId == restaurant.Id)">
+                                        @restaurant.Name
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Category Filter -->
+                        <div class="mb-3">
+                            <label for="categoryId" class="form-label">Category</label>
+                            <select class="form-select" id="categoryId" name="categoryId">
+                                <option value="">All Categories</option>
+                                @foreach (var category in Model.Categories)
+                                {
+                                    <option value="@category.Id" selected="@(Model.SelectedCategoryId == category.Id)">
+                                        @category.Name (@category.MenuItemCount)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Sort Options -->
+                        <div class="mb-3">
+                            <label for="sortBy" class="form-label">Sort By</label>
+                            <select class="form-select" id="sortBy" name="sortBy">
+                                <option value="name" selected="@(Model.SortBy == "name")">Name</option>
+                                <option value="price" selected="@(Model.SortBy == "price")">Price</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="sortOrder" class="form-label">Sort Order</label>
+                            <select class="form-select" id="sortOrder" name="sortOrder">
+                                <option value="asc" selected="@(Model.SortOrder == "asc")">Ascending</option>
+                                <option value="desc" selected="@(Model.SortOrder == "desc")">Descending</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-2"></i> Apply Filters
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-undo me-2"></i> Reset Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Items Grid -->
+        <div class="col-lg-9 col-md-8">
+            @if (!Model.MenuItems.Any())
+            {
+                <div class="card shadow-sm border-0 rounded-3">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-utensils fa-4x text-muted mb-3"></i>
+                        <h3>No menu items found</h3>
+                        <p class="text-muted mb-4">Try adjusting your filters or search criteria.</p>
+                        <a asp-action="Index" class="btn btn-primary">
+                            <i class="fas fa-undo me-2"></i> Reset Filters
+                        </a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Results Summary -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <p class="text-muted mb-0">
+                        Showing <span class="fw-bold">@Model.MenuItems.Count</span> of <span class="fw-bold">@Model.TotalItems</span> items
+                    </p>
+                    <div class="d-flex align-items-center">
+                        <span class="text-muted me-2">View:</span>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary active" id="gridViewBtn">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="listViewBtn">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid View -->
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="gridView">
+                    @foreach (var item in Model.MenuItems)
+                    {
+                        <div class="col">
+                            <div class="menu-item-card" data-details-url="@Url.Action("Details", new { id = item.Id })">
+                                <span class="availability-badge @(item.IsAvailable ? "badge-available" : "badge-unavailable")">
+                                    @(item.IsAvailable ? "Available" : "Unavailable")
+                                </span>
+                                
+                                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" class="card-img-top" alt="@item.Name">
+                                }
+                                else
+                                {
+                                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-utensils fa-3x text-muted"></i>
+                                    </div>
+                                }
+                                
+                                <div class="card-body">
+                                    <div class="category-name">@item.CategoryName</div>
+                                    <h5 class="card-title">@item.Name</h5>
+                                    <div class="restaurant-name">
+                                        <i class="fas fa-store me-1"></i> @item.RestaurantName
+                                    </div>
+                                    <p class="card-text">@item.Description</p>
+                                    <div class="card-price">@item.Price.ToString("C")</div>
+                                </div>
+                                
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary">
+                                            <i class="fas fa-info-circle me-1"></i> Details
+                                        </a>
+                                        
+                                        @if (User.IsInRole("Admin") || User.IsInRole("Owner"))
+                                        {
+                                            <div class="btn-group">
+                                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        }
+                                        else if (item.IsAvailable)
+                                        {
+                                            @await Html.PartialAsync("_AddToCart", item)
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                
+                <!-- List View (Hidden by default) -->
+                <div class="card shadow-sm border-0 rounded-3 d-none" id="listView">
+                    <div class="list-group list-group-flush">
+                        @foreach (var item in Model.MenuItems)
+                        {
+                            <div class="list-group-item p-3">
+                                <div class="row align-items-center">
+                                    <div class="col-md-2 col-sm-3 mb-3 mb-md-0">
+                                        @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl" class="img-fluid rounded" alt="@item.Name" style="height: 100px; object-fit: cover;">
+                                        }
+                                        else
+                                        {
+                                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 100px;">
+                                                <i class="fas fa-utensils fa-2x text-muted"></i>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="col-md-6 col-sm-9 mb-3 mb-md-0">
+                                        <h5 class="mb-1">@item.Name</h5>
+                                        <div class="text-muted small mb-2">
+                                            <span class="me-3"><i class="fas fa-store me-1"></i> @item.RestaurantName</span>
+                                            <span><i class="fas fa-tag me-1"></i> @item.CategoryName</span>
+                                        </div>
+                                        <p class="mb-0 small">@item.Description</p>
+                                    </div>
+                                    <div class="col-md-2 col-6 text-md-center mb-2 mb-md-0">
+                                        <div class="fw-bold text-primary">@item.Price.ToString("C")</div>
+                                        <span class="badge @(item.IsAvailable ? "bg-success" : "bg-danger") mt-1">
+                                            @(item.IsAvailable ? "Available" : "Unavailable")
+                                        </span>
+                                    </div>
+                                    <div class="col-md-2 col-6 text-end">
+                                        <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-end">
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-info-circle"></i>
+                                            </a>
+                                            @if (User.IsInRole("Admin") || User.IsInRole("Owner"))
+                                            {
+                                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            }
+                                            else if (item.IsAvailable)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-primary add-to-cart-quick" 
+                                                        data-item-id="@item.Id" data-item-name="@item.Name">
+                                                    <i class="fas fa-cart-plus"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.TotalPages > 1)
+                {
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item @(Model.PageNumber == 1 ? "disabled" : "")">
+                                <a class="page-link" href="#" onclick="changePage(@(Model.PageNumber - 1))" 
+                                   aria-label="Previous">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            
+                            @for (int i = 1; i <= Model.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                    <a class="page-link" href="#" onclick="changePage(@i)">@i</a>
+                                </li>
+                            }
+                            
+                            <li class="page-item @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" href="#" onclick="changePage(@(Model.PageNumber + 1))" 
+                                   aria-label="Next">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <!-- Menu item styles are now loaded from menu-item-enhancements.css -->
+}
+
+@section Scripts {
+    <!-- Menu item scripts are now loaded from menu-item-enhancements.js -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Page navigation
+            window.changePage = function(pageNumber) {
+                document.getElementById('pageNumberInput').value = pageNumber;
+                document.getElementById('filterForm').submit();
+            };
+
+            // Auto-submit form when filters change
+            document.querySelectorAll('#filterForm select')
+                .forEach(element => {
+                    element.addEventListener('change', () => {
+                        document.getElementById('pageNumberInput').value = 1;
+                        document.getElementById('filterForm').submit();
+                    });
+                });
+                
+            // Search input with debounce
+            const searchInput = document.getElementById('searchQuery');
+            if (searchInput) {
+                let debounceTimer;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        document.getElementById('pageNumberInput').value = 1;
+                        document.getElementById('filterForm').submit();
+                    }, 500);
+                });
+            }
+            
+            // Toggle between grid and list view
+            const gridViewBtn = document.getElementById('gridViewBtn');
+            const listViewBtn = document.getElementById('listViewBtn');
+            const gridView = document.getElementById('gridView');
+            const listView = document.getElementById('listView');
+            
+            if (gridViewBtn && listViewBtn && gridView && listView) {
+                gridViewBtn.addEventListener('click', function() {
+                    gridView.classList.remove('d-none');
+                    listView.classList.add('d-none');
+                    gridViewBtn.classList.add('active');
+                    listViewBtn.classList.remove('active');
+                    localStorage.setItem('menuItemViewPreference', 'grid');
+                });
+                
+                listViewBtn.addEventListener('click', function() {
+                    gridView.classList.add('d-none');
+                    listView.classList.remove('d-none');
+                    gridViewBtn.classList.remove('active');
+                    listViewBtn.classList.add('active');
+                    localStorage.setItem('menuItemViewPreference', 'list');
+                });
+                
+                // Load user preference
+                const viewPreference = localStorage.getItem('menuItemViewPreference');
+                if (viewPreference === 'list') {
+                    listViewBtn.click();
+                }
+            }
+            
+            // Quick add to cart buttons in list view
+            document.querySelectorAll('.add-to-cart-quick').forEach(button => {
+                button.addEventListener('click', function() {
+                    const itemId = this.getAttribute('data-item-id');
+                    const itemName = this.getAttribute('data-item-name');
+                    
+                    // Show loading state
+                    const originalHTML = this.innerHTML;
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    
+                    // Create form data
+                    const formData = new FormData();
+                    formData.append('menuItemId', itemId);
+                    formData.append('quantity', 1);
+                    
+                    // Get CSRF token
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                    
+                    // Submit via fetch
+                    fetch('/cart/add', {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': token
+                        },
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(() => {
+                        // Update cart count
+                        updateCartSummary();
+                        
+                        // Show notification
+                        showCartNotification(itemName, 1);
+                        
+                        // Reset button
+                        this.innerHTML = '<i class="fas fa-check"></i>';
+                        
+                        setTimeout(() => {
+                            this.innerHTML = originalHTML;
+                            this.disabled = false;
+                        }, 2000);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        this.innerHTML = originalHTML;
+                        this.disabled = false;
+                        showCartNotification('Error', 'Failed to add item to cart', 'error');
+                    });
+                });
+            });
+        });
+    </script>
+}

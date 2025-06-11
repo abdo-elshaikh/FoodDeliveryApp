@@ -1,0 +1,155 @@
+@model FoodDeliveryApp.ViewModels.Account.ProfileViewModel
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0">My Addresses</h5>
+    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+        <i class="fas fa-plus me-2"></i>Add New Address
+    </button>
+</div>
+
+@if (!Model.Addresses.Any())
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>You haven't added any addresses yet.
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var address in Model.Addresses)
+        {
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h6 class="card-title mb-0">
+                                @address.AddressType
+                                @if (address.IsDefault)
+                                {
+                                    <span class="badge bg-primary ms-2">Default</span>
+                                }
+                            </h6>
+                            <div class="dropdown">
+                                <button class="btn btn-link text-dark p-0" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <button class="dropdown-item" onclick="setDefaultAddress('@address.Id')">
+                                            <i class="fas fa-star me-2"></i>Set as Default
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item" onclick="editAddress('@address.Id')">
+                                            <i class="fas fa-edit me-2"></i>Edit
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item text-danger" onclick="deleteAddress('@address.Id')">
+                                            <i class="fas fa-trash me-2"></i>Delete
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p class="card-text">
+                            @address.StreetAddress<br />
+                            @address.City, @address.State @address.PostalCode<br />
+                            @address.Country
+                        </p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Add Address Modal -->
+<div class="modal fade" id="addAddressModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Address</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="AddAddress" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Address Type</label>
+                        <select name="AddressType" class="form-select" required>
+                            <option value="">Select Type</option>
+                            <option value="Home">Home</option>
+                            <option value="Work">Work</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Street Address</label>
+                        <input type="text" name="StreetAddress" class="form-control" required />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">City</label>
+                            <input type="text" name="City" class="form-control" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">State</label>
+                            <input type="text" name="State" class="form-control" required />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Postal Code</label>
+                            <input type="text" name="PostalCode" class="form-control" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Country</label>
+                            <input type="text" name="Country" class="form-control" required />
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="IsDefault" class="form-check-input" id="isDefaultAddress" />
+                        <label class="form-check-label" for="isDefaultAddress">Set as default address</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Address</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function setDefaultAddress(addressId) {
+            if (confirm('Set this address as your default?')) {
+                $.post('@Url.Action("SetDefaultAddress")', { addressId: addressId })
+                    .done(function() {
+                        location.reload();
+                    })
+                    .fail(function() {
+                        alert('Failed to set default address');
+                    });
+            }
+        }
+
+        function deleteAddress(addressId) {
+            if (confirm('Are you sure you want to delete this address?')) {
+                $.post('@Url.Action("DeleteAddress")', { addressId: addressId })
+                    .done(function() {
+                        location.reload();
+                    })
+                    .fail(function() {
+                        alert('Failed to delete address');
+                    });
+            }
+        }
+
+        function editAddress(addressId) {
+            // TODO: Implement edit address functionality
+            alert('Edit address functionality coming soon!');
+        }
+    </script>
+} 

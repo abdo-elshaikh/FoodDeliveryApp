@@ -1,0 +1,61 @@
+@model List<FoodDeliveryApp.ViewModels.Order.OrderItemViewModel>
+
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="bg-light">
+            <tr>
+                <th>Item</th>
+                <th class="text-center">Quantity</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">Subtotal</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                            {
+                                <img src="@item.ImageUrl" alt="@item.Name" 
+                                     class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                            }
+                            <div>
+                                <h6 class="mb-0">@item.Name</h6>
+                                @if (!string.IsNullOrEmpty(item.SpecialInstructions))
+                                {
+                                    <small class="text-muted">@item.SpecialInstructions</small>
+                                }
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-center">@item.Quantity</td>
+                    <td class="text-end">@item.Price.ToString("C")</td>
+                    <td class="text-end">@item.Subtotal.ToString("C")</td>
+                    <td>
+                        <span class="badge bg-@(GetStatusBadgeColor(item.Status.ToString()))">
+                            @item.Status
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@functions {
+    private string GetStatusBadgeColor(string status)
+    {
+        return status switch
+        {
+            "Pending" => "secondary",
+            "Preparing" => "info",
+            "Ready" => "warning",
+            "Delivered" => "success",
+            "Cancelled" => "danger",
+            _ => "secondary"
+        };
+    }
+} 

@@ -1,0 +1,119 @@
+@{
+    var currentTime = DateTime.Now;
+    var isOpen = currentTime.Hour >= 8 && currentTime.Hour < 22;
+}
+
+<div class="top-bar bg-primary text-white py-2" data-aos="fade-down">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center flex-wrap">
+                    <div class="top-bar-item me-4">
+                        <i class="fas fa-phone-alt me-2"></i>
+                        <a href="tel:+1234567890" class="text-white text-decoration-none hover-lift">+1 234 567 890</a>
+                    </div>
+                    <div class="top-bar-item me-4">
+                        <i class="fas fa-envelope me-2"></i>
+                        <a href="mailto:support@fooddeliveryapp.com" class="text-white text-decoration-none hover-lift">support@fooddeliveryapp.com</a>
+                    </div>
+                    <div class="top-bar-item">
+                        <i class="fas fa-clock me-2"></i>
+                        <span class="restaurant-status @(isOpen ? "text-success" : "text-danger")">
+                            <i class="fas fa-circle me-1"></i>
+                            @(isOpen ? "Open Now" : "Closed")
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-end align-items-center flex-wrap">
+                    <div class="top-bar-item me-3">
+                        <a href="#" class="text-white text-decoration-none hover-lift" data-bs-toggle="modal" data-bs-target="#trackOrderModal">
+                            <i class="fas fa-truck me-2"></i>Track Order
+                        </a>
+                    </div>
+                    <div class="top-bar-item me-3">
+                        <a href="#" class="text-white text-decoration-none hover-lift" data-bs-toggle="modal" data-bs-target="#locationModal">
+                            <i class="fas fa-map-marker-alt me-2"></i>Change Location
+                        </a>
+                    </div>
+                    <div class="top-bar-item">
+                        <div class="dropdown">
+                            <button class="btn btn-link text-white p-0 hover-lift" type="button" id="languageDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-globe me-2"></i>EN
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#"><img src="~/images/flags/us.png" alt="English" class="me-2" />English</a></li>
+                                <li><a class="dropdown-item" href="#"><img src="~/images/flags/es.png" alt="Spanish" class="me-2" />Spanish</a></li>
+                                <li><a class="dropdown-item" href="#"><img src="~/images/flags/fr.png" alt="French" class="me-2" />French</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="top-bar-divider mx-3"></div>
+                    <div class="social-links">
+                        <a href="#" class="text-white me-2 social-link hover-lift" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-white me-2 social-link hover-lift" title="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white me-2 social-link hover-lift" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-white social-link hover-lift" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Track Order Modal -->
+<div class="modal fade" id="trackOrderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Track Your Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="trackOrderForm">
+                    <div class="mb-3">
+                        <label for="orderNumber" class="form-label">Order Number</label>
+                        <input type="text" class="form-control" id="orderNumber" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="orderEmail" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="orderEmail" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Track Order</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Location Modal -->
+<div class="modal fade" id="locationModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Delivery Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="locationForm">
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Delivery Address</label>
+                        <input type="text" class="form-control" id="address" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="city" class="form-label">City</label>
+                            <input type="text" class="form-control" id="city" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="zipCode" class="form-label">ZIP Code</label>
+                            <input type="text" class="form-control" id="zipCode" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Update Location</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> 

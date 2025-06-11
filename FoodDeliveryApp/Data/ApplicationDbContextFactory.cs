@@ -5,24 +5,21 @@ using System.IO;
 
 namespace FoodDeliveryApp.Data
 {
+    // This factory is used by EF Core tools at design time (e.g., for migrations)
     public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
     {
         public ApplicationDbContext CreateDbContext(string[] args)
         {
-            var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-
-            // Build config
-            IConfigurationRoot configuration = new ConfigurationBuilder()
+            // Build configuration
+            var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json")
                 .Build();
 
+            var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
             var connectionString = configuration.GetConnectionString("DefaultConnection");
 
             optionsBuilder.UseSqlServer(connectionString);
-
-            // Enable sensitive data logging to get detailed error messages during design time
-            optionsBuilder.EnableSensitiveDataLogging();
 
             return new ApplicationDbContext(optionsBuilder.Options);
         }

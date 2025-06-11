@@ -7,56 +7,94 @@ namespace FoodDeliveryApp.Repositories.Implementations
 {
     public class PromotionRepository : Repository<Promotion>, IPromotionRepository
     {
-        private readonly ApplicationDbContext _context;
-        public PromotionRepository(ApplicationDbContext context) : base(context)
+        protected new readonly ApplicationDbContext _context;
+
+        public PromotionRepository(ApplicationDbContext context, ILogger<Repository<Promotion>> logger)
+            : base(context, logger)
         {
             _context = context;
         }
-        public async Task<Promotion> GetByCodeAsync(string code)
-            => await _context.Promotions
-                .FirstOrDefaultAsync(p => p.Code == code);
 
-        public async Task<IEnumerable<Promotion>> GetActivePromotionsAsync()
-            => await _context.Promotions
-                .Where(p => p.IsActive &&
-                           p.StartDate <= DateTime.UtcNow &&
-                           p.EndDate >= DateTime.UtcNow)
-                .ToListAsync();
-
-        public async Task<IEnumerable<Promotion>> GetExpiredPromotionsAsync()
-            => await _context.Promotions
-                .Where(p => p.EndDate < DateTime.UtcNow)
-                .ToListAsync();
-
-        public async Task<bool> IsPromotionValidAsync(string code, decimal orderAmount)
+        public async Task<bool> IsCodeUniqueAsync(string code)
         {
-            var promotion = await GetByCodeAsync(code);
-            if (promotion == null) return false;
-
-            return promotion.IsActive &&
-                   promotion.StartDate <= DateTime.UtcNow &&
-                   promotion.EndDate >= DateTime.UtcNow &&
-                   (promotion.MinimumOrderAmount == null ||
-                    orderAmount >= promotion.MinimumOrderAmount) &&
-                   (promotion.UsageLimit == null ||
-                    await GetUsageCountAsync(code) < promotion.UsageLimit);
+            return await _context.Promotions.AnyAsync(p => p.Code == code);
+        }
+        public async Task<Promotion> GetByCodeAsync(string code)
+        {
+            try
+            {
+                return await _context.Promotions
+                   .FirstOrDefaultAsync(p => p.Code == code);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving promotion by code");
+                throw;
+            }
         }
 
-        private async Task<int> GetUsageCountAsync(string code)
-            => await _context.Orders
-                .CountAsync(o => o.Equals(code));
+        public async Task<IEnumerable<Promotion>> GetActivePromotionsAsync()
+        {
+            try
+            {
+                return await _context.Promotions
+                   .Where(p => p.IsActive && p.ValidUntil >= DateTime.UtcNow)
+                   .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving active promotions");
+                throw;
+            }
+        }
 
-        // GetValidPromotion
-        public async Task<Promotion> GetValidPromotionAsync(string code, int restaurantId, decimal orderAmount)
+        public async Task<IEnumerable<Promotion>> GetExpiredPromotionsAsync()
+        {
+            try
+            {
+                return await _context.Promotions
+                   .Where(p => p.ValidUntil < DateTime.UtcNow)
+                   .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving expired promotions");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Promotion>> GetByRestaurantIdAsync(int restaurantId)
         {
             return await _context.Promotions
-                .FirstOrDefaultAsync(p => p.Code == code &&
-            p.RestaurantId == restaurantId &&
-            p.IsActive &&
-            p.StartDate <= DateTime.UtcNow &&
-            p.EndDate >= DateTime.UtcNow &&
-            (p.MinimumOrderAmount == 0 || orderAmount >= p.MinimumOrderAmount));
+               .Where(p => p.RestaurantId == restaurantId)
+               .ToListAsync();
 
+        }
+
+        public async Task<(bool isValid, string errorMessage)> IsPromotionValidAsync(string code, decimal orderAmount, int? restaurantId = null)
+        {
+            try
+            {
+                var promotion = await GetByCodeAsync(code);
+                if (promotion == null) return (false, "Invalid promotion code.");
+
+                if (!promotion.IsActive) return (false, "This promotion is no longer active.");
+
+                if (promotion.ValidUntil < DateTime.UtcNow) return (false, "This promotion has expired.");
+
+                if (orderAmount < promotion.MinimumOrderAmount) return (false, $"Minimum order amount for this promotion is {promotion.MinimumOrderAmount:C}.");
+
+                if (promotion.RestaurantId.HasValue && promotion.RestaurantId != restaurantId) return (false, "This promotion is not applicable to the selected restaurant.");
+
+                if (promotion.UsageCount >= promotion.MaxUsageLimit) return (false, "This promotion has reached its maximum usage limit.");
+
+                return (true, null);
+            }
+            catch (Exception ex)
+            {
+                return (false, "Failed to validate promotion. Please try again.");
+            }
         }
     }
 }
+

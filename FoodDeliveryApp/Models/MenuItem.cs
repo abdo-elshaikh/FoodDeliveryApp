@@ -3,14 +3,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FoodDeliveryApp.Models
 {
-    public class MenuItem
+    public class MenuItem : BaseEntity
     {
-        [Key]
-        public int Id { get; set; }
-
         [Required]
         [StringLength(100)]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [StringLength(500)]
         public string? Description { get; set; }
@@ -24,53 +21,88 @@ namespace FoodDeliveryApp.Models
 
         public bool IsAvailable { get; set; } = true;
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
-
         [Required]
         public int RestaurantId { get; set; }
 
-        // Make CategoryId nullable to support ON DELETE SET NULL
         public int? CategoryId { get; set; }
-        public virtual MenuItemCategory Category { get; set; }
+
+        public double Rating { get; set; } = 0;
+
+        public TimeSpan PreparationTime { get; set; } = TimeSpan.Zero;
+
+        public int Calories { get; set; } = 0;
+
+        public int SpiceLevel { get; set; } = 0;
+
+        public bool IsVegetarian { get; set; } = false;
+
+        public bool IsVegan { get; set; } = false;
+
+        // tags
+        [NotMapped]
+        public virtual ICollection<string> Tags { get; set; } = new HashSet<string>();
 
         // Navigation properties
-        public virtual Restaurant Restaurant { get; set; }
+        public virtual MenuItemCategory Category { get; set; } = null!;
+        public virtual Restaurant Restaurant { get; set; } = null!;
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new HashSet<OrderItem>();
         public virtual ICollection<Review> Reviews { get; set; } = new HashSet<Review>();
-        public virtual ICollection<CustomizationOption> CustomizationOptions { get; set; } = new HashSet<CustomizationOption>();
+
+
+        // help methods
+        public bool IsSpicy()
+        {
+            return SpiceLevel > 5;
+        }
+
+        public bool IsHealthy()
+        {
+            return IsSpicy() == false && IsVegetarian == false && IsVegan == false;
+        }
+
+        public bool IsPopular()
+        {
+            return Rating > 4.5;
+        }
+
+        public bool IsNew()
+        {
+            return CreatedAt > DateTime.UtcNow.AddDays(-30);
+        }
+
+        public bool IsOnSale()
+        {
+            return Price < 10;
+        }
+
+        public void AddTag(string tag)
+        {
+            Tags.Add(tag);
+        }
+
+        public void RemoveTag(string tag)
+        {
+            Tags.Remove(tag);
+        }
+
+        public void UpdateTags(string[] newTags)
+        {
+            Tags.Clear();
+            AddTags(newTags);
+        }
+
+        private void AddTags(string[] newTags)
+        {
+            foreach (var tag in newTags)
+            {
+                AddTag(tag);
+            }
+        }
+        
+        public void UpdateRating(double newRating)
+        {
+            Rating = (Rating * Reviews.Count + newRating) / (Reviews.Count + 1);
+        }
     }
-
-    public class CustomizationOption
-    {
-        [Key]
-        public int Id { get; set; }
-        [Required]
-        [ForeignKey("MenuItem")]
-        public int MenuItemId { get; set; }
-        public string Name { get; set; }
-        public bool IsRequired { get; set; }
-        public bool AllowMultiple { get; set; }
-        public List<CustomizationChoice> Choices { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
-        public virtual MenuItem MenuItem { get; set; }
-    }
-
-    public class CustomizationChoice
-    {
-        [Key]
-        public int Id { get; set; }
-
-        [Required]
-        [ForeignKey(nameof(CustomizationOption))]
-        public int CustomizationOptionId { get; set; }
-
-        public string Name { get; set; }
-        public decimal Price { get; set; }
-        public bool IsDefault { get; set; }
-
-        public virtual CustomizationOption CustomizationOption { get; set; }
-    }
-
+    
 }

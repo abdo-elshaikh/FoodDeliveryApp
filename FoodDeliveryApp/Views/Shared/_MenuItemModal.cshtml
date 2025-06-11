@@ -1,0 +1,149 @@
+@model FoodDeliveryApp.ViewModels.MenuItem.MenuItemDetailsViewModel
+
+<div class="modal fade" id="menuItemModal" tabindex="-1" aria-labelledby="menuItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="row g-0">
+                    <!-- Image Column -->
+                    <div class="col-md-6">
+                        <div class="position-relative h-100">
+                            <img src="@Model.MenuItem.ImageUrl" class="img-fluid w-100 h-100" style="object-fit: cover;" alt="@Model.MenuItem.Name">
+                            @if (Model.MenuItem.IsPopular)
+                            {
+                                <span class="badge bg-warning position-absolute top-0 end-0 m-3">Popular</span>
+                            }
+                            @if (Model.MenuItem.Discount > 0)
+                            {
+                                <span class="badge bg-danger position-absolute top-0 start-0 m-3">@Model.MenuItem.Discount% OFF</span>
+                            }
+                        </div>
+                    </div>
+                    
+                    <!-- Details Column -->
+                    <div class="col-md-6">
+                        <div class="p-4">
+                            <h3 class="mb-3 fw-bold">@Model.MenuItem.Name</h3>
+                            
+                            <!-- Price Section -->
+                            <div class="mb-4">
+                                @if (Model.MenuItem.Discount > 0)
+                                {
+                                    <span class="text-decoration-line-through text-muted me-2">$@Model.MenuItem.OriginalPrice</span>
+                                }
+                                <span class="h3 mb-0 text-primary">$@Model.MenuItem.Price</span>
+                            </div>
+                            
+                            <!-- Description -->
+                            <p class="text-muted mb-4">@Model.MenuItem.Description</p>
+                            
+                            <!-- Dietary Info -->
+                            <div class="d-flex gap-3 mb-4">
+                                @if (Model.MenuItem.IsSpicy)
+                                {
+                                    <span class="badge bg-danger bg-opacity-10 text-danger">
+                                        <i class="fas fa-pepper-hot me-1"></i> Spicy
+                                    </span>
+                                }
+                                @if (Model.MenuItem.IsVegetarian)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success">
+                                        <i class="fas fa-leaf me-1"></i> Vegetarian
+                                    </span>
+                                }
+                                @if (Model.MenuItem.IsVegan)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success">
+                                        <i class="fas fa-seedling me-1"></i> Vegan
+                                    </span>
+                                }
+                            </div>
+                            
+                            <!-- Additional Info -->
+                            @if (Model.MenuItem.Calories > 0)
+                            {
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-fire me-1"></i> @Model.MenuItem.Calories calories
+                                    </small>
+                                </div>
+                            }
+                            
+                            <!-- Quantity Selector -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Quantity</label>
+                                <div class="input-group" style="width: 150px;">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="decreaseQuantity()">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" class="form-control text-center" id="itemQuantity" value="1" min="1" max="99">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="increaseQuantity()">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Special Instructions -->
+                            <div class="mb-4">
+                                <label for="specialInstructions" class="form-label fw-bold">Special Instructions</label>
+                                <textarea class="form-control" id="specialInstructions" rows="2" 
+                                    placeholder="Add any special requests or instructions..."></textarea>
+                            </div>
+                            
+                            <!-- Add to Cart Button -->
+                            <button class="btn btn-primary w-100 py-3" onclick="addToCart(@Model.MenuItem.Id)">
+                                <i class="fas fa-shopping-cart me-2"></i>Add to Cart - $<span id="totalPrice">@Model.MenuItem.Price</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentQuantity = 1;
+        const basePrice = @Model.MenuItem.Price;
+        
+        function updateTotalPrice() {
+            const total = (basePrice * currentQuantity).toFixed(2);
+            document.getElementById('totalPrice').textContent = total;
+        }
+        
+        function increaseQuantity() {
+            if (currentQuantity < 99) {
+                currentQuantity++;
+                document.getElementById('itemQuantity').value = currentQuantity;
+                updateTotalPrice();
+            }
+        }
+        
+        function decreaseQuantity() {
+            if (currentQuantity > 1) {
+                currentQuantity--;
+                document.getElementById('itemQuantity').value = currentQuantity;
+                updateTotalPrice();
+            }
+        }
+        
+        // Initialize modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = new bootstrap.Modal(document.getElementById('menuItemModal'));
+            
+            // Handle quantity input changes
+            document.getElementById('itemQuantity').addEventListener('change', function(e) {
+                let value = parseInt(e.target.value);
+                if (isNaN(value) || value < 1) value = 1;
+                if (value > 99) value = 99;
+                currentQuantity = value;
+                e.target.value = value;
+                updateTotalPrice();
+            });
+        });
+    </script>
+} 

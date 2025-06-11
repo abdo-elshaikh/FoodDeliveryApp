@@ -1,0 +1,119 @@
+@model FoodDeliveryApp.ViewModels.Driver.DriverViewModel
+@{
+    ViewData["Title"] = "Driver Dashboard";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Driver Information</h5>
+                    <p class="card-text">
+                        <strong>Name:</strong> @Model.FirstName @Model.LastName<br />
+                        <strong>Email:</strong> @Model.Email<br />
+                        <strong>Phone:</strong> @Model.PhoneNumber<br />
+                        <strong>License:</strong> @Model.LicenseNumber<br />
+                        <strong>Vehicle:</strong> @Model.VehicleInfo
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Status</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="badge bg-@(Model.Status == DriverStatus.Available ? "success" : 
+                                               Model.Status == DriverStatus.Busy ? "warning" : "secondary")">
+                                @Model.Status
+                            </span>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" id="updateStatusBtn">Update Status</button>
+                        </div>
+                    </div>
+                    <div id="statusUpdateForm" style="display: none;">
+                        <select class="form-select mb-2" id="statusSelect">
+                            <option value="Offline">Offline</option>
+                            <option value="Available">Available</option>
+                            <option value="Busy">Busy</option>
+                        </select>
+                        <button class="btn btn-success" id="saveStatusBtn">Save</button>
+                        <button class="btn btn-secondary" id="cancelStatusBtn">Cancel</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Location</h5>
+                    <p class="card-text">
+                        <strong>Current Address:</strong> @(Model.CurrentAddress ?? "Not available")<br />
+                        <strong>Last Update:</strong> @(Model.LastActive?.ToString("g") ?? "Never")
+                    </p>
+                    <button class="btn btn-primary" id="updateLocationBtn">Update Location</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#updateStatusBtn').click(function() {
+                $('#statusUpdateForm').show();
+                $(this).hide();
+            });
+
+            $('#cancelStatusBtn').click(function() {
+                $('#statusUpdateForm').hide();
+                $('#updateStatusBtn').show();
+            });
+
+            $('#saveStatusBtn').click(function() {
+                const newStatus = $('#statusSelect').val();
+                $.ajax({
+                    url: '/api/driver/@Model.Id/status',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(newStatus),
+                    success: function() {
+                        location.reload();
+                    },
+                    error: function() {
+                        alert('Failed to update status');
+                    }
+                });
+            });
+
+            $('#updateLocationBtn').click(function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        const location = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            address: 'Current Location' // You might want to use a geocoding service to get the address
+                        };
+
+                        $.ajax({
+                            url: '/api/driver/@Model.Id/location',
+                            type: 'PUT',
+                            contentType: 'application/json',
+                            data: JSON.stringify(location),
+                            success: function() {
+                                location.reload();
+                            },
+                            error: function() {
+                                alert('Failed to update location');
+                            }
+                        });
+                    });
+                } else {
+                    alert('Geolocation is not supported by your browser');
+                }
+            });
+        });
+    </script>
+} 

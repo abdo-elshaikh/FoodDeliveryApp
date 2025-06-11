@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Offline - FoodFast</title>
+
+    <link rel="stylesheet" href="/css/app.css">
+    <style>
+        .offline-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .offline-content {
+            max-width: 600px;
+        }
+
+        .offline-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            color: var(--color-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-content">
+            <div class="offline-icon">
+                <i class="fas fa-wifi-slash"></i>
+            </div>
+            <h1>You're Offline</h1>
+            <p class="lead">It seems you've lost your internet connection. Please check your connection and try again.</p>
+            <button class="btn btn-primary mt-4" onclick="window.location.reload()">
+                <i class="fas fa-sync-alt me-2"></i> Retry Connection
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Check if we're back online
+        window.addEventListener('online', function() {
+            window.location.reload();
+        });
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

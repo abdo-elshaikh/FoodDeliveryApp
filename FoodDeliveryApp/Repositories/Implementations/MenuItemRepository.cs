@@ -1,100 +1,159 @@
-﻿using FoodDeliveryApp.Data;
+﻿﻿using FoodDeliveryApp.Data;
 using FoodDeliveryApp.Models;
 using FoodDeliveryApp.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FoodDeliveryApp.Repositories.Implementations
 {
     public class MenuItemRepository : Repository<MenuItem>, IMenuItemRepository
     {
-        private readonly ApplicationDbContext _context;
-        public MenuItemRepository(ApplicationDbContext context) : base(context)
+        protected new readonly ApplicationDbContext _context;
+        protected new readonly ILogger<Repository<MenuItem>> _logger;
+
+        public MenuItemRepository(ApplicationDbContext context, ILogger<MenuItemRepository> logger) : base(context, logger)
         {
             _context = context;
+            _logger = logger;
         }
 
-        public async Task<IEnumerable<MenuItem>> GetByRestaurantAsync(int restaurantId)
-            => await _context.MenuItems
-                .Where(m => m.RestaurantId == restaurantId)
-                .OrderBy(m => m.Name)
-                .ToListAsync();
-
-        public async Task<IEnumerable<MenuItem>> GetAvailableItemsByRestaurantAsync(int restaurantId)
-            => await _context.MenuItems
-                .Where(m => m.RestaurantId == restaurantId && m.IsAvailable)
-                .OrderBy(m => m.Name)
-                .ToListAsync();
-
-        public async Task<IEnumerable<MenuItem>> GetPopularItemsAsync(int count, int restaurantId)
-            => await _context.MenuItems
-                .Where(m => m.RestaurantId == restaurantId && m.IsAvailable)
-                .OrderByDescending(m => m.OrderItems.Count())
-                .Take(count)
-                .ToListAsync();
-
-        public async Task<IEnumerable<MenuItem>> GetByRestaurantCategoryAsync(int categoryId)
+        public async Task<IEnumerable<MenuItem>> GetByRestaurantIdAsync(int restaurantId)
         {
-            var restaurants = await _context.Restaurants
-                .Where(r => r.CategoryId == categoryId)
-                .Select(r => r.Id)
-                .ToListAsync();
-
-            // Get all menu items for the restaurants in the specified category
-            var menuItems = await _context.MenuItems
-                .Where(m => restaurants.Contains(m.RestaurantId) && m.IsAvailable)
-                .ToListAsync();
-            return menuItems;
+            try
+            {
+                return await _context.MenuItems
+                    .Where(m => m.RestaurantId == restaurantId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving menu items by restaurant ID");
+                throw;
+            }
         }
 
-        public async Task<List<CustomizationOption>> GetCustomizationOptionsAsync(int menuItemId)
+        public async Task<IEnumerable<MenuItem>> GetByCategoryIdAsync(int categoryId)
         {
-            // Example: Fetch from DB (e.g., EF Core)
-            return await _context.CustomizationOptions
-                .Where(o => o.MenuItemId == menuItemId)
-                .Include(o => o.Choices)
-                .ToListAsync();
+            try
+            {
+                return await _context.MenuItems
+                    .Where(m => m.CategoryId == categoryId)
+                    .ToListAsync();
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving menu items by category ID");
+                throw;
+            }
         }
 
-        public async Task<List<MenuItem>> GetRelatedItemsAsync(int menuItemId, int restaurantId, int take)
+        public async Task<IEnumerable<MenuItem>> GetPopularItemsAsync(int count = 8)
         {
-            // Example: Fetch related items by restaurant, excluding current item
+            try
+            {
+                return await _context.MenuItems
+                   .OrderByDescending(m => m.Id)
+                   .Take(count)
+                   .ToListAsync();
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving popular menu items");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<MenuItemCategory>> GetPopularCategoriesAsync(int count = 6)
+        {
+            try
+            {
+                return await _context.MenuItemCategories
+                    .OrderByDescending(c => c.MenuItems.Count)
+                    .Take(count)
+                    .ToListAsync();
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving popular menu item categories");
+                throw;
+            }
+        }
+
+        public async Task<MenuItem> GetByIdWithDetailsAsync(int id)
+        {
+            try
+            {
+                return await _context.MenuItems
+                    .Include(m => m.Restaurant)
+                    .Include(m => m.Category)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving menu item by ID with details");
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateAvailabilityAsync(int id, bool isAvailable)
+        {
+            try
+            {
+                var menuItem = await _context.MenuItems.FindAsync(id);
+                if (menuItem == null)
+                {
+                    return false;
+                }
+
+                menuItem.IsAvailable = isAvailable;
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error updating menu item availability");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<MenuItem>> SearchMenuItemsAsync(string searchTerm)
+        {
+            try
+            {
+                return await _context.MenuItems
+                   .Where(m => m.Name.Contains(searchTerm) || m.Description.Contains(searchTerm))
+                   .ToListAsync();
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error searching menu items");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<MenuItem>> GetByIdsAsync(IEnumerable<int> ids)
+        {
             return await _context.MenuItems
-                .Where(m => m.RestaurantId == restaurantId && m.Id != menuItemId && m.IsAvailable)
-                .OrderBy(m => m.Price)
-                .Take(take)
+                .Where(m => ids.Contains(m.Id))
                 .ToListAsync();
         }
 
-        //GetPopularDishesAsync
-        public async Task<IEnumerable<MenuItem>> GetPopularDishesAsync(int count)
+        public async Task<MenuItem> GetByIdWithRestaurantAsync(int id)
         {
-            return await _context.MenuItems
-                .Where(m => m.IsAvailable)
-                .OrderByDescending(m => m.OrderItems.Count())
-                .Take(count)
-                .ToListAsync();
-        }
-
-        //SearchMenuItemsAsync
-        public async Task<IEnumerable<MenuItem>> SearchMenuItemsAsync(string searchQuery, int? restaurantId, int? categoryId, int pageNumber, int pageSize)
-        {
-            var query = _context.MenuItems.AsQueryable();
-            if (!string.IsNullOrEmpty(searchQuery))
+            try
             {
-                query = query.Where(m => m.Name.Contains(searchQuery) || m.Description.Contains(searchQuery));
+                return await _context.MenuItems
+                    .Include(m => m.Restaurant)
+                    .FirstOrDefaultAsync(m => m.Id == id);
             }
-            if (restaurantId.HasValue)
+            catch (Exception ex)
             {
-                query = query.Where(m => m.RestaurantId == restaurantId.Value);
+                _logger.LogError(ex, "Error retrieving menu item by ID with restaurant details");
+                throw;
             }
-            if (categoryId.HasValue)
-            {
-                query = query.Where(m => m.Restaurant.CategoryId == categoryId.Value);
-            }
-            return await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
         }
     }
 }

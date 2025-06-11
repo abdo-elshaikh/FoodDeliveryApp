@@ -8,109 +8,137 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using FoodDeliveryApp.Services.Interfaces;
+using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
+using FoodDeliveryApp.Hubs;
+using AutoMapper.Extensions;
+using FoodDeliveryApp.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Db connection string.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Register the DbContext with MySQL.
-// builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+// Register the DbContext with SQL Server
+builder.Services.AddDbContext<ApplicationDbContext>(options => 
+    options.UseSqlServer(connectionString, 
+        sqlOptions => sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null)));
 
-// Uncomment the following line to use SQL Server instead of MySQL
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
-
-// Configure static files
-
+// Register HttpContextAccessor
+builder.Services.AddHttpContextAccessor();
 
 // Register Identity services
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-    {
-        options.User.RequireUniqueEmail = true;
-        options.SignIn.RequireConfirmedAccount = true;
-    })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+{
+    options.User.RequireUniqueEmail = true;
+    options.SignIn.RequireConfirmedAccount = true;
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequiredLength = 8;
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
-// Configure Email Settings
+// Configure Email Settings and register as singleton
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-// Register EmailSender service
-builder.Services.AddTransient<IEmailSender, EmailSender>();
+builder.Services.AddSingleton(resolver =>
+    resolver.GetRequiredService<IOptions<EmailSettings>>().Value);
 
-// Configure AutoMapper
-builder.Services.AddHttpContextAccessor();
+// Register EmailSender service with EmailSettings injection
+builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 // Register Session
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
-    options.Cookie.HttpOnly = true; // Make the session cookie HTTP-only
-    options.Cookie.IsEssential = true; // Make the session cookie essential
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
-// Add Cart service
-builder.Services.AddScoped<ICartService, CartService>();
-
-// Add Braintree service
-builder.Services.AddTransient<IBraintreeService, BraintreeService>();
-
-builder.Services.AddScoped<IPaymentService, PaymentService>();
-
-// Add File service
-builder.Services.AddScoped<IFileService, FileService>();
-
-// register generic repository
+// Register repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IRestaurantRepository, RestaurantRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IMenuItemRepository, MenuItemRepository>();
 builder.Services.AddScoped<IAddressRepository, AddressRepository>();
 builder.Services.AddScoped<IPromotionRepository, PromotionRepository>();
-
-builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
-builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
+builder.Services.AddScoped<IOrderTrackingRepository, OrderTrackingRepository>();
+builder.Services.AddScoped<ISearchLogRepository, SearchLogRepository>();
+builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+builder.Services.AddScoped<ICartItemRepository, CartItemRepository>();
+builder.Services.AddScoped<ICartRepository, CartRepository>();
 
+// Register Unit of Work
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-builder.Services.AddScoped<ILogger<CartController>, Logger<CartController>>();
+// Register services
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IUserLocationService, UserLocationService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<ICartCalculationService, CartCalculationService>();
+builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddScoped<IDriverService, DriverService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IAddressService, AddressService>();
+
+// Add services to the container
+builder.Services.AddScoped<IRestaurantService, RestaurantService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+
+// Add MVC controllers with views
+builder.Services.AddControllersWithViews();
+
+// Add caching services
+builder.Services.AddMemoryCache();
+builder.Services.AddDistributedMemoryCache();
+
 // Configure Identity options
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
-        options.AccessDeniedPath = "/AccessDenied";
+        options.AccessDeniedPath = "/Error/403";
+        options.ReturnUrlParameter = "ReturnUrl";
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = TimeSpan.FromHours(1);
     });
 
-builder.Services.AddControllersWithViews();
+// Configure AutoMapper
+builder.Services.AddAutoMapper(typeof(Program).Assembly);
+
+// Add SignalR
+builder.Services.AddSignalR();
+
+// Add HttpClient for Google Maps API
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-// handle errors globally.
-app.Use(async (context, next) =>
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
 {
-    try
-    {
-        await next();
-        if (context.Response.StatusCode == 404)
-        {
-            context.Request.Path = "/NotFound";
-            await next();
-        }
-    }
-    catch (Exception ex)
-    {
-        // Log the exception
-        // You can use a logging framework like Serilog, NLog, etc.
-        Console.WriteLine($"An error occurred: {ex.Message}");
-        context.Response.Redirect("/Error");
-    }
-});
+    app.UseExceptionHandler("/Error/500");
+    app.UseHsts();
+}
+else
+{
+    app.UseDeveloperExceptionPage();
+}
 
 // Seed the database with initial data
 using (var scope = app.Services.CreateScope())
@@ -128,23 +156,44 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+app.UseStatusCodePagesWithReExecute("/Error/{0}");
+
+app.UseStatusCodePages(async context =>
 {
-    app.UseExceptionHandler("/Error");
-    app.UseStatusCodePagesWithReExecute("/NotFound");
-    app.UseHsts();
-}
-else
-{
-    app.UseDeveloperExceptionPage();
-}
+    var response = context.HttpContext.Response;
+    if (response.StatusCode == 403)
+    {
+        response.Clear();
+        context.HttpContext.Request.Path = "/Error/403";
+        await context.Next(context.HttpContext);
+    }
+    else if (response.StatusCode == 404)
+    {
+        response.Clear();
+        context.HttpContext.Request.Path = "/Error/404";
+        await context.Next(context.HttpContext);
+    }
+    else if (response.StatusCode == 503)
+    {
+        response.Clear();
+        context.HttpContext.Request.Path = "/Error/503";
+        await context.Next(context.HttpContext);
+    }
+    else if (response.StatusCode == 500)
+    {
+        response.Clear();
+        context.HttpContext.Request.Path = "/Error/500";
+        await context.Next(context.HttpContext);
+    }
+    else
+    {
+        await context.Next(context.HttpContext);
+    }
+});
 
 app.UseSession();
 
 app.UseHttpsRedirection();
-
-
 
 // Configure static files with proper MIME types
 var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
@@ -160,8 +209,7 @@ app.UseStaticFiles(new StaticFileOptions
     {
         // Cache static files for 1 day
         const int durationInSeconds = 86400;
-        ctx.Context.Response.Headers["Cache-Control"] = 
-            "public,max-age=" + durationInSeconds;
+        ctx.Context.Response.Headers["Cache-Control"] = "public,max-age=" + durationInSeconds;
     }
 });
 

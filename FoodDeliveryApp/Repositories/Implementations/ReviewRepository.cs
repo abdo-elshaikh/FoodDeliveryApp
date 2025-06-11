@@ -2,61 +2,57 @@
 using FoodDeliveryApp.Models;
 using FoodDeliveryApp.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace FoodDeliveryApp.Repositories.Implementations
 {
     public class ReviewRepository : Repository<Review>, IReviewRepository
     {
-        private readonly ApplicationDbContext _context;
-        public ReviewRepository(ApplicationDbContext context) : base(context)
+        protected new readonly ApplicationDbContext _context;
+        protected new readonly ILogger<Repository<Review>> _logger;
+
+        public ReviewRepository(
+            ApplicationDbContext context,
+            ILogger<ReviewRepository> logger) : base(context, logger)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task AddReviewAsync(Review review)
+        public async Task<double?> GetAverageRatingAsync(int? restaurantId, int? MenuItemId)
         {
-            await _context.Reviews.AddAsync(review);
-
-            // Update Restaurant.Rating
-            var restaurant = await _context.Restaurants
-                .Include(r => r.Reviews)
-                .FirstOrDefaultAsync(r => r.Id == review.RestaurantId);
-
-            if (restaurant != null)
+            if (restaurantId == null || MenuItemId == null)
             {
-                restaurant.Rating = restaurant.Reviews.Any() ? restaurant.Reviews.Average(r => r.Rating) : 0m;
-                await _context.SaveChangesAsync();
+                return null;
             }
+
+            var reviews = await _context.Reviews.Where(r => r.RestaurantId == restaurantId || r.MenuItemId == MenuItemId).ToListAsync();
+            return reviews.Any() ? (double)reviews.Average(r => r.Rating) : null;
+        }
+
+        public async Task<IEnumerable<Review>> GetByMenuItemAsync(int MenuItemId)
+        {
+            return await _context.Reviews.Where(r => r.MenuItemId == MenuItemId).Include(r => r.User).ToListAsync();
         }
 
         public async Task<IEnumerable<Review>> GetByRestaurantAsync(int restaurantId)
-            => await _context.Reviews
-                .Include(r => r.CustomerProfile)
-                .Where(r => r.RestaurantId == restaurantId)
-                .OrderByDescending(r => r.CreatedAt)
-                .ToListAsync();
-
-        public async Task<IEnumerable<Review>> GetByCustomerAsync(int customerId)
-            => await _context.Reviews
-                .Include(r => r.Restaurant)
-                .Where(r => r.CustomerProfileId == customerId)
-                .OrderByDescending(r => r.CreatedAt)
-                .ToListAsync();
-
-        public async Task<double?> GetAverageRatingAsync(int restaurantId)
         {
-            return await _context.Reviews
-                .Where(r => r.RestaurantId == restaurantId)
-                .Select(r => (double?)r.Rating)
-                .AverageAsync();
+            return await _context.Reviews.Where(r => r.RestaurantId == restaurantId).Include(r => r.User).ToListAsync();
+        }
+
+        public async Task<IEnumerable<Review>> GetByUserIdAsync(string userId)
+        {
+            return await _context.Reviews.Where(r => r.UserId == userId).Include(r => r.User).ToListAsync();
         }
 
         public async Task<IEnumerable<Review>> GetRecentReviewsAsync(int count)
-            => await _context.Reviews
-                .Include(r => r.Restaurant)
-                .Include(r => r.CustomerProfile)
-                .OrderByDescending(r => r.CreatedAt)
-                .Take(count)
-                .ToListAsync();
+        {
+            return await _context.Reviews.Include(r => r.User).OrderByDescending(r => r.CreatedAt).Take(count).ToListAsync();
+        }
+
+        public async Task<IEnumerable<Review>> GetRestaurantReviewsAsync(int restaurantId)
+        {
+            return await _context.Reviews.Where(r => r.RestaurantId == restaurantId).Include(r => r.User).ToListAsync();
+        }
     }
 }

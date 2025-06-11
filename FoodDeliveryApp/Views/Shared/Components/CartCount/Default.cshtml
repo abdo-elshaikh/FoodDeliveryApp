@@ -1,0 +1,27 @@
+@model int
+<span class="position-relative" aria-label="Cart items">
+    <i class="fas fa-shopping-cart fa-lg"></i>
+    <span class="cart-count-badge badge rounded-pill 
+        @(Model > 0 ? "bg-danger" : "bg-secondary opacity-50") 
+        position-absolute top-0 start-100 translate-middle"
+        style="font-size:0.85rem; min-width:1.5em;">
+        @Model
+    </span>
+</span>
+
+<style>
+.cart-count-badge {
+    transition: transform 0.2s cubic-bezier(.4,2,.6,1);
+}
+.cart-count-badge.animated {
+    transform: scale(1.2);
+}
+</style>
+<script>
+    // Optional: Animate badge on update
+    const badge = document.querySelector('.cart-count-badge');
+    if (badge) {
+        badge.classList.add('animated');
+        setTimeout(() => badge.classList.remove('animated'), 400);
+    }
+</script>

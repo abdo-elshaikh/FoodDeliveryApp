@@ -1,0 +1,201 @@
+@using Microsoft.AspNetCore.Identity
+@using FoodDeliveryApp.Models
+@using FoodDeliveryApp.ViewModels.Account
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@if (SignInManager.IsSignedIn(User))
+{
+    var user = await UserManager.GetUserAsync(User);
+    <div class="user-menu dropdown">
+        <button class="btn btn-link dropdown-toggle d-flex align-items-center" type="button" id="userDropdown"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="user-avatar position-relative">
+                <i class="fas fa-user-circle text-primary"></i>
+                @if (user?.IsActive == true)
+                {
+                    <span class="position-absolute bottom-0 end-0 bg-success rounded-circle"
+                        style="width: 10px; height: 10px; border: 2px solid white;"></span>
+                }
+            </div>
+            <div class="ms-2 d-none d-md-block text-start">
+                <span class="user-name fw-bold">@user?.UserName.Split("@")[0]</span>
+            </div>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3" style="min-width: 280px;">
+            <li class="px-3 py-2 border-bottom">
+                <div class="d-flex align-items-center">
+                    <img src="@(string.IsNullOrEmpty(user?.ProfilePictureUrl) ? "/images/default-avatar.png" : user.ProfilePictureUrl)"
+                        alt="@user?.UserName" class="rounded-circle me-2"
+                        style="width: 48px; height: 48px; object-fit: cover;" />
+                    <div>
+                        <h6 class="mb-0">@user?.UserName.Split("@")[0]</h6>
+                        <small class="text-muted">@user?.Email</small>
+                    </div>
+                </div>
+            </li>
+            <li>
+                <a class="dropdown-item py-2" asp-controller="Account" asp-action="Profile">
+                    <i class="fas fa-user me-2 text-primary"></i>My Profile
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item py-2" asp-controller="Orders" asp-action="Index">
+                    <i class="fas fa-receipt me-2 text-success"></i>My Orders
+                    @if (ViewBag.PendingOrders > 0)
+                    {
+                        <span class="badge bg-danger rounded-pill float-end">@ViewBag.PendingOrders</span>
+                    }
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item py-2" asp-controller="Account" asp-action="Addresses">
+                    <i class="fas fa-map-marker-alt me-2 text-warning"></i>My Addresses
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item py-2" asp-controller="Account" asp-action="Favorites">
+                    <i class="fas fa-heart me-2 text-danger"></i>Favorites
+                    @if (ViewBag.FavoritesCount > 0)
+                    {
+                        <span class="badge bg-danger rounded-pill float-end">@ViewBag.FavoritesCount</span>
+                    }
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item py-2" asp-controller="Account" asp-action="Settings">
+                    <i class="fas fa-cog me-2 text-secondary"></i>Settings
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item py-2" asp-controller="Account" asp-action="Notifications">
+                    <i class="fas fa-bell me-2 text-info"></i>Notifications
+                    @if (ViewBag.UnreadNotifications > 0)
+                    {
+                        <span class="badge bg-danger rounded-pill float-end">@ViewBag.UnreadNotifications</span>
+                    }
+                </a>
+            </li>
+            <li>
+                <hr class="dropdown-divider">
+            </li>
+            <li>
+                <form class="form-inline" asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="dropdown-item py-2 text-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+}
+else
+{
+    <div class="auth-buttons d-flex align-items-center">
+        <a asp-controller="Account" asp-action="Login" class="btn btn-outline-primary me-2 d-flex align-items-center">
+            <i class="fas fa-sign-in-alt me-2"></i>
+            <span class="d-none d-md-inline">Login</span>
+        </a>
+        <a asp-controller="Account" asp-action="Register" class="btn btn-primary d-flex align-items-center">
+            <i class="fas fa-user-plus me-2"></i>
+            <span class="d-none d-md-inline">Register</span>
+        </a>
+    </div>
+}
+
+@section Styles {
+    <style>
+        .user-menu .dropdown-toggle::after {
+            display: none;
+        }
+
+        .user-menu .dropdown-toggle {
+            padding: 0.5rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .user-menu .dropdown-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .dropdown-item {
+            transition: all 0.2s ease;
+            border-radius: 0.5rem;
+            margin: 0.25rem 0;
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(var(--bs-primary-rgb), 0.1);
+            transform: translateX(5px);
+        }
+
+        .dropdown-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .auth-buttons .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .auth-buttons .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        @@media(max - width: 991.98px) {
+                .auth-buttons {
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+
+                .auth-buttons .btn {
+                    width: 100%;
+                    justify-content: center;
+                }
+
+                .user-menu .dropdown-toggle {
+                    width: 100%;
+                    justify-content: center;
+                }
+
+                .dropdown-menu {
+                    width: 100%;
+                    margin-top: 0.5rem;
+                }
+            }
+
+            @@media(max - width: 767.98px) {
+                    .auth-buttons .btn {
+                        padding: 0.5rem;
+                    }
+
+                    .user-menu .dropdown-toggle {
+                        padding: 0.5rem;
+                    }
+                }
+            </style>
+        }
+
+        @section Scripts {
+            <script>
+                // Add hover effect to dropdown items
+                document.querySelectorAll('.dropdown-item').forEach(item => {
+                    item.addEventListener('mouseenter', function () {
+                        this.style.transform = 'translateX(5px)';
+                    });
+                    item.addEventListener('mouseleave', function () {
+                        this.style.transform = 'translateX(0)';
+                    });
+                });
+            </script>
+        }

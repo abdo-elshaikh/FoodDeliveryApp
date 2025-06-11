@@ -1,0 +1,109 @@
+@model string
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Promotional Code</h5>
+        <div class="promotion-form">
+            <div class="input-group">
+                <input type="text" id="promotionCode" class="form-control" 
+                       placeholder="Enter promotion code" value="@Model">
+                <button class="btn btn-primary" type="button" id="validatePromotion">
+                    <i class="fas fa-check"></i> Apply
+                </button>
+            </div>
+            <div id="promotionMessage" class="mt-2" style="display: none;">
+                <div class="alert alert-dismissible fade show" role="alert">
+                    <span id="promotionMessageText"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+            <div id="promotionDetails" class="mt-3" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Discount:</strong>
+                        <span id="discountAmount"></span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="removePromotion">
+                        <i class="fas fa-times"></i> Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        const validatePromotion = () => {
+            const code = $('#promotionCode').val();
+            const orderTotal = parseFloat($('#orderTotal').text());
+
+            if (!code) {
+                showMessage('Please enter a promotion code.', 'warning');
+                return;
+            }
+
+            $.get('@Url.Action("Validate", "Promotion")', { code, orderTotal })
+                .done(function(response) {
+                    if (response.isValid) {
+                        showMessage(response.message, 'success');
+                        showPromotionDetails(response);
+                        updateOrderTotal(response.finalTotal);
+                    } else {
+                        showMessage(response.message, 'danger');
+                        hidePromotionDetails();
+                    }
+                })
+                .fail(function() {
+                    showMessage('Error validating promotion code. Please try again.', 'danger');
+                });
+        };
+
+        const showMessage = (message, type) => {
+            const messageDiv = $('#promotionMessage');
+            const messageText = $('#promotionMessageText');
+            messageDiv.find('.alert')
+                .removeClass('alert-success alert-danger alert-warning')
+                .addClass(`alert-${type}`);
+            messageText.text(message);
+            messageDiv.show();
+        };
+
+        const showPromotionDetails = (response) => {
+            $('#discountAmount').text(`-$${response.discountAmount.toFixed(2)}`);
+            $('#promotionDetails').show();
+            $('#validatePromotion').prop('disabled', true);
+            $('#promotionCode').prop('readonly', true);
+        };
+
+        const hidePromotionDetails = () => {
+            $('#promotionDetails').hide();
+            $('#validatePromotion').prop('disabled', false);
+            $('#promotionCode').prop('readonly', false);
+        };
+
+        const updateOrderTotal = (newTotal) => {
+            $('#orderTotal').text(newTotal.toFixed(2));
+            // Trigger event for other components that need to update
+            $(document).trigger('orderTotalUpdated', [newTotal]);
+        };
+
+        $('#validatePromotion').click(validatePromotion);
+
+        $('#promotionCode').keypress(function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                validatePromotion();
+            }
+        });
+
+        $('#removePromotion').click(function() {
+            $('#promotionCode').val('').prop('readonly', false);
+            $('#validatePromotion').prop('disabled', false);
+            $('#promotionMessage, #promotionDetails').hide();
+            // Reset order total to original amount
+            const originalTotal = parseFloat($('#originalTotal').val());
+            updateOrderTotal(originalTotal);
+        });
+    });
+</script>

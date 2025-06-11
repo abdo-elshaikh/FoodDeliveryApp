@@ -1,0 +1,349 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+}
+
+<header class="site-header" data-aos="fade-down" data-aos-delay="100">
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                <img src="~/images/logo.png" alt="FoodDeliveryApp Logo" class="img-fluid" />
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link @(currentController == "Home" && currentAction == "Index" ? "active" : "")" 
+                           asp-controller="Home" asp-action="Index">
+                            <i class="fas fa-home me-1"></i><span class="nav-text">Home</span>
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle @(currentController == "Restaurants" ? "active" : "")" 
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-utensils me-1"></i><span class="nav-text">Restaurants</span>
+                        </a>
+                        <ul class="dropdown-menu shadow-lg border-0 rounded-3">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" asp-controller="Restaurants" asp-action="Index">
+                                    <i class="fas fa-store me-2 text-primary"></i>All Restaurants
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" asp-controller="Restaurants" asp-action="Popular">
+                                    <i class="fas fa-fire me-2 text-danger"></i>Popular
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" asp-controller="Restaurants" asp-action="New">
+                                    <i class="fas fa-star me-2 text-warning"></i>New Arrivals
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" asp-controller="Restaurants" asp-action="Categories">
+                                    <i class="fas fa-th-large me-2 text-success"></i>Categories
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(currentController == "Orders" ? "active" : "")" 
+                           asp-controller="Orders" asp-action="Index">
+                            <i class="fas fa-receipt me-1"></i><span class="nav-text">Orders</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(currentController == "Deals" ? "active" : "")" 
+                           asp-controller="Deals" asp-action="Index">
+                            <i class="fas fa-tag me-1"></i><span class="nav-text">Deals</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="navbar-actions d-flex align-items-center">
+                    <div class="search-box me-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Search restaurants..." 
+                                   data-bs-toggle="modal" data-bs-target="#searchModal" />
+                            <button type="button" class="btn btn-outline-primary search-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    @await Component.InvokeAsync("CartSummary")
+                    <partial name="_LoginPartial" />
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<!-- Search Modal -->
+<div class="modal fade" id="searchModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <div class="search-input-wrapper w-100">
+                    <div class="input-group">
+                        <span class="input-group-text border-0 bg-transparent">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-0" placeholder="Search for restaurants, cuisines, or dishes...">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="search-categories mb-4">
+                    <h6 class="mb-3 fw-bold">Popular Categories</h6>
+                    <div class="category-chips">
+                        <a href="#" class="category-chip">
+                            <i class="fas fa-pizza-slice"></i>
+                            <span>Pizza</span>
+                        </a>
+                        <a href="#" class="category-chip">
+                            <i class="fas fa-hamburger"></i>
+                            <span>Burgers</span>
+                        </a>
+                        <a href="#" class="category-chip">
+                            <i class="fas fa-drumstick-bite"></i>
+                            <span>Chicken</span>
+                        </a>
+                        <a href="#" class="category-chip">
+                            <i class="fas fa-fish"></i>
+                            <span>Seafood</span>
+                        </a>
+                        <a href="#" class="category-chip">
+                            <i class="fas fa-leaf"></i>
+                            <span>Vegetarian</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="search-results">
+                    <h6 class="mb-3 fw-bold">Recent Searches</h6>
+                    <div class="recent-searches">
+                        <a href="#" class="recent-search-item">
+                            <i class="fas fa-history text-muted"></i>
+                            <span>Italian Restaurant</span>
+                            <button class="btn-close btn-close-white" aria-label="Remove"></button>
+                        </a>
+                        <a href="#" class="recent-search-item">
+                            <i class="fas fa-history text-muted"></i>
+                            <span>Pizza Delivery</span>
+                            <button class="btn-close btn-close-white" aria-label="Remove"></button>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .site-header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar {
+            padding: 0.5rem 0;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-link {
+            padding: 0.5rem 1rem;
+            color: #333;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--bs-primary);
+        }
+
+        .nav-link.active {
+            color: var(--bs-primary);
+            font-weight: 500;
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 1rem;
+            right: 1rem;
+            height: 2px;
+            background-color: var(--bs-primary);
+            border-radius: 2px;
+        }
+
+        .dropdown-menu {
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(var(--bs-primary-rgb), 0.1);
+            transform: translateX(5px);
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 200px;
+        }
+
+        .search-box .form-control {
+            border-radius: 50px;
+            padding-right: 40px;
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            border-radius: 0 50px 50px 0;
+            padding: 0 1rem;
+        }
+
+        .category-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .category-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: #f8f9fa;
+            border-radius: 50px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .category-chip:hover {
+            background-color: var(--bs-primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .category-chip i {
+            margin-right: 0.5rem;
+        }
+
+        .recent-search-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+            color: #333;
+            text-decoration: none;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .recent-search-item:hover {
+            background-color: var(--bs-primary);
+            color: white;
+        }
+
+        .recent-search-item i:first-child {
+            margin-right: 0.75rem;
+        }
+
+        .recent-search-item .btn-close {
+            margin-left: auto;
+            opacity: 0.5;
+        }
+
+        .recent-search-item:hover .btn-close {
+            opacity: 1;
+        }
+
+        @@media (max-width: 991.98px) {
+            .navbar-collapse {
+                background: white;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                margin-top: 1rem;
+            }
+
+            .navbar-actions {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 1rem;
+            }
+
+            .search-box {
+                width: 100%;
+                margin-right: 0 !important;
+            }
+
+            .nav-text {
+                display: inline-block;
+            }
+        }
+
+        @@media (max-width: 767.98px) {
+            .navbar-brand img {
+                height: 32px;
+            }
+
+            .nav-link {
+                padding: 0.75rem 1rem;
+            }
+
+            .nav-link.active::after {
+                display: none;
+            }
+
+            .nav-link.active {
+                background-color: rgba(var(--bs-primary-rgb), 0.1);
+                border-radius: 0.5rem;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Add hover effect to dropdown items
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateX(5px)';
+            });
+            item.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateX(0)';
+            });
+        });
+
+        // Handle search input focus
+        const searchInput = document.querySelector('#searchModal .form-control');
+        searchInput.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+        searchInput.addEventListener('blur', function() {
+            this.parentElement.classList.remove('focused');
+        });
+    </script>
+} 

@@ -1,0 +1,174 @@
+@model int
+
+<div class="add-to-cart-container">
+    @if (User.Identity.IsAuthenticated)
+    {
+        <form asp-controller="Cart" asp-action="AddToCart" asp-route-menuItemId="@Model" method="post" 
+            data-ajax="true" data-ajax-method="POST" 
+            data-ajax-success="onCartSuccess" data-ajax-failure="onCartFailure"
+            class="add-to-cart-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="menuItemId" value="@Model" />
+            <div class="input-group mb-2">
+                <button type="button" class="btn btn-outline-secondary quantity-btn" onclick="decrementQuantity(this)" aria-label="Decrease quantity">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <input type="number" name="quantity" value="1" min="1" max="99"
+                    class="form-control text-center quantity-input" aria-label="Quantity" 
+                    onchange="validateQuantity(this)" />
+                <button type="button" class="btn btn-outline-secondary quantity-btn" onclick="incrementQuantity(this)" aria-label="Increase quantity">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 add-to-cart-btn" data-loading-text="Adding...">
+                <i class="fas fa-cart-plus me-2"></i><span class="btn-text">Add to Cart</span>
+            </button>
+        </form>
+    }
+    else
+    {
+        <a asp-controller="Account" asp-action="Login" class="btn btn-outline-primary w-100">
+            <i class="fas fa-sign-in-alt me-2"></i>Login to Order
+        </a>
+    }
+</div>
+
+<div id="modalContainer"></div>
+
+@section Styles {
+    <style>
+        .add-to-cart-container {
+            margin-top: 1rem;
+        }
+
+        .quantity-input {
+            max-width: 60px;
+        }
+
+        .add-to-cart-btn {
+            transition: all 0.2s ease-in-out;
+            position: relative;
+        }
+
+        .add-to-cart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .add-to-cart-btn.loading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .add-to-cart-btn.loading .btn-text {
+            visibility: hidden;
+        }
+
+        .add-to-cart-btn.loading::after {
+            content: "";
+            position: absolute;
+            width: 1rem;
+            height: 1rem;
+            top: 50%;
+            left: 50%;
+            margin: -0.5rem 0 0 -0.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: button-loading-spinner 0.6s linear infinite;
+        }
+
+        @@keyframes button-loading-spinner {
+            from {
+                transform: rotate(0turn);
+            }
+            to {
+                transform: rotate(1turn);
+            }
+        }
+
+        .input-group .btn {
+            padding: 0.375rem 0.75rem;
+        }
+
+        .quantity-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        function validateQuantity(input) {
+            let value = parseInt(input.value);
+            if (isNaN(value) || value < 1) value = 1;
+            if (value > 99) value = 99;
+            input.value = value;
+        }
+
+        function incrementQuantity(button) {
+            const input = button.parentElement.querySelector('.quantity-input');
+            const currentValue = parseInt(input.value);
+            if (currentValue < 99) {
+                input.value = currentValue + 1;
+                validateQuantity(input);
+            }
+        }
+
+        function decrementQuantity(button) {
+            const input = button.parentElement.querySelector('.quantity-input');
+            const currentValue = parseInt(input.value);
+            if (currentValue > 1) {
+                input.value = currentValue - 1;
+                validateQuantity(input);
+            }
+        }
+
+        function onCartSuccess(response) {
+            if (response.success) {
+                // Update cart count
+                const cartCount = document.querySelector('.cart-count');
+                if (cartCount) {
+                    cartCount.textContent = response.cartItemCount;
+                }
+
+                // Show success message
+                showToast('Item added to cart successfully', 'success');
+
+                // Update cart summary if available
+                if (response.cartSummaryViewModel) {
+                    updateCartSummary(response.cartSummaryViewModel);
+                }
+            } else {
+                showToast(response.message || 'Error adding item to cart', 'error');
+            }
+        }
+
+        function onCartFailure(xhr, status, error) {
+            showToast('Error adding item to cart. Please try again.', 'error');
+        }
+
+        function showToast(message, type = 'info') {
+            // Implement your toast notification system here
+            console.log(`${type}: ${message}`);
+        }
+
+        function updateCartSummary(summary) {
+            // update partials of the cart summary
+
+            Html.renderPartialAsync('_CartSummaryPartial', summary).then(html => {
+                document.getElementById('cartSummaryContainer').innerHTML = html;
+            });
+        }
+
+        // Add loading state to form submission
+        document.querySelectorAll('.add-to-cart-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const button = this.querySelector('.add-to-cart-btn');
+                button.classList.add('loading');
+                button.disabled = true;
+            });
+        });
+    </script>
+}

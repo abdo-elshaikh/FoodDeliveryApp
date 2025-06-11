@@ -1,32 +1,28 @@
 ﻿@{
-    ViewData["Title"] = "Confirm Email";
-    Layout = "~/Views/Shared/_LayoutAccount.cshtml";
+    ViewData["Title"] = "Email Confirmation";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow-lg border-0 animate__animated animate__fadeInUp">
-            <div class="card-body p-4 text-center">
-                <h2 class="mb-4">
-                    <i class="fas fa-envelope-open-text me-2 text-primary"></i>@ViewData["Title"]
-                </h2>
-                @if (TempData["SuccessMessage"] != null)
-                {
-                    <div class="alert alert-success alert-dismissible fade show animate__animated animate__bounceIn" role="alert">
-                        @TempData["SuccessMessage"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4" data-aos="fade-up">
+                <div class="card-body p-4 p-md-5 text-center">
+                    <div class="mb-4">
+                        <div class="mb-3">
+                            <i class="fas fa-envelope-open-text fa-4x text-primary"></i>
+                        </div>
+                        <h1 class="h3 fw-bold mb-3">Email Confirmation</h1>
+                        <p class="text-muted mb-4">Thank you for confirming your email. Your account is now active and you can start using all features of our platform.</p>
                     </div>
-                }
-                @if (TempData["ErrorMessage"] != null)
-                {
-                    <div class="alert alert-danger alert-dismissible fade show animate__animated animate__shakeX" role="alert">
-                        @TempData["ErrorMessage"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
+                    <div class="d-grid gap-2">
+                        <a asp-action="Login" class="btn btn-primary btn-lg rounded-pill">
+                            <i class="fas fa-sign-in-alt me-2"></i>Go to Login
+                        </a>
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                            <i class="fas fa-home me-2"></i>Back to Home
+                        </a>
                     </div>
-                }
-                <p>Please wait while we confirm your email...</p>
-                <div class="spinner-border text-primary" role="status" style="display: none;" id="loadingSpinner">
-                    <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
         </div>
@@ -35,9 +31,11 @@
 
 @section Scripts {
     <script>
-        $(document).ready(function () {
-            $('#loadingSpinner').show();
-            setTimeout(() => $('#loadingSpinner').hide(), 2000);
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
         });
     </script>
 }

@@ -2,153 +2,165 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FoodDeliveryApp.ViewModels.Promotion
 {
-    public class PromotionViewModel
+    /// <summary>
+    /// View model for displaying promotion information
+    /// </summary>
+    public class PromotionViewModel : BaseViewModel
     {
-        public int Id { get; set; }
-
-        [Required(ErrorMessage = "Title is required")]
-        [StringLength(100, ErrorMessage = "Title cannot exceed 100 characters")]
+        // Title
         public string Title { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Code is required")]
+        [StringLength(100, ErrorMessage = "Code cannot exceed 100 characters")]
+        [Display(Name = "Code")]
+        public string Code { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Description is required")]
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+        [Display(Name = "Description")]
         public string Description { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Discount type is required")]
-        [Display(Name = "Discount Type")]
-        public DiscountType DiscountType { get; set; }
-
-        [Required(ErrorMessage = "Discount value is required")]
-        [Range(0, 100, ErrorMessage = "Discount value must be between 0 and 100")]
-        [Display(Name = "Discount Value")]
-        public decimal DiscountValue { get; set; }
 
         [Required(ErrorMessage = "Start date is required")]
         [Display(Name = "Start Date")]
+        [DataType(DataType.Date)]
         public DateTime StartDate { get; set; }
 
         [Required(ErrorMessage = "End date is required")]
         [Display(Name = "End Date")]
+        [DataType(DataType.Date)]
         public DateTime EndDate { get; set; }
 
-        [Display(Name = "Minimum Order Amount")]
-        [Range(0, 1000, ErrorMessage = "Minimum order amount must be between 0 and 1000")]
-        public decimal? MinimumOrderAmount { get; set; }
-
-        [Display(Name = "Maximum Discount Amount")]
-        [Range(0, 1000, ErrorMessage = "Maximum discount amount must be between 0 and 1000")]
-        public decimal? MaximumDiscountAmount { get; set; }
-
-        [Display(Name = "Promotion Code")]
-        [StringLength(20, ErrorMessage = "Promotion code cannot exceed 20 characters")]
-        public string? PromotionCode { get; set; }
-        
-        [Display(Name = "Code")]
-        [StringLength(20, ErrorMessage = "Promotion code cannot exceed 20 characters")]
-        public string? Code { get; set; }
-        
-        // Used for compatibility with older code
-        public bool IsPercentage => DiscountType == DiscountType.Percentage;
-        
         [Display(Name = "Restaurant")]
         public int? RestaurantId { get; set; }
-        
-        [Display(Name = "Restaurant Name")]
-        public string? RestaurantName { get; set; }
 
+        [Display(Name = "Restaurant Name")]
+        public string RestaurantName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Discount value is required")]
+        [Display(Name = "Discount Value")]
+        public decimal DiscountValue { get; set; }
+
+        [Required(ErrorMessage = "Is percentage is required")]
+        [Display(Name = "Is Percentage")]
+        public bool IsPercentage { get; set; }
+
+        [Required(ErrorMessage = "Minimum order amount is required")]
+        [Display(Name = "Minimum Order Amount")]
+        public decimal MinimumOrderAmount { get; set; }
+
+        [Required(ErrorMessage = "Usage limit is required")]
         [Display(Name = "Usage Limit")]
-        [Range(0, int.MaxValue, ErrorMessage = "Usage limit must be greater than or equal to 0")]
         public int? UsageLimit { get; set; }
 
         [Display(Name = "Usage Count")]
         public int UsageCount { get; set; }
 
-        public bool IsActive { get; set; }
-        public bool IsPublic { get; set; }
-        public List<int>? ApplicableRestaurantIds { get; set; }
-        public List<int>? ApplicableMenuItemIds { get; set; }
-        public List<int>? ApplicableCategoryIds { get; set; }
-        public string FormattedDiscount => IsPercentage ? $"{DiscountValue}%" : $"${DiscountValue}";
-        public bool IsExpired => DateTime.Now > EndDate;
-        public bool IsComingSoon => DateTime.Now < StartDate;
-        public bool IsCurrentlyActive => IsActive && !IsExpired && !IsComingSoon;
+        // DiscountAmount
+        [Display(Name = "Discount Amount")]
+        public decimal DiscountAmount => IsPercentage ? (DiscountValue / 100) * MinimumOrderAmount : DiscountValue;
+        // ImageUrl
+        [Display(Name = "Image URL")]
+        public string ImageUrl { get; set; } = string.Empty;
     }
 
-    public class CreatePromotionViewModel
+    /// <summary>
+    /// View model for displaying a list of promotions with pagination and filtering
+    /// </summary>
+    public class PromotionListViewModel : BaseListViewModel<PromotionViewModel>
     {
-        [Required(ErrorMessage = "Title is required")]
-        [StringLength(100, ErrorMessage = "Title cannot exceed 100 characters")]
-        public string Title { get; set; } = string.Empty;
+        public List<PromotionViewModel> Promotions 
+        { 
+            get => Items; 
+            set => Items = value; 
+        }
 
-        [Required(ErrorMessage = "Description is required")]
+        [Display(Name = "Restaurant")]
+        public int? RestaurantId { get; set; }
+
+        [Display(Name = "Active Only")]
+        public bool ActiveOnly { get; set; } = true;
+
+        [Display(Name = "Current Only")]
+        public bool CurrentOnly { get; set; } = true;
+    }
+
+    /// <summary>
+    /// View model for creating a new promotion
+    /// </summary>
+    public class PromotionCreateViewModel : BaseCreateViewModel
+    {
+        [Required(ErrorMessage = "Code is required")]
+        [StringLength(100, ErrorMessage = "Code cannot exceed 100 characters")]
+        [Display(Name = "Code")]
+        public string Code { get; set; }
+
         [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
-        public string Description { get; set; } = string.Empty;
+        [Display(Name = "Description")]
+        public string Description { get; set; }
 
-        [Required(ErrorMessage = "Discount type is required")]
-        [Display(Name = "Discount Type")]
-        public DiscountType DiscountType { get; set; }
-
-        [Required(ErrorMessage = "Discount value is required")]
-        [Range(0, 100, ErrorMessage = "Discount value must be between 0 and 100")]
-        [Display(Name = "Discount Value")]
-        public decimal DiscountValue { get; set; }
 
         [Required(ErrorMessage = "Start date is required")]
         [Display(Name = "Start Date")]
+        [DataType(DataType.Date)]
         public DateTime StartDate { get; set; }
 
         [Required(ErrorMessage = "End date is required")]
         [Display(Name = "End Date")]
+        [DataType(DataType.Date)]
         public DateTime EndDate { get; set; }
 
-        [Display(Name = "Minimum Order Amount")]
-        [Range(0, 1000, ErrorMessage = "Minimum order amount must be between 0 and 1000")]
-        public decimal? MinimumOrderAmount { get; set; }
+        [Display(Name = "Restaurant")]
+        public int? RestaurantId { get; set; }
 
-        [Display(Name = "Maximum Discount Amount")]
-        [Range(0, 1000, ErrorMessage = "Maximum discount amount must be between 0 and 1000")]
-        public decimal? MaximumDiscountAmount { get; set; }
-
-        [Display(Name = "Promotion Code")]
-        [StringLength(20, ErrorMessage = "Promotion code cannot exceed 20 characters")]
-        public string? PromotionCode { get; set; }
-
-        [Display(Name = "Usage Limit")]
-        [Range(0, int.MaxValue, ErrorMessage = "Usage limit must be greater than or equal to 0")]
-        public int? UsageLimit { get; set; }
-
-        public bool IsActive { get; set; } = true;
-        public bool IsPublic { get; set; } = true;
-        public List<int>? ApplicableRestaurantIds { get; set; }
-        public List<int>? ApplicableMenuItemIds { get; set; }
-        public List<int>? ApplicableCategoryIds { get; set; }
-    }
-
-    public class EditPromotionViewModel : CreatePromotionViewModel
-    {
-        public int Id { get; set; }
-        public int UsageCount { get; set; }
-    }
-
-    public class PromotionListViewModel
-    {
-        public int Id { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public DiscountType DiscountType { get; set; }
+        [Required(ErrorMessage = "Discount value is required")]
+        [Display(Name = "Discount Value")]
         public decimal DiscountValue { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-        public string? PromotionCode { get; set; }
-        public bool IsActive { get; set; }
-        public bool IsPublic { get; set; }
-        public int UsageCount { get; set; }
-        public int? UsageLimit { get; set; }
+
+        [Required(ErrorMessage = "Is percentage is required")]
+        [Display(Name = "Is Percentage")]
+        public bool IsPercentage { get; set; }
+
+        [Required(ErrorMessage = "Minimum order amount is required")]
+        [Display(Name = "Minimum Order Amount")]
+        public decimal MinimumOrderAmount { get; set; }
     }
 
-    public enum DiscountType
+    /// <summary>
+    /// View model for editing an existing promotion
+    /// </summary>
+    public class PromotionEditViewModel : BaseEditViewModel
     {
-        Percentage,
-        FixedAmount
-    }
+        [Required(ErrorMessage = "Code is required")]
+        [StringLength(100, ErrorMessage = "Code cannot exceed 100 characters")]
+        [Display(Name = "Code")]
+        public string Code { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+        [Display(Name = "Description")]
+        public string Description { get; set; } = string.Empty;
+
+        
+        [Required(ErrorMessage = "Start date is required")]
+        [Display(Name = "Start Date")]
+        [DataType(DataType.Date)]
+        public DateTime StartDate { get; set; }
+
+        [Required(ErrorMessage = "End date is required")]
+        [Display(Name = "End Date")]
+        [DataType(DataType.Date)]
+        public DateTime EndDate { get; set; }
+
+        [Display(Name = "Restaurant")]
+        public int? RestaurantId { get; set; }
+
+        [Required(ErrorMessage = "Discount value is required")]
+        [Display(Name = "Discount Value")]
+        public decimal DiscountValue { get; set; }
+
+        [Required(ErrorMessage = "Is percentage is required")]
+        [Display(Name = "Is Percentage")]
+        public bool IsPercentage { get; set; }
+
+        [Required(ErrorMessage = "Minimum order amount is required")]
+        [Display(Name = "Minimum Order Amount")]
+        public decimal MinimumOrderAmount { get; set; }
+    }    
 } 

@@ -1,10 +1,14 @@
 ﻿using FoodDeliveryApp.Models;
 using FoodDeliveryApp.Repositories.Interfaces;
 using FoodDeliveryApp.Services;
+using FoodDeliveryApp.Services.Interfaces;
 using FoodDeliveryApp.ViewModels.Cart;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using System.IO;
 
 namespace FoodDeliveryApp.Controllers
 {
@@ -12,133 +16,109 @@ namespace FoodDeliveryApp.Controllers
     [Route("cart")]
     public class CartController : Controller
     {
-        private readonly ICartService _cartService;
-        private readonly IMenuItemRepository _menuItemRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<CartController> _logger;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ICurrentUserService _userManager;
 
-        public CartController(
-            ICartService cartService,
-            IMenuItemRepository menuItemRepository,
-            UserManager<ApplicationUser> userManager,
-            ILogger<CartController> logger)
+        public CartController(IUnitOfWork unitOfWork, ICurrentUserService userManager, ILogger<CartController> logger)
         {
-            _cartService = cartService;
-            _menuItemRepository = menuItemRepository;
-            _userManager = userManager;
-            _logger = logger;
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+
 
         // GET: Cart/Index
         [HttpGet]
         [Route("")]
         public async Task<IActionResult> Index()
         {
-            try
-            {
-                var user = await _userManager.GetUserAsync(User);
-                var cart = await _cartService.GetCartAsync(user.Id);
-                var cartItems = cart.Items.Select(item => new CartItemViewModel
-                {
-                    Id = item.Id,
-                    MenuItemId = item.MenuItemId,
-                    Quantity = item.Quantity,
-                    Name = item.MenuItem?.Name ?? "Unnamed Item",
-                    ImageUrl = item.MenuItem?.ImageUrl ?? "/images/placeholder-dish.jpg",
-                    Price = item.MenuItem?.Price ?? 0,
-                    RestaurantId = item.MenuItem?.RestaurantId ?? 0,
-                    RestaurantName = item.MenuItem?.Restaurant?.Name ?? "Unknown Restaurant",
-                    TaxRate = item.MenuItem?.Restaurant?.TaxRate ?? 0,
-                    DeliveryFee = item.MenuItem?.Restaurant?.DeliveryFee ?? 0,
-                    Customizations = item.Customizations?.Select(c => new CartItemCustomizationViewModel
-                    {
-                        OptionId = c.OptionId,
-                        ChoiceId = c.ChoiceId,
-                        Price = c.Price
-                    }).ToList() ?? new List<CartItemCustomizationViewModel>()
-                }).ToList();
+            var userId = _userManager.GetCurrentUserId();
+            var cart = await _unitOfWork.Carts.GetByUserIdAsync(userId);
 
-                var viewModel = new CartViewModel
-                {
-                    Items = cartItems,
-                    Subtotal = cartItems.Sum(item => (item.Price + (item.Customizations?.Sum(c => c.Price) ?? 0)) * item.Quantity),
-                    DeliveryFee = CalculateDeliveryFee(cartItems),
-                    Tax = CalculateTaxFee(cartItems),
-                    Total = cartItems.Sum(item => (item.Price + (item.Customizations?.Sum(c => c.Price) ?? 0)) * item.Quantity) +
-                           CalculateDeliveryFee(cartItems) + CalculateTaxFee(cartItems)
-                };
-
-                return View(viewModel);
-            }
-            catch (Exception ex)
+            if (cart == null)
             {
-                _logger.LogError(ex, "Error loading cart for user ID {UserId}", User.Identity?.Name);
-                TempData["ErrorMessage"] = "Unable to load your cart. Please try again later.";
-                return RedirectToAction("Index", "Home");
+                _logger.LogWarning("Cart not found for user {UserId}", userId);
+                return NotFound("Cart not found.");
             }
+
+            if (cart.IsEmpty)
+            {
+                return View(new CartViewModel(new List<CartItemViewModel>(), 0, 0, 0));
+            }
+
+            var deliveryFee = CalculateDeliveryFee(cart);
+            var tax = CalculateTaxFee(cart);
+            var total = CalculateTotal(cart, deliveryFee, tax);
+
+            var cartViewModel = new CartViewModel(
+                cart.Items.Select(x => new CartItemViewModel(x)).ToList(),
+                total,
+                deliveryFee,
+                tax);
+
+            return View(cartViewModel);
         }
 
         // POST: Cart/Add
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("add")]
-        public async Task<IActionResult> AddToCart(AddToCartViewModel model)
+        public async Task<IActionResult> AddToCart(int menuItemId, int quantity = 1)
         {
-            if (model == null || model.MenuItemId <= 0 || model.Quantity <= 0 || model.Quantity > 100)
-            {
-                _logger.LogWarning("Invalid add to cart data: {ModelData}, User={UserId}",
-                    model != null ? $"MenuItemId={model.MenuItemId}, Quantity={model.Quantity}" : "null model",
-                    User.Identity?.Name);
-                TempData["ErrorMessage"] = "Invalid item data or quantity.";
-                return RedirectToAction("Index");
-            }
-
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                var menuItem = await _menuItemRepository.GetByIdAsync(model.MenuItemId);
-
-                if (menuItem == null || !menuItem.IsAvailable)
+                // Validate input
+                if (quantity < 1 || quantity > 99)
                 {
-                    _logger.LogWarning("Attempted to add unavailable item to cart: MenuItemId={MenuItemId}, User={UserId}",
-                        model.MenuItemId, user.Id);
-                    TempData["ErrorMessage"] = "This item is no longer available.";
-                    return RedirectToAction("Details", "MenuItems", new { id = model.MenuItemId });
+                    _logger.LogWarning("Invalid quantity {Quantity} for menu item {MenuItemId}", quantity, menuItemId);
+                    return BadRequest(new { success = false, message = "Invalid quantity. Must be between 1 and 99." });
                 }
 
-               var castomizations = model.Customizations
-                    .Select(c => new CartItemCustomizationViewModel
-                    {
-                        OptionId = c.OptionId,
-                        ChoiceId = c.ChoiceId,
-                        Price = c.Price
-                    }).ToList();
+                var userId = _userManager.GetCurrentUserId();
+                if (userId == null) return Challenge();
 
-                var cartItem = new CartItemViewModel
+                var menuItem = await _unitOfWork.MenuItems.GetByIdAsync(menuItemId);
+                if (menuItem == null)
                 {
-                    MenuItemId = model.MenuItemId,
-                    Quantity = model.Quantity,
-                    Name = menuItem.Name,
-                    ImageUrl = menuItem.ImageUrl,
-                    RestaurantId = menuItem.RestaurantId,
-                    Customizations = castomizations
-                };
+                    _logger.LogWarning("Menu item not found. ID: {MenuItemId}", menuItemId);
+                    return NotFound(new { success = false, message = "Menu item not found." });
+                }
 
-                // Add item to cart
-                await _cartService.AddItemToCartAsync(user.Id, cartItem);
-                _logger.LogInformation("Added item {MenuItemId} to cart with quantity {Quantity} for user {UserId}",
-                    model.MenuItemId, model.Quantity, user.Id);
+                // Check if item is available
+                if (!menuItem.IsAvailable)
+                {
+                    _logger.LogWarning("Menu item {MenuItemId} is not available", menuItemId);
+                    return BadRequest(new { success = false, message = "This item is currently unavailable." });
+                }
 
-                TempData["SuccessMessage"] = $"{menuItem.Name} added to your cart.";
-                ViewBag.CartCount = await _cartService.GetCartItemCountAsync(user.Id);
-                return RedirectToAction("Details", "MenuItems", new { id = model.MenuItemId });
+                var cart = await _unitOfWork.Carts.AddItemToCartAsync(userId, menuItem, quantity);
+
+                if (cart == null)
+                {
+                    _logger.LogWarning("Error adding item to cart for user {UserId}", userId);
+                    return BadRequest(new { success = false, message = "Error adding item to cart." });
+                }
+
+                _logger.LogInformation("Item added to cart for user {UserId}", userId);
+
+                // Get cart summary data
+                var cartSummary = await CartSummary();
+                var cartSummaryViewModel = cartSummary as CartSummaryViewModel;
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Item added to cart successfully",
+                    cartItemCount = cart.Items.Count,
+                    restaurantId = menuItem.RestaurantId,
+                    cartSummaryViewModel = cartSummaryViewModel
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding item {MenuItemId} to cart for user {UserId}",
-                    model.MenuItemId, User.Identity?.Name);
-                TempData["ErrorMessage"] = "Failed to add item to cart. Please try again.";
-                return RedirectToAction("Details", "MenuItems", new { id = model.MenuItemId });
+                _logger.LogError(ex, "Error adding item to cart for user {UserId}", _userManager.GetCurrentUserId());
+                return StatusCode(500, new { success = false, message = "An error occurred while adding item to cart." });
             }
         }
 
@@ -146,29 +126,25 @@ namespace FoodDeliveryApp.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("update")]
-        public async Task<IActionResult> UpdateCartItem(int cartItemId, int quantity)
+        public async Task<IActionResult> UpdateQuantity(int cartItemId, int quantity)
         {
-            if (cartItemId <= 0 || quantity <= 0 || quantity > 100)
-            {
-                _logger.LogWarning("Invalid update data: CartItemId={CartItemId}, Quantity={Quantity}, User={UserId}", cartItemId, quantity, User.Identity?.Name);
-                TempData["ErrorMessage"] = "Invalid quantity or item data.";
-                return RedirectToAction("Index");
-            }
-
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                await _cartService.UpdateItemQuantityAsync(user.Id, cartItemId, quantity);
-                _logger.LogInformation("Updated cart item {CartItemId} to quantity {Quantity} for user {UserId}", cartItemId, quantity, user.Id);
-                TempData["SuccessMessage"] = "Cart item quantity updated.";
-                ViewBag.CartCount = await _cartService.GetCartItemCountAsync(user.Id);
-                return RedirectToAction("Index");
+
+                var userId = _userManager.GetCurrentUserId();
+                if (userId == null) return Challenge();
+
+                var cart = await _unitOfWork.Carts.UpdateCartItemQuantityAsync(userId, cartItemId, quantity);
+
+                _logger.LogInformation("Quantity for cart item {CartItemId} updated for user {UserId}", cartItemId, userId);
+                TempData["Success"] = "Item quantity updated successfully.";
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating cart item {CartItemId} for user {UserId}", cartItemId, User.Identity?.Name);
-                TempData["ErrorMessage"] = "Failed to update cart item.";
-                return RedirectToAction("Index");
+                _logger.LogError(ex, "Error updating quantity for cart item {CartItemId}", cartItemId);
+                TempData["Error"] = "An error occurred while updating the item quantity.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
@@ -178,27 +154,23 @@ namespace FoodDeliveryApp.Controllers
         [Route("remove")]
         public async Task<IActionResult> RemoveFromCart(int cartItemId)
         {
-            if (cartItemId <= 0)
-            {
-                _logger.LogWarning("Invalid remove data: CartItemId={CartItemId}, User={UserId}", cartItemId, User.Identity?.Name);
-                TempData["ErrorMessage"] = "Invalid item data.";
-                return RedirectToAction("Index");
-            }
-
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                await _cartService.RemoveItemFromCartAsync(user.Id, cartItemId);
-                _logger.LogInformation("Removed cart item {CartItemId} from cart for user {UserId}", cartItemId, user.Id);
-                TempData["SuccessMessage"] = "Item removed from cart.";
-                ViewBag.CartCount = await _cartService.GetCartItemCountAsync(user.Id);
-                return RedirectToAction("Index");
+                var userId = _userManager.GetCurrentUserId();
+                if (userId == null) return Challenge();
+
+                var cart = await _unitOfWork.Carts.RemoveItemFromCartAsync(userId, cartItemId);
+
+                _logger.LogInformation("Cart item {CartItemId} removed from cart for user {UserId}",
+                    cartItemId, userId);
+                TempData["Success"] = "Item removed from cart successfully.";
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error removing cart item {CartItemId} for user {UserId}", cartItemId, User.Identity?.Name);
-                TempData["ErrorMessage"] = "Failed to remove item from cart.";
-                return RedirectToAction("Index");
+                _logger.LogError(ex, "Error removing cart item {CartItemId}", cartItemId);
+                TempData["Error"] = "An error occurred while removing the item from your cart.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
@@ -210,18 +182,27 @@ namespace FoodDeliveryApp.Controllers
         {
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                await _cartService.ClearCartAsync(user.Id);
-                _logger.LogInformation("Cleared cart for user {UserId}", user.Id);
-                TempData["SuccessMessage"] = "Cart cleared successfully.";
-                ViewBag.CartCount = await _cartService.GetCartItemCountAsync(user.Id);
-                return RedirectToAction("Index");
+                var userId = _userManager.GetCurrentUserId();
+                if (userId == null) return Challenge();
+
+                var cart = await _unitOfWork.Carts.GetByUserIdAsync(userId);
+                if (cart == null)
+                {
+                    _logger.LogWarning("Cart not found for user {UserId}", userId);
+                    return NotFound("Cart not found.");
+                }
+
+                await _unitOfWork.Carts.ClearCartItemsAsync(cart.Id);
+
+                _logger.LogInformation("Cart cleared for user {UserId}", userId);
+                TempData["Success"] = "Cart cleared successfully.";
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error clearing cart for user {UserId}", User.Identity?.Name);
-                TempData["ErrorMessage"] = "Failed to clear cart.";
-                return RedirectToAction("Index");
+                _logger.LogError(ex, "Error clearing cart");
+                TempData["Error"] = "An error occurred while clearing your cart.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
@@ -233,10 +214,19 @@ namespace FoodDeliveryApp.Controllers
         {
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                if(user == null) return PartialView("_CartSummary", 0);
-                var count = await _cartService.GetCartItemCountAsync(user.Id);
-                return PartialView("_CartSummary", count);
+                var userId = _userManager.GetCurrentUserId();
+                if (userId == null) return PartialView("_CartSummary", 0);
+                var cart = await _unitOfWork.Carts.GetByUserIdAsync(userId);
+
+                if (cart == null) return PartialView("_CartSummary", 0);
+
+                var deliveryFee = CalculateDeliveryFee(cart);
+                var tax = CalculateTaxFee(cart);
+                var total = CalculateTotal(cart, deliveryFee, tax);
+
+                var ItemCount = cart.Items.Count();
+                var Total = CalculateTotal(cart, deliveryFee, tax);
+                return PartialView("_CartSummary", new CartSummaryViewModel { ItemCount = ItemCount, Total = Total });
             }
             catch (Exception ex)
             {
@@ -245,30 +235,73 @@ namespace FoodDeliveryApp.Controllers
             }
         }
 
-        // Calculate delivery fee from unique restaurants
-        private decimal CalculateDeliveryFee(List<CartItemViewModel> cartItems)
+        // POST: Cart/ApplyPromoCode
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("Cart/ApplyPromoCode/{promoCode}")]
+        public async Task<IActionResult> ApplyPromoCode(string promoCode)
         {
-            if (!cartItems.Any())
+            var userId = _userManager.GetCurrentUserId();
+            if (userId == null) return BadRequest("Invalid user.");
+            try
             {
-                return 0;
+                var cart = await _unitOfWork.Carts.GetByUserIdAsync(userId);
+                if (cart == null) return BadRequest("Cart not found.");
+                var promo = await _unitOfWork.Promotions.GetByCodeAsync(promoCode);
+                if (promo == null)
+                {
+                    _logger.LogWarning("Invalid promotion code {PromoCode}", promoCode);
+                    return BadRequest("Invalid promotion code.");
+                }
+                var discountAmount = promo.CalculateDiscountAmount(cart.Subtotal);
+                cart.PromotionCode = promoCode;
+                cart.IsPromotionApplied = true;
+                cart.PromotionCodeExpiration = promo.ValidUntil;
+                cart.LastModifiedAt = DateTime.UtcNow;
+                cart.TotalWithDiscount = cart.Items.Sum(x => x.Subtotal) - discountAmount;
+
+                await _unitOfWork.Carts.UpdateAsync(cart);
+                _logger.LogInformation("Promotion code {PromoCode} applied to cart for user {UserId}", promoCode, userId);
+                return Json(new { success = true, discountAmount = discountAmount });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error applying promotion code {PromoCode} to cart for user {UserId}", promoCode, userId);
+                return BadRequest("An error occurred while applying the promotion code.");
             }
 
-            var uniqueRestaurantIds = cartItems.Select(item => item.RestaurantId).Distinct();
-            return uniqueRestaurantIds.Sum(id => cartItems.First(item => item.RestaurantId == id).DeliveryFee);
+        }
+
+        // Calculate delivery fee from unique restaurants
+        private decimal CalculateDeliveryFee(Cart cart)
+        {
+            var uniqueRestaurants = cart.Items.Select(item => item.RestaurantId).Distinct().ToList();
+            var deliveryFee = 0m;
+            foreach (var restaurant in uniqueRestaurants)
+            {
+                deliveryFee += cart.Items.Where(item => item.RestaurantId == restaurant).Sum(item => item.Restaurant.DeliveryFee);
+            }
+            return deliveryFee;
         }
 
         // Calculate tax fee
-        private decimal CalculateTaxFee(List<CartItemViewModel> cartItems)
+        private decimal CalculateTaxFee(Cart cart)
         {
-            if (!cartItems.Any())
+            var taxFee = 0m;
+            foreach (var item in cart.Items)
             {
-                return 0;
+                taxFee += item.MenuItem.Price * item.MenuItem.Restaurant.TaxRate / 100;
             }
-
-            // Assume tax rate is consistent within a restaurant; use the first item's tax rate
-            var taxRate = cartItems.FirstOrDefault()?.TaxRate ?? 0;
-            var subtotal = cartItems.Sum(item => (item.Price + (item.Customizations?.Sum(c => c.Price) ?? 0)) * item.Quantity);
-            return subtotal * taxRate / 100;
+            return taxFee;
         }
+
+        // Calculate total
+        private decimal CalculateTotal(Cart cart, decimal deliveryFee, decimal tax)
+        {
+            var itemsTotal = cart.Items.Sum(item => item.MenuItem.Price * item.Quantity);
+            return itemsTotal + deliveryFee + tax;
+        }
+
+
     }
 }

@@ -1,0 +1,119 @@
+@model FoodDeliveryApp.ViewModels.Order.OrderConfirmationViewModel
+
+@{
+    ViewData["Title"] = "Order Confirmation";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm rounded-4" data-aos="fade-up">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 fw-bold mb-0">Order Confirmation</h1>
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Orders
+                        </a>
+                    </div>
+
+                    <div class="text-center py-5">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h3 class="h5 fw-bold mb-2">Order Placed Successfully</h3>
+                        <p class="text-muted mb-4">Your order has been placed and is being processed.</p>
+                        <a asp-action="Details" asp-route-id="@Model.OrderId"
+                            class="btn btn-primary rounded-pill px-4">
+                            <i class="fas fa-eye me-2"></i>View Order Details
+                        </a>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light rounded-4">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title mb-4">Order Information</h5>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Order ID</span>
+                                        <span class="fw-bold">#@Model.OrderId</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Status</span>
+                                        <span class="badge bg-primary rounded-pill">@Model.Status</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Created At</span>
+                                        <span class="fw-bold">@Model.CreatedAt.ToString("MMM dd, yyyy")</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Total</span>
+                                        <span class="fw-bold">$@Model.TotalPrice.ToString("F2")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light rounded-4">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title mb-4">Delivery Information</h5>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Address</span>
+                                        <span class="fw-bold">@Model.DeliveryAddress</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted">Payment Method</span>
+                                        <span class="fw-bold">@Model.PaymentMethod</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="card border-0 bg-light rounded-4">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title mb-4">Order Items</h5>
+                                    @foreach (var item in Model.OrderItems)
+                                    {
+                                        <div class="card border-0 bg-white rounded-4 mb-3 shadow-sm" data-aos="fade-up">
+                                            <div class="card-body p-4">
+                                                <div class="row g-3 align-items-center">
+                                                    <div class="col-md-2 col-3">
+                                                        <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/default-menu-item.png" : item.ImageUrl)" 
+                                                             alt="@item.Name" class="rounded-3 img-fluid"
+                                                             style="width: 100%; height: 80px; object-fit: cover;">
+                                                    </div>
+                                                    <div class="col-md-6 col-9">
+                                                        <h6 class="fw-bold mb-1">@item.Name</h6>
+                                                        <p class="text-muted small mb-2">@item.Restaurant.Name</p>
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="fw-bold mx-2">@item.Quantity</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2 text-end d-none d-md-block">
+                                                        <div class="fw-bold text-primary mb-2">
+                                                            $@((item.Price * item.Quantity).ToString("F2"))
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+    </script>
+} 

@@ -1,0 +1,128 @@
+@model FoodDeliveryApp.ViewModels.Category.CategoryEditViewModel
+@{
+    ViewData["Title"] = "Edit Category";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm rounded-4" data-aos="fade-up">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 class="h3 fw-bold mb-0">Edit Category</h1>
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Categories
+                        </a>
+                    </div>
+
+                    <form asp-action="Edit" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-4 mb-4" role="alert"></div>
+                        <input type="hidden" asp-for="Id" />
+
+                        <div class="row g-4">
+                            <!-- Category Image -->
+                            <div class="col-md-4">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body text-center p-4">
+                                        <div class="position-relative mb-3">
+                                            <img id="imagePreview"
+                                                src="@(string.IsNullOrEmpty(Model.CurrentImageUrl) ? "/images/default-category.png" : Model.CurrentImageUrl)"
+                                                 alt="@Model.Name" class="rounded-3 img-thumbnail"
+                                                 style="width: 100%; height: 200px; object-fit: cover;">
+                                            <div class="position-absolute bottom-0 end-0 p-2">
+                                                <label for="ImageFile" class="btn btn-primary btn-sm rounded-circle shadow-sm">
+                                                    <i class="fas fa-camera"></i>
+                                                </label>
+                                                <input type="file" id="ImageFile" name="ImageFile" class="d-none" accept="image/*">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted d-block">Recommended size: 800x600 pixels</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Category Information -->
+                            <div class="col-md-8">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title mb-4">Category Information</h5>
+
+                                        <div class="mb-3">
+                                            <label asp-for="Name" class="form-label fw-bold">Name</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-light border-end-0">
+                                                    <i class="fas fa-tag text-muted"></i>
+                                                </span>
+                                                <input asp-for="Name" class="form-control border-start-0" placeholder="Enter category name">
+                                            </div>
+                                            <span asp-validation-for="Name" class="text-danger"></span>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label asp-for="Description" class="form-label fw-bold">Description</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-light border-end-0">
+                                                    <i class="fas fa-align-left text-muted"></i>
+                                                </span>
+                                                <textarea asp-for="Description" class="form-control border-start-0" rows="4" 
+                                                          placeholder="Enter category description"></textarea>
+                                            </div>
+                                            <span asp-validation-for="Description" class="text-danger"></span>
+                                        </div>
+
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize AOS animations
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+
+        // Image preview functionality
+        document.getElementById('ImageFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('imagePreview').src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Form validation
+        (function() {
+            'use strict';
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
+}

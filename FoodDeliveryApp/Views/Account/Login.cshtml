@@ -1,109 +1,200 @@
 ﻿@model FoodDeliveryApp.ViewModels.Account.LoginViewModel
+
 @{
-    ViewData["Title"] = "Login";
-    Layout = "~/Views/Shared/_LayoutAccount.cshtml";
+    ViewData["Title"] = "Welcome Back";
+    ViewData["Subtitle"] = "Sign in to continue to your account";
+    Layout = "_LayoutAccount";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow-lg border-0 animate__animated animate__fadeInUp">
-            <div class="card-body p-4">
-                <h2 class="text-center mb-4">
-                    <i class="fas fa-sign-in-alt me-2 text-primary"></i>@ViewData["Title"]
-                </h2>
+<div class="login-form">
+    <form asp-action="Login" method="post" class="needs-validation" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-                <form asp-action="Login" method="post" id="loginForm" class="needs-validation" novalidate>
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" role="alert"></div>
-
-                    <div class="mb-4">
-                        <label asp-for="Email" class="form-label">Email Address</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-envelope"></i>
-                            </span>
-                            <input asp-for="Email" class="form-control" placeholder="Enter your email"
-                                   aria-label="Email" aria-describedby="email-validation" />
-                        </div>
-                        <span asp-validation-for="Email" class="text-danger" id="email-validation"></span>
-                    </div>
-
-                    <div class="mb-4">
-                        <label asp-for="Password" class="form-label">Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-lock"></i>
-                            </span>
-                            <input asp-for="Password" class="form-control" placeholder="Enter your password"
-                                   aria-label="Password" aria-describedby="password-validation" />
-                            <button class="btn btn-outline-secondary" type="button" id="togglePassword"
-                                    aria-label="Toggle password visibility">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        <span asp-validation-for="Password" class="text-danger" id="password-validation"></span>
-                    </div>
-
-                    <div class="mb-4 form-check">
-                        <input asp-for="RememberMe" class="form-check-input" />
-                        <label asp-for="RememberMe" class="form-check-label">Remember me</label>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg" id="loginButton">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            <i class="fas fa-sign-in-alt me-2"></i>Login
-                        </button>
-                    </div>
-
-                    <div class="text-center mt-4">
-                        <p class="mb-0">Don't have an account? <a href="/Account/Register" class="text-primary fw-bold">Register here</a></p>
-                        <p class="mt-2">
-                            <a href="/Account/ForgotPassword" class="text-muted">
-                                <i class="fas fa-key me-1"></i>Forgot your password?
-                            </a>
-                        </p>
-                    </div>
-                </form>
+        <div class="form-group">
+            <label asp-for="Email" class="form-label">Email Address</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-envelope"></i>
+                </span>
+                <input asp-for="Email" class="form-control" type="email" placeholder="Enter your email" required />
             </div>
+            <span asp-validation-for="Email" class="text-danger"></span>
         </div>
+
+        <div class="form-group">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <label asp-for="Password" class="form-label mb-0">Password</label>
+                <a asp-action="ForgotPassword" class="forgot-password">Forgot password?</a>
+            </div>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-lock"></i>
+                </span>
+                <input asp-for="Password" class="form-control" type="password" placeholder="Enter your password" required />
+                <button type="button" class="password-toggle-btn" onclick="togglePassword('Password')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <div class="form-check mb-4">
+            <input asp-for="RememberMe" class="form-check-input" />
+            <label asp-for="RememberMe" class="form-check-label">Keep me signed in</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg">
+            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+        </button>
+
+        <div class="divider">
+            <span>or continue with</span>
+        </div>
+
+        <div class="social-login">
+            <a asp-action="ExternalLogin" asp-route-provider="Google" class="btn btn-social btn-google">
+                <i class="fab fa-google"></i>
+                <span>Google</span>
+            </a>
+            <a asp-action="ExternalLogin" asp-route-provider="Facebook" class="btn btn-social btn-facebook">
+                <i class="fab fa-facebook-f"></i>
+                <span>Facebook</span>
+            </a>
+        </div>
+    </form>
+
+    <div class="account-links">
+        <p class="text-center mb-0">
+            Don't have an account? 
+            <a asp-action="Register" class="text-primary">Create an account</a>
+        </p>
     </div>
 </div>
 
+@section Styles {
+    <style>
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .forgot-password {
+            color: var(--primary-color);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .forgot-password:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+
+        .password-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.625rem 0.875rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--primary-color);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: var(--text-muted);
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .divider span {
+            padding: 0 1rem;
+            font-size: 0.875rem;
+        }
+
+        .social-login {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-social {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: var(--background-color);
+            color: var(--text-color);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-social:hover {
+            background: var(--secondary-color);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+
+        .btn-google i {
+            color: #DB4437;
+        }
+
+        .btn-facebook i {
+            color: #4267B2;
+        }
+
+        .account-links {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .account-links a {
+            color: var(--primary-color);
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .account-links a:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+
+        @@media (max-width: 480px) {
+            .social-login {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
     <script>
-        $(document).ready(function() {
-            // Toggle password visibility
-            $('#togglePassword').click(function() {
-                const passwordInput = $('#Password');
-                const icon = $(this).find('i');
-                
-                if (passwordInput.attr('type') === 'password') {
-                    passwordInput.attr('type', 'text');
-                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
-                } else {
-                    passwordInput.attr('type', 'password');
-                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
-                }
-            });
-
-            // Form submission handling
-            $('#loginForm').on('submit', function() {
-                if ($(this).valid()) {
-                    const button = $('#loginButton');
-                    const spinner = button.find('.spinner-border');
-                    const icon = button.find('.fas');
-                    
-                    button.prop('disabled', true);
-                    spinner.removeClass('d-none');
-                    icon.addClass('d-none');
-                }
-            });
-
-            // Enhanced validation feedback
-            $('input').on('input', function() {
-                $(this).valid();
-            });
+        // Auto-focus first input
+        document.addEventListener('DOMContentLoaded', function () {
+            const firstInput = document.querySelector('input[type="email"]');
+            if (firstInput) {
+                firstInput.focus();
+            }
         });
     </script>
 }

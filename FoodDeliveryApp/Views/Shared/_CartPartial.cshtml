@@ -1,0 +1,86 @@
+@using FoodDeliveryApp.Services
+@using FoodDeliveryApp.Services.Interfaces
+@inject ICartService CartService
+@inject ICurrentUserService CurrentUserService
+
+<div class="cart-wrapper position-relative me-3">
+    <a href="@Url.Action("Index", "Cart")" class="cart-link">
+        <i class="fas fa-shopping-cart fa-lg"></i>
+        @{
+            var itemCount = 0;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                try
+                {
+                    var userId = CurrentUserService.GetCurrentUserId();
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        var cart = await CartService.GetCartAsync(userId);
+                        itemCount = cart?.Items?.Count ?? 0;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Log error if needed
+                    itemCount = 0;
+                }
+            }
+        }
+        @if (itemCount > 0)
+        {
+            <span class="cart-badge">@itemCount</span>
+        }
+    </a>
+</div>
+
+<style>
+    .cart-wrapper {
+        display: inline-block;
+    }
+
+    .cart-link {
+        color: var(--text);
+        text-decoration: none;
+        transition: var(--transition-fast);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .cart-link:hover {
+        color: var(--primary);
+    }
+
+    .cart-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: var(--primary);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+        min-width: 1.5rem;
+        text-align: center;
+        animation: pulse 1.5s infinite;
+    }
+
+    @@eyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .cart-wrapper {
+            margin-right: 0.5rem !important;
+        }
+    }
+</style> 

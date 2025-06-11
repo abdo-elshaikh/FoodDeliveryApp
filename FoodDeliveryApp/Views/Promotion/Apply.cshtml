@@ -1,0 +1,84 @@
+@model FoodDeliveryApp.ViewModels.Promotion.ApplyPromotionViewModel
+
+@{ Layout = "_Layout"; }
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Apply Promotion Code</h3>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Apply" method="post" id="promotionForm">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Code" class="control-label"></label>
+                            <div class="input-group">
+                                <input asp-for="Code" class="form-control" placeholder="Enter promotion code" />
+                                <button type="submit" class="btn btn-primary">Apply</button>
+                            </div>
+                            <span asp-validation-for="Code" class="text-danger"></span>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.Message))
+                        {
+                            <div class="alert @(Model.IsValid ? "alert-success" : "alert-danger")">
+                                @Model.Message
+                            </div>
+                        }
+
+                        @if (Model.IsValid)
+                        {
+                            <div class="card mt-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Order Total:</span>
+                                        <span>$@Model.OrderTotal.ToString("F2")</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Discount:</span>
+                                        <span class="text-success">-$@Model.DiscountAmount.ToString("F2")</span>
+                                    </div>
+                                    <hr />
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Final Total:</strong>
+                                        <strong>$@Model.FinalTotal.ToString("F2")</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ Layout = "_Layout"; }
+    <script>
+        $(document).ready(function () {
+            $('#promotionForm').on('submit', function (e) {
+                e.preventDefault();
+                $.post($(this).attr('action'), $(this).serialize(), function (result) {
+                    if (result.isValid) {
+                        $('.alert').removeClass('alert-danger').addClass('alert-success');
+                    } else {
+                        $('.alert').removeClass('alert-success').addClass('alert-danger');
+                    }
+                    $('.alert').text(result.message).show();
+                    if (result.isValid) {
+                        $('.card.mt-3').show();
+                        $('.order-total').text('$' + result.orderTotal.toFixed(2));
+                        $('.discount-amount').text('$' + result.discountAmount.toFixed(2));
+                        $('.final-total').text('$' + result.finalTotal.toFixed(2));
+                    } else {
+                        $('.card.mt-3').hide();
+                    }
+                });
+            });
+        });
+    </script>
+} 

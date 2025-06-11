@@ -1,0 +1,54 @@
+@{
+    var success = TempData["Success"] as string;
+    var error = TempData["Error"] as string;
+    var info = TempData["Info"] as string;
+    var warning = TempData["Warning"] as string;
+}
+
+@if (!string.IsNullOrEmpty(success) || !string.IsNullOrEmpty(error) || !string.IsNullOrEmpty(info) || !string.IsNullOrEmpty(warning))
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            @if (!string.IsNullOrEmpty(success))
+            {
+                <text>
+                showToast(@Html.Raw(Json.Serialize(success)), 'success', {
+                    duration: 5000,
+                    closeable: true,
+                    progress: true
+                });
+                </text>
+            }
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <text>
+                showToast(@Html.Raw(Json.Serialize(error)), 'error', {
+                    duration: 6000,
+                    closeable: true,
+                    progress: true
+                });
+                </text>
+            }
+            @if (!string.IsNullOrEmpty(info))
+            {
+                <text>
+                showToast(@Html.Raw(Json.Serialize(info)), 'info', {
+                    duration: 4000,
+                    closeable: true,
+                    progress: true
+                });
+                </text>
+            }
+            @if (!string.IsNullOrEmpty(warning))
+            {
+                <text>
+                showToast(@Html.Raw(Json.Serialize(warning)), 'warning', {
+                    duration: 5000,
+                    closeable: true,
+                    progress: true
+                });
+                </text>
+            }
+        });
+    </script>
+}

@@ -1,460 +1,250 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using FoodDeliveryApp.Models;
-using FoodDeliveryApp.Repositories.Interfaces;
-using FoodDeliveryApp.Services;
-using FoodDeliveryApp.ViewModels.Address;
-using FoodDeliveryApp.ViewModels.OrderViewModels;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using FoodDeliveryApp.Models;
+using FoodDeliveryApp.Services.Interfaces;
+using FoodDeliveryApp.ViewModels.Order;
+using FoodDeliveryApp.ViewModels.Address;
+using Microsoft.Extensions.Caching.Memory;
+using System.Security.Claims;
 
 namespace FoodDeliveryApp.Controllers
 {
     [Authorize]
+    [Route("orders")]
     public class OrderController : Controller
     {
-        private readonly IOrderRepository _orderRepository;
-        private readonly ICartService _cartService;
-        private readonly IMenuItemRepository _menuItemRepository;
-        private readonly IRestaurantRepository _restaurantRepository;
-        private readonly IRepository<PaymentMethod> _paymentMethodRepository;
-        private readonly IPaymentService _paymentService;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IConfiguration _configuration;
+        private readonly IOrderService _orderService;
         private readonly ILogger<OrderController> _logger;
-        private readonly IAddressRepository _addressRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMemoryCache _cache;
+        private readonly IAddressService _addressService;
+        private readonly ICartService _cartService;
+        private const int CACHE_DURATION_MINUTES = 5;
 
         public OrderController(
-            IOrderRepository orderRepository,
-            ICartService cartService,
-            IMenuItemRepository menuItemRepository,
-            IRestaurantRepository restaurantRepository,
-            IRepository<PaymentMethod> paymentMethodRepository,
-            IPaymentService paymentService,
-            UserManager<ApplicationUser> userManager,
-            IConfiguration configuration,
-            IAddressRepository addressRepository,
-            IUnitOfWork unitOfWork,
-            ILogger<OrderController> logger)
+            IOrderService orderService,
+            ILogger<OrderController> logger,
+            IMemoryCache cache,
+            IAddressService addressService,
+            ICartService cartService)
         {
-            _orderRepository = orderRepository;
-            _cartService = cartService;
-            _menuItemRepository = menuItemRepository;
-            _restaurantRepository = restaurantRepository;
-            _paymentMethodRepository = paymentMethodRepository;
-            _paymentService = paymentService;
-            _userManager = userManager;
-            _configuration = configuration;
+            _orderService = orderService;
             _logger = logger;
-            _addressRepository = addressRepository;
-            _unitOfWork = unitOfWork;
+            _cache = cache;
+            _addressService = addressService;
+            _cartService = cartService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Checkout()
+        [Route("")]
+        public async Task<IActionResult> Index(
+            string searchTerm = null!,
+            OrderStatus? status = null,
+            DateTime? date = null,
+            string sortBy = "OrderDate",
+            string sortOrder = "desc",
+            int page = 1)
         {
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null) return Challenge();
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var isAdmin = User.IsInRole("Admin");
+                var isRestaurantOwner = User.IsInRole("Owner");
 
-                var cart = await _cartService.GetCartAsync(user.Id);
-                if (cart == null || !cart.Items.Any())
+                var cacheKey = $"orders_{userId}_{searchTerm}_{status}_{date}_{sortBy}_{sortOrder}_{page}";
+                if (!_cache.TryGetValue(cacheKey, out PaginatedList<Order> orders))
                 {
-                    TempData["ErrorMessage"] = "Your cart is empty.";
-                    return RedirectToAction("Index", "Cart");
+                    orders = await _orderService.SearchOrdersAsync(
+                        searchTerm: searchTerm,
+                        statusFilter: status?.ToString(),
+                        startDate: date,
+                        endDate: date?.AddDays(1),
+                        page: page,
+                        pageSize: 10,
+                        sortBy: sortBy,
+                        sortOrder: sortOrder);
+
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                    _cache.Set(cacheKey, orders, cacheOptions);
                 }
 
-                var addresses = await _addressRepository.GetUserAddressesAsync(user.Id);
-                var paymentMethods = await _paymentMethodRepository.GetAllAsync();
-                var restaurantId = cart.Items.First().MenuItem.RestaurantId;
-                var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
-
-                var cartItemsViewModel = cart.Items.Select(item => new OrderItemViewModel
+                var viewModel = new OrderListViewModel
                 {
-                    Id = item.Id,
-                    MenuItemId = item.MenuItemId,
-                    Name = item.MenuItem.Name,
-                    Price = item.MenuItem.Price,
-                    Quantity = item.Quantity,
-                    ImageUrl = item.MenuItem.ImageUrl ?? "/images/placeholder-dish.jpg",
-                    Customizations = item.Customizations?.Select(c => new OrderCustomizationViewModel
+                    Orders = orders.Items.Select(o => new OrderSummaryViewModel
                     {
-                        Id = c.Id,
-                        OptionId = c.OptionId,
-                        ChoiceId = c.ChoiceId,
-                        Name = c.Option?.Name ?? "N/A",
-                        Choice = c.Choice?.Name ?? "N/A",
-                        Price = c.Price
-                    }).ToList() ?? new List<OrderCustomizationViewModel>()
-                }).ToList();
-
-                decimal subtotal = cartItemsViewModel.Sum(item => item.Price * item.Quantity + item.Customizations.Sum(c => c.Price * item.Quantity));
-                decimal deliveryFee = restaurant?.DeliveryFee ?? 5.0m;
-                decimal taxRate = 0.1m;
-                decimal tax = subtotal * taxRate;
-                decimal discount = 0; // TODO: Implement promo code logic
-                decimal total = subtotal + deliveryFee + tax - discount;
-
-                var viewModel = new OrderCreateViewModel
-                {
-                    RestaurantId = restaurantId,
-                    RestaurantName = restaurant?.Name ?? "N/A",
-                    CartItems = cartItemsViewModel,
-                    Subtotal = subtotal,
-                    Tax = tax,
-                    DeliveryFee = deliveryFee,
-                    Discount = discount,
-                    Total = total,
-                    AddressOptions = addresses.Select(a => new SelectListItem
-                    {
-                        Value = a.Id.ToString(),
-                        Text = $"{a.Street}, {a.City}, {a.State} {a.PostalCode}"
-                    }),
-                    PaymentMethodOptions = paymentMethods.Select(pm => new SelectListItem
-                    {
-                        Value = pm.Id.ToString(),
-                        Text = pm.Provider.ToString()
-                    })
+                        OrderId = o.Id,
+                        OrderNumber = o.OrderNumber,
+                        CreatedAt = o.OrderDate,
+                        Status = o.Status,
+                        CustomerName = o.User.FullName,
+                        CustomerEmail = o.User.Email,
+                        TotalAmount = o.Total,
+                        PaymentMethod = o.PaymentMethod,
+                        CanBeCancelled = o.Status != OrderStatus.Delivered && 
+                                       o.Status != OrderStatus.Canceled &&
+                                       (DateTime.UtcNow - o.OrderDate).TotalMinutes <= 30,
+                        RestaurantGroups = o.OrderItems
+                            .GroupBy(i => i.RestaurantId)
+                            .Select(g => new RestaurantOrderGroup
+                            {
+                                RestaurantId = g.Key,
+                                RestaurantName = g.First().Restaurant.Name,
+                                Items = g.Select(i => new OrderItemViewModel
+                                {
+                                    MenuItemId = i.MenuItemId,
+                                    Name = i.MenuItem.Name,
+                                    ImageUrl = i.MenuItem.ImageUrl,
+                                    Quantity = i.Quantity,
+                                    Price = i.Price,
+                                    Subtotal = i.Price * i.Quantity,
+                                    SpecialInstructions = i.SpecialInstructions,
+                                    Status = i.Status
+                                }).ToList(),
+                                Subtotal = g.Sum(i => i.Price * i.Quantity),
+                                Status = g.All(i => i.Status == OrderItemStatus.Delivered) 
+                                    ? OrderItemStatus.Delivered 
+                                    : g.Any(i => i.Status == OrderItemStatus.Preparing) 
+                                        ? OrderItemStatus.Preparing 
+                                        : OrderItemStatus.Pending
+                            }).ToList()
+                    }).ToList(),
+                    SearchTerm = searchTerm,
+                    Status = status,
+                    Date = date,
+                    SortBy = sortBy,
+                    SortOrder = sortOrder,
+                    CurrentPage = page,
+                    TotalPages = orders.TotalPages,
+                    IsAdmin = isAdmin,
+                    IsRestaurantOwner = isRestaurantOwner
                 };
 
                 return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading checkout page for user {UserId}", User.Identity?.Name);
-                TempData["ErrorMessage"] = "An error occurred while loading checkout.";
-                return RedirectToAction("Index", "Cart");
+                _logger.LogError(ex, "Error retrieving orders");
+                TempData["Error"] = "An error occurred while retrieving orders.";
+                return View(new OrderListViewModel());
             }
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Checkout(OrderCreateViewModel model)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Challenge();
-
-            if (!ModelState.IsValid)
-            {
-                var addresses = await _addressRepository.GetUserAddressesAsync(user.Id);
-                var paymentMethods = await _paymentMethodRepository.GetAllAsync();
-                model.AddressOptions = addresses.Select(a => new SelectListItem
-                {
-                    Value = a.Id.ToString(),
-                    Text = $"{a.Street}, {a.City}, {a.State} {a.PostalCode}"
-                });
-                model.PaymentMethodOptions = paymentMethods.Select(pm => new SelectListItem
-                {
-                    Value = pm.Id.ToString(),
-                    Text = pm.Provider.ToString()
-                });
-                var cart = await _cartService.GetCartAsync(user.Id);
-                if (cart != null && cart.Items.Any())
-                {
-                    model.CartItems = cart.Items.Select(item => new OrderItemViewModel
-                    {
-                        Id = item.Id,
-                        MenuItemId = item.MenuItemId,
-                        Name = item.MenuItem.Name,
-                        Price = item.MenuItem.Price,
-                        Quantity = item.Quantity,
-                        ImageUrl = item.MenuItem.ImageUrl ?? "/images/placeholder-dish.jpg",
-                        Customizations = item.Customizations?.Select(c => new OrderCustomizationViewModel
-                        {
-                            Id = c.Id,
-                            OptionId = c.OptionId,
-                            ChoiceId = c.ChoiceId,
-                            Name = c.Option?.Name ?? "N/A",
-                            Choice = c.Choice?.Name ?? "N/A",
-                            Price = c.Price
-                        }).ToList() ?? new List<OrderCustomizationViewModel>()
-                    }).ToList();
-
-                    decimal subtotal = model.CartItems.Sum(item => item.Price * item.Quantity + item.Customizations.Sum(c => c.Price * item.Quantity));
-                    var restaurant = await _restaurantRepository.GetByIdAsync(model.RestaurantId);
-                    decimal deliveryFee = restaurant?.DeliveryFee ?? 5.0m;
-                    decimal taxRate = 0.1m;
-                    decimal tax = subtotal * taxRate;
-                    decimal discount = 0; // TODO: Implement promo code logic
-                    model.Subtotal = subtotal;
-                    model.Tax = tax;
-                    model.DeliveryFee = deliveryFee;
-                    model.Discount = discount;
-                    model.Total = subtotal + deliveryFee + tax - discount;
-                    model.RestaurantName = restaurant?.Name ?? "N/A";
-                }
-                return View(model);
-            }
-
-            try
-            {
-                var cart = await _cartService.GetCartAsync(user.Id);
-                if (cart == null || !cart.Items.Any())
-                {
-                    TempData["ErrorMessage"] = "Your cart is empty or session expired.";
-                    return RedirectToAction("Index", "Cart");
-                }
-
-                var restaurant = await _restaurantRepository.GetByIdAsync(model.RestaurantId);
-                var deliveryAddress = await _addressRepository.GetByIdAsync(model.AddressId);
-                var paymentMethod = await _paymentMethodRepository.GetByIdAsync(model.PaymentMethodId);
-
-                if (restaurant == null || deliveryAddress == null || paymentMethod == null)
-                {
-                    TempData["ErrorMessage"] = "Invalid restaurant, address, or payment method selected.";
-                    return View(model);
-                }
-
-                var order = new Order
-                {
-                    UserId = user.Id,
-                    RestaurantId = model.RestaurantId,
-                    OrderDate = DateTime.UtcNow,
-                    Status = OrderStatus.Placed,
-                    Subtotal = model.Subtotal,
-                    DeliveryFee = model.DeliveryFee,
-                    Tax = model.Tax,
-                    Total = model.Total,
-                    DeliveryAddressId = model.AddressId,
-                    SpecialInstructions = model.SpecialRequests,
-                    PaymentMethodType = paymentMethod.Type,
-                    PaymentDetails = paymentMethod.Type == PaymentMethodType.CashOnDelivery
-                        ? "Cash on Delivery"
-                        : $"{paymentMethod.Provider} ending in {paymentMethod.AccountNumberMasked?.Substring(paymentMethod.AccountNumberMasked.Length - 4)}"
-                };
-
-                foreach (var cartItem in cart.Items)
-                {
-                    var orderItem = new OrderItem
-                    {
-                        MenuItemId = cartItem.MenuItemId,
-                        Quantity = cartItem.Quantity,
-                        Price = cartItem.MenuItem.Price,
-                        RestaurantId = cartItem.MenuItem.RestaurantId,
-                        Customizations = cartItem.Customizations?.Select(cc => new OrderCustomization
-                        {
-                            OptionId = cc.OptionId,
-                            ChoiceId = cc.ChoiceId,
-                            Price = cc.Price
-                        }).ToList() ?? new List<OrderCustomization>()
-                    };
-                    order.OrderItems.Add(orderItem);
-                }
-
-                var payment = new Payment
-                {
-                    OrderId = order.Id,
-                    Amount = order.Total,
-                    PaymentDate = DateTime.UtcNow,
-                    Status = PaymentStatus.Pending,
-                    PaymentMethodId = model.PaymentMethodId,
-                    UserId = user.Id
-                };
-
-                if (paymentMethod.Type == PaymentMethodType.CashOnDelivery)
-                {
-                    payment.Status = PaymentStatus.Pending;
-                    payment.TransactionId = Guid.NewGuid().ToString();
-                }
-                else
-                {
-                    var paymentResult = await _paymentService.ProcessPayment(model.PaymentMethodId, order.Total, $"Order {order.Id}");
-                    if (!paymentResult.Success)
-                    {
-                        TempData["ErrorMessage"] = $"Payment failed: {paymentResult.ErrorMessage}";
-                        return View(model);
-                    }
-                    payment.Status = PaymentStatus.Paid;
-                    payment.TransactionId = paymentResult.TransactionId;
-                }
-
-                order.Payment = payment;
-                await _orderRepository.AddAsync(order);
-                await _unitOfWork.SaveChangesAsync();
-                await _cartService.ClearCartAsync(user.Id);
-
-                TempData["SuccessMessage"] = "Order placed successfully!";
-                return RedirectToAction("Details", new { id = order.Id });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error placing order for user {UserId}", User.Identity?.Name);
-                TempData["ErrorMessage"] = "An error occurred while placing your order.";
-                return View(model);
-            }
-        }
-
-        [HttpGet]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> Details(int id)
         {
             try
             {
-                var order = await _orderRepository.GetOrderWithDetailsAsync(id);
-                if (order == null)
+                var cacheKey = $"order_details_{id}";
+                if (!_cache.TryGetValue(cacheKey, out OrderDetailsViewModel viewModel))
                 {
-                    _logger.LogWarning("Order with ID {OrderId} not found.", id);
-                    return NotFound();
-                }
-
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser == null) return Challenge();
-
-                bool isOwner = order.UserId == currentUser.Id;
-                bool isAdmin = User.IsInRole("Admin");
-                bool isRestaurantOwner = order.Restaurant?.OwnerId == currentUser.Id;
-
-                if (!isOwner && !isAdmin && !isRestaurantOwner)
-                {
-                    _logger.LogWarning("User {UserId} forbidden from viewing order {OrderId}.", currentUser.Id, id);
-                    return Forbid();
-                }
-
-                var viewModel = new OrderDetailsViewModel
-                {
-                    Id = order.Id,
-                    OrderDate = order.OrderDate,
-                    Status = order.Status,
-                    Address = order.Address != null ? new AddressViewModel
+                    var order = await _orderService.GetOrderByIdAsync(id);
+                    if (order == null)
                     {
-                        Id = order.Address.Id,
-                    } : null,
-                    SpecialInstructions = order.SpecialInstructions,
-                    PaymentDetails = order.PaymentDetails,
-                    PaymentStatus = order.Payment?.Status ?? PaymentStatus.Pending,
-                    RestaurantName = order.Restaurant?.Name ?? "N/A",
-                    Items = order.OrderItems.Select(oi => new OrderItemViewModel
+                        _logger.LogWarning("Order {OrderId} not found", id);
+                        return NotFound();
+                    }
+
+                    // Check authorization
+                    if (!User.IsInRole("Admin") && 
+                        !User.IsInRole("RestaurantOwner") && 
+                        order.UserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
                     {
-                        Id = oi.Id,
-                        MenuItemId = oi.MenuItemId,
-                        Name = oi.MenuItem?.Name ?? "N/A",
-                        ImageUrl = oi.MenuItem?.ImageUrl ?? "/images/placeholder-dish.jpg",
-                        Price = oi.Price,
-                        Quantity = oi.Quantity,
-                        SpecialInstructions = oi.SpecialInstructions,
-                        Customizations = oi.Customizations.Select(oc => new OrderCustomizationViewModel
+                        _logger.LogWarning("User {UserId} attempted to access order {OrderId} without authorization", 
+                            User.FindFirstValue(ClaimTypes.NameIdentifier), id);
+                        return Forbid();
+                    }
+
+                    viewModel = new OrderDetailsViewModel
+                    {
+                        OrderId = order.Id,
+                        OrderNumber = order.OrderNumber,
+                        Status = order.Status,
+                        CreatedAt = order.OrderDate,
+                        EstimatedDeliveryTime = order.EstimatedDeliveryTime,
+                        ActualDeliveryTime = order.ActualDeliveryTime,
+                        IsDelayed = order.IsDelayed,
+                        DelayReason = order.DelayReason,
+                        CustomerName = order.User.FullName,
+                        CustomerEmail = order.User.Email,
+                        DeliveryAddress = new AddressViewModel
                         {
-                            Id = oc.Id,
-                            OptionId = oc.OptionId,
-                            ChoiceId = oc.ChoiceId,
-                            Name = oc.OrderItem?.MenuItem.Name ?? "N/A",
-                            //Choice = oc?.Name ?? "N/A",
-                            Price = oc.Price
-                        }).ToList()
-                    }).ToList(),
-                    Subtotal = order.Subtotal,
-                    DeliveryFee = order.DeliveryFee,
-                    Tax = order.Tax,
-                    Total = order.Total
-                };
-
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading order details for order {OrderId}, user {UserId}", id, User.Identity?.Name);
-                TempData["ErrorMessage"] = "An error occurred while loading order details.";
-                return RedirectToAction("History");
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> History(int page = 1, int pageSize = 10, string sortBy = "OrderDate", string sortOrder = "desc")
-        {
-            try
-            {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null) return Challenge();
-
-                var orders = await _orderRepository.GetUserOrdersAsync(user.Id, o => o.Restaurant, o => o.OrderItems, o => o.Payment);
-                if (sortOrder?.ToLower() == "desc")
-                {
-                    orders = sortBy switch
-                    {
-                        "Total" => orders.OrderByDescending(o => o.Total),
-                        _ => orders.OrderByDescending(o => o.OrderDate)
-                    };
-                }
-                else
-                {
-                    orders = sortBy switch
-                    {
-                        "Total" => orders.OrderBy(o => o.Total),
-                        _ => orders.OrderBy(o => o.OrderDate)
-                    };
-                }
-
-                var totalCount = orders.Count();
-                var pagedOrders = orders.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-                var viewModel = new OrderListViewModel
-                {
-                    Orders = pagedOrders.Select(o => new OrderViewModel
-                    {
-                        Id = o.Id,
-                        OrderNumber = o.Id.ToString(),
-                        CustomerName = o.User?.CustomerProfile != null
-                            ? $"{o.User.CustomerProfile.FirstName} {o.User.CustomerProfile.LastName}".Trim()
-                            : o.User?.UserName ?? "N/A",
-                        CustomerPhone = o.User?.CustomerProfile?.PhoneNumber ?? "N/A",
-                        RestaurantName = o.Restaurant?.Name ?? "N/A",
-                        RestaurantPhone = o.Restaurant?.PhoneNumber ?? "N/A",
-                        Status = o.Status,
-                        OrderDate = o.OrderDate,
-                        DeliveryDate = o.DeliveryDate,
-                        EstimatedDeliveryTime = o.EstimatedDeliveryTime,
-                        DeliveryAddress = o.Address != null
-                            ? $"{o.Address.Street}, {o.Address.City}, {o.Address.State} {o.Address.PostalCode}"
-                            : "N/A",
-                        PaymentMethod = o.PaymentDetails ?? "N/A",
-                        PaymentStatus = o.Payment?.Status ?? PaymentStatus.Pending,
-                        Subtotal = o.Subtotal,
-                        Tax = o.Tax,
-                        DeliveryFee = o.DeliveryFee,
-                        Discount = o.Discount,
-                        Total = o.Total,
-                        DeliveryInstructions = o.DeliveryInstructions,
-                        SpecialRequests = o.SpecialInstructions,
-                        TrackingUrl = o.TrackingUrl,
-                        Items = o.OrderItems.Select(oi => new OrderItemViewModel
-                        {
-                            Id = oi.Id,
-                            MenuItemId = oi.MenuItemId,
-                            Name = oi.MenuItem?.Name ?? "N/A",
-                            ImageUrl = oi.MenuItem?.ImageUrl ?? "/images/placeholder-dish.jpg",
-                            Price = oi.Price,
-                            Quantity = oi.Quantity,
-                            SpecialInstructions = oi.SpecialInstructions,
-                            Customizations = oi.Customizations.Select(oc => new OrderCustomizationViewModel
+                            StreetAddress = order.DeliveryAddress.StreetAddress,
+                            City = order.DeliveryAddress.City,
+                            State = order.DeliveryAddress.State,
+                            PostalCode = order.DeliveryAddress.PostalCode,
+                            Country = order.DeliveryAddress.Country
+                        },
+                        PaymentMethod = order.PaymentMethod,
+                        PaymentStatus = order.PaymentStatus,
+                        RestaurantGroups = order.OrderItems
+                            .GroupBy(i => i.RestaurantId)
+                            .Select(g => new RestaurantOrderGroup
                             {
-                                Id = oc.Id,
-                                OptionId = oc.OptionId,
-                                ChoiceId = oc.ChoiceId,
-                                Name = oc.CustomizationOption?.Name ?? "N/A",
-                                Choice = oc.CustomizationChoice?.Name ?? "N/A",
-                                Price = oc.Price
-                            }).ToList()
-                        }).ToList()
-                    }).ToList(),
-                    CurrentPage = page,
-                    PageSize = pageSize,
-                    TotalCount = totalCount,
-                    SortBy = sortBy,
-                    SortOrder = sortOrder
-                };
+                                RestaurantId = g.Key,
+                                RestaurantName = g.First().Restaurant.Name,
+                                RestaurantPhone = g.First().Restaurant.PhoneNumber,
+                                ImageUrl = g.First().Restaurant.ImageUrl,
+                                RestaurantAddress = new AddressViewModel
+                                {
+                                    StreetAddress = g.First().Restaurant.Address,
+                                    City = g.First().Restaurant.City,
+                                    State = g.First().Restaurant.State,
+                                    PostalCode = g.First().Restaurant.PostalCode,
+                                    Country = "Egypt"
+                                },
+                                Items = g.Select(i => new OrderItemViewModel
+                                {
+                                    MenuItemId = i.MenuItemId,
+                                    Name = i.MenuItem.Name,
+                                    ImageUrl = i.MenuItem.ImageUrl,
+                                    Quantity = i.Quantity,
+                                    Price = i.Price,
+                                    Subtotal = i.Price * i.Quantity,
+                                    SpecialInstructions = i.SpecialInstructions,
+                                    Status = i.Status
+                                }).ToList(),
+                                Subtotal = g.Sum(i => i.Price * i.Quantity),
+                                Status = g.All(i => i.Status == OrderItemStatus.Delivered) 
+                                    ? OrderItemStatus.Delivered 
+                                    : g.Any(i => i.Status == OrderItemStatus.Preparing) 
+                                        ? OrderItemStatus.Preparing 
+                                        : OrderItemStatus.Pending
+                            }).ToList(),
+                        Subtotal = order.Subtotal,
+                        Tax = order.Tax,
+                        DeliveryFee = order.DeliveryFee,
+                        Discount = order.Discount,
+                        TotalAmount = order.Total,
+                        Driver = order.Driver != null ? new DriverViewModel
+                        {
+                            DriverId = order.Driver.Id,
+                            Name = order.Driver.User.FullName,
+                            PhoneNumber = order.Driver.User.PhoneNumber,
+                            ProfilePictureUrl = order.Driver.User.ProfilePictureUrl,
+                            VehicleType = order.Driver.VehicleInfo,
+                            LicensePlate = order.Driver.LicenseNumber
+                        } : null,
+                        TrackingHistory = order.TrackingHistory.Select(t => new OrderTrackingViewModel
+                        {
+                            OrderId = t.OrderId,
+                            OrderNumber = order.OrderNumber,
+                            Status = t.Status,
+                            Location = t.Location,
+                        }).ToList(),
+                    };
+
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(CACHE_DURATION_MINUTES));
+                    _cache.Set(cacheKey, viewModel, cacheOptions);
+                }
 
                 return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading order history for user {UserId}", User.Identity?.Name);
-                TempData["ErrorMessage"] = "An error occurred while loading your order history.";
-                return View(new OrderListViewModel());
+                _logger.LogError(ex, "Error retrieving order details for order {OrderId}", id);
+                TempData["Error"] = "An error occurred while retrieving order details.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
@@ -464,253 +254,427 @@ namespace FoodDeliveryApp.Controllers
         {
             try
             {
-                var order = await _orderRepository.GetByIdAsync(id);
+                var order = await _orderService.GetOrderByIdAsync(id);
                 if (order == null)
                 {
                     return NotFound();
                 }
 
-                var user = await _userManager.GetUserAsync(User);
-                if (order.UserId != user.Id && !User.IsInRole("Admin"))
+                // Check if user is authorized to cancel the order
+                if (!User.IsInRole("Admin") && 
+                    !User.IsInRole("RestaurantOwner") && 
+                    order.UserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
                 {
                     return Forbid();
                 }
 
-                if (order.Status != OrderStatus.Placed)
+                // Check if order can be cancelled
+                if (order.Status == OrderStatus.Delivered || 
+                    order.Status == OrderStatus.Canceled ||
+                    (DateTime.UtcNow - order.OrderDate).TotalMinutes > 30)
                 {
-                    TempData["ErrorMessage"] = "Only orders in 'Placed' status can be cancelled.";
-                    return RedirectToAction("Details", new { id });
+                    TempData["Error"] = "This order cannot be cancelled.";
+                    return RedirectToAction(nameof(Details), new { id });
                 }
 
-                if (order.Payment != null && order.Payment.Status == PaymentStatus.Paid)
-                {
-                    var refundResult = await _paymentService.ProcessRefund(order.Payment.TransactionId, order.Total, $"Order {id} cancelled");
-                    if (!refundResult.Success)
-                    {
-                        TempData["ErrorMessage"] = $"Could not process refund: {refundResult.ErrorMessage}";
-                        return RedirectToAction("Details", new { id });
-                    }
-                    order.Payment.Status = PaymentStatus.Refunded;
-                }
-
-                order.Status = OrderStatus.Canceled;
-                await _orderRepository.UpdateAsync(order);
-                await _unitOfWork.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Order cancelled successfully.";
-                return RedirectToAction("Details", new { id });
+                await _orderService.CancelOrderAsync(id);
+                TempData["Success"] = "Order has been cancelled successfully.";
+                return RedirectToAction(nameof(Details), new { id });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error cancelling order {OrderId} for user {UserId}", id, User.Identity?.Name);
-                TempData["ErrorMessage"] = "An error occurred while cancelling the order.";
-                return RedirectToAction("Details", new { id });
+                _logger.LogError(ex, "Error cancelling order {OrderId}", id);
+                TempData["Error"] = "An error occurred while cancelling the order.";
+                return RedirectToAction(nameof(Details), new { id });
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Track(int orderId)
+        [Authorize(Roles = "Admin,RestaurantOwner")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateItemStatus(int orderId, int itemId, OrderItemStatus status)
         {
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
-
-                if (order == null || order.UserId != user.Id)
+                var order = await _orderService.GetOrderByIdAsync(orderId);
+                if (order == null)
                 {
-                    TempData["ErrorMessage"] = "Order not found or you do not have permission to view it.";
-                    return RedirectToAction("Index", "Home");
+                    return NotFound();
                 }
 
-                var viewModel = new OrderTrackViewModel
+                // Check if restaurant owner is authorized to update this order
+                if (User.IsInRole("RestaurantOwner"))
+                {
+                    var restaurantId = order.OrderItems.FirstOrDefault(i => i.Id == itemId)?.RestaurantId;
+                    if (!restaurantId.HasValue || !await _orderService.IsRestaurantOwnerAsync(restaurantId.Value, User.FindFirstValue(ClaimTypes.NameIdentifier)))
+                    {
+                        return Forbid();
+                    }
+                }
+
+                await _orderService.UpdateOrderItemStatusAsync(orderId, itemId, status);
+
+                // Update order status based on all items
+                var newOrderStatus = CalculateOrderStatus(order.OrderItems);
+                if (newOrderStatus != order.Status)
+                {
+                    await _orderService.UpdateOrderStatusAsync(orderId, newOrderStatus);
+                }
+
+                TempData["Success"] = "Order item status updated successfully.";
+                return RedirectToAction(nameof(Details), new { id = orderId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating order item status for order {OrderId}, item {ItemId}", orderId, itemId);
+                TempData["Error"] = "An error occurred while updating the order item status.";
+                return RedirectToAction(nameof(Details), new { id = orderId });
+            }
+        }
+
+        private OrderStatus CalculateOrderStatus(ICollection<OrderItem> items)
+        {
+            if (items.All(i => i.Status == OrderItemStatus.Delivered))
+                return OrderStatus.Delivered;
+            if (items.Any(i => i.Status == OrderItemStatus.Preparing))
+                return OrderStatus.InPreparation;
+            if (items.All(i => i.Status == OrderItemStatus.Ready))
+                return OrderStatus.ReadyForPickup;
+            return OrderStatus.Confirmed;
+        }
+
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Export(
+            string searchTerm = null,
+            OrderStatus? status = null,
+            DateTime? date = null)
+        {
+            try
+            {
+                var orders = await _orderService.ExportOrdersAsync(
+                    searchTerm: searchTerm,
+                    statusFilter: status?.ToString(),
+                    startDate: date,
+                    endDate: date?.AddDays(1));
+
+                var fileName = $"orders_export_{DateTime.UtcNow:yyyyMMddHHmmss}.csv";
+                return File(orders, "text/csv", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting orders");
+                TempData["Error"] = "An error occurred while exporting orders.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpGet("Export/{id:int}")]
+        public async Task<IActionResult> ExportOrder(int id)
+        {
+            try
+            {
+                var order = await _orderService.GetOrderByIdAsync(id);
+                if (order == null)
+                {
+                    return NotFound();
+                }
+
+                // Check authorization
+                if (!User.IsInRole("Admin") && 
+                    !User.IsInRole("RestaurantOwner") && 
+                    order.UserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
+                {
+                    return Forbid();
+                }
+
+                var viewModel = new OrderDetailsViewModel
                 {
                     OrderId = order.Id,
+                    OrderNumber = order.OrderNumber,
                     Status = order.Status,
+                    CreatedAt = order.OrderDate,
                     EstimatedDeliveryTime = order.EstimatedDeliveryTime,
+                    ActualDeliveryTime = order.ActualDeliveryTime,
+                    IsDelayed = order.IsDelayed,
+                    DelayReason = order.DelayReason,
+                    CustomerName = order.User.FullName,
+                    CustomerEmail = order.User.Email,
                     DeliveryAddress = new AddressViewModel
                     {
-                        Id = order.Address?.Id ?? 0,
+                        StreetAddress = order.DeliveryAddress.StreetAddress,
+                        City = order.DeliveryAddress.City,
+                        State = order.DeliveryAddress.State,
+                        PostalCode = order.DeliveryAddress.PostalCode,
+                        Country = order.DeliveryAddress.Country
                     },
-                    Items = order.OrderItems.Select(item => new OrderItemViewModel
-                    {
-                        Id = item.Id,
-                        MenuItemId = item.MenuItemId,
-                        Name = item.MenuItem?.Name ?? "N/A",
-                        Quantity = item.Quantity,
-                        Price = item.Price,
-                        ImageUrl = item.MenuItem?.ImageUrl ?? "/images/placeholder-dish.jpg",
-                        Customizations = item.Customizations.Select(c => new OrderCustomizationViewModel
+                    PaymentMethod = order.PaymentMethod,
+                    PaymentStatus = order.PaymentStatus,
+                    RestaurantGroups = order.OrderItems
+                        .GroupBy(i => i.RestaurantId)
+                        .Select(g => new RestaurantOrderGroup
                         {
-                            Id = c.Id,
-                            OptionId = c.OptionId,
-                            ChoiceId = c.ChoiceId,
-                            Name = c.CustomizationOption?.Name ?? "N/A",
-                            Choice = c.CustomizationChoice?.Name ?? "N/A",
-                            Price = c.Price
-                        }).ToList()
+                            RestaurantId = g.Key,
+                            RestaurantName = g.First().Restaurant.Name,
+                            RestaurantPhone = g.First().Restaurant.PhoneNumber,
+                            RestaurantAddress = new AddressViewModel
+                            {
+                                StreetAddress = g.First().Restaurant.Address,
+                                City = g.First().Restaurant.City,
+                                State = g.First().Restaurant.State,
+                                PostalCode = g.First().Restaurant.PostalCode,
+                                Country = "Egypt"
+                            },
+                            Items = g.Select(i => new OrderItemViewModel
+                            {
+                                MenuItemId = i.MenuItemId,
+                                Name = i.MenuItem.Name,
+                                ImageUrl = i.MenuItem.ImageUrl,
+                                Quantity = i.Quantity,
+                                Price = i.Price,
+                                Subtotal = i.Price * i.Quantity,
+                                SpecialInstructions = i.SpecialInstructions,
+                                Status = i.Status
+                            }).ToList(),
+                            Subtotal = g.Sum(i => i.Price * i.Quantity),
+                            Status = g.All(i => i.Status == OrderItemStatus.Delivered) 
+                                ? OrderItemStatus.Delivered 
+                                : g.Any(i => i.Status == OrderItemStatus.Preparing) 
+                                    ? OrderItemStatus.Preparing 
+                                    : OrderItemStatus.Pending
+                        }).ToList(),
+                    Subtotal = order.Subtotal,
+                    Tax = order.Tax,
+                    DeliveryFee = order.DeliveryFee,
+                    Discount = order.Discount,
+                    TotalAmount = order.Total,
+                    Driver = order.Driver != null ? new DriverViewModel
+                    {
+                        DriverId = order.Driver.Id,
+                        Name = order.Driver.User.FullName,
+                        PhoneNumber = order.Driver.User.PhoneNumber,
+                        ProfilePictureUrl = order.Driver.User.ProfilePictureUrl,
+                        VehicleType = order.Driver.VehicleInfo,
+                        LicensePlate = order.Driver.LicenseNumber
+                    } : null,
+                    TrackingHistory = order.TrackingHistory.Select(t => new OrderTrackingViewModel
+                    {
+                        OrderId = t.OrderId,
+                        OrderNumber = order.OrderNumber,
+                        Status = t.Status,
+                        Location = t.Location,
+                        DriverName = t.Driver?.User?.FullName,
+                        DriverPhone = t.Driver?.User?.PhoneNumber,
+                        DriverPhotoUrl = t.Driver?.User?.ProfilePictureUrl,
+                        Timestamp = t.Timestamp,
                     }).ToList()
                 };
 
-                return View(viewModel);
+                // Generate PDF using a view
+                var pdfBytes = await _orderService.GenerateOrderPdfAsync(viewModel);
+                var fileName = $"order_{order.OrderNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
+                return File(pdfBytes, "application/pdf", fileName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while tracking order with ID {OrderId}", orderId);
-                TempData["ErrorMessage"] = "An error occurred while trying to track your order.";
-                return RedirectToAction("Index", "Home");
+                _logger.LogError(ex, "Error exporting order {OrderId}", id);
+                TempData["Error"] = "An error occurred while exporting the order.";
+                return RedirectToAction(nameof(Details), new { id });
             }
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin,Owner")]
-        public async Task<IActionResult> Manage(string status = "All", int? restaurantId = null, int page = 1, int pageSize = 10, string sortBy = "OrderDate", string sortOrder = "desc", string searchQuery = null)
+        [Route("Create")]
+        public async Task<IActionResult> Create()
         {
             try
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null) return Challenge();
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var addresses = await _addressService.GetUserAddressesAsync(userId);
+                ViewBag.DeliveryAddresses = addresses;
 
-                var query = await _orderRepository.GetAllAsync();
-                if (User.IsInRole("Owner"))
+                var viewModel = new OrderCreateViewModel
                 {
-                    query = query.Where(o => o.Restaurant.OwnerId == user.Id);
-                }
-
-                if (status != "All")
-                {
-                    if (Enum.TryParse<OrderStatus>(status, out var statusEnum))
-                    {
-                        query = query.Where(o => o.Status == statusEnum);
-                    }
-                }
-
-                if (restaurantId.HasValue)
-                {
-                    query = query.Where(o => o.RestaurantId == restaurantId.Value);
-                }
-
-                if (!string.IsNullOrEmpty(searchQuery))
-                {
-                    query = query.Where(o => o.Id.ToString().Contains(searchQuery) ||
-                                            o.User.CustomerProfile.FirstName.Contains(searchQuery) ||
-                                            o.User.CustomerProfile.LastName.Contains(searchQuery));
-                }
-
-                query = sortBy switch
-                {
-                    "Id" => sortOrder == "asc" ? query.OrderBy(o => o.Id) : query.OrderByDescending(o => o.Id),
-                    "Total" => sortOrder == "asc" ? query.OrderBy(o => o.Total) : query.OrderByDescending(o => o.Total),
-                    _ => sortOrder == "asc" ? query.OrderBy(o => o.OrderDate) : query.OrderByDescending(o => o.OrderDate)
-                };
-
-                var totalCount = query.Count();
-                var orders = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-                var restaurantName = restaurantId.HasValue ? (await _restaurantRepository.GetByIdAsync(restaurantId.Value))?.Name : null;
-
-                var viewModel = new OrderManagementListViewModel
-                {
-                    Orders = orders.Select(o => new OrderManagementViewModel
-                    {
-                        Id = o.Id,
-                        OrderDate = o.OrderDate,
-                        CustomerName = o.User?.CustomerProfile != null
-                            ? $"{o.User.CustomerProfile.FirstName} {o.User.CustomerProfile.LastName}".Trim()
-                            : o.User?.UserName ?? "N/A",
-                        RestaurantCount = o.OrderItems.Select(oi => oi.RestaurantId).Distinct().Count(),
-                        ItemsCount = o.OrderItems.Sum(oi => oi.Quantity),
-                        Status = o.Status,
-                        PaymentStatus = o.Payment?.Status ?? PaymentStatus.Pending,
-                        Total = o.Total
-                    }).ToList(),
-                    TotalCount = totalCount,
-                    CurrentPage = page,
-                    PageSize = pageSize,
-                    StatusFilter = status,
-                    RestaurantId = restaurantId,
-                    RestaurantName = restaurantName,
-                    SortBy = sortBy,
-                    SortOrder = sortOrder,
-                    SearchQuery = searchQuery
+                    Items = new List<OrderItemCreateViewModel>(),
+                    PaymentMethod = PaymentMethod.CashOnDelivery
                 };
 
                 return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading order management for user {UserId}", User.Identity?.Name);
-                TempData["ErrorMessage"] = "An error occurred while loading orders.";
-                return View(new OrderManagementListViewModel());
+                _logger.LogError(ex, "Error preparing order creation form");
+                TempData["Error"] = "An error occurred while preparing the order form.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin,Owner")]
+        [Route("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateStatus(int id, string status)
+        public async Task<IActionResult> Create(OrderCreateViewModel model)
         {
             try
             {
-                var order = await _orderRepository.GetOrderWithDetailsAsync(id);
+                if (!ModelState.IsValid)
+                {
+                    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                    var addresses = await _addressService.GetUserAddressesAsync(currentUserId);
+                    ViewBag.DeliveryAddresses = addresses;
+                    return View(model);
+                }
+
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var order = await _orderService.CreateOrderAsync(model);
+
                 if (order == null)
                 {
-                    TempData["ErrorMessage"] = "Order not found.";
-                    return RedirectToAction("Manage");
+                    TempData["Error"] = "Failed to create the order. Please try again.";
+                    return View(model);
                 }
 
-                var user = await _userManager.GetUserAsync(User);
-                if (User.IsInRole("Owner") && order.Restaurant?.OwnerId != user.Id)
-                {
-                    return Forbid();
-                }
-
-                if (!Enum.TryParse<OrderStatus>(status, out var newStatus))
-                {
-                    TempData["ErrorMessage"] = "Invalid status.";
-                    return RedirectToAction("Manage");
-                }
-
-                // Validate status transition
-                var validNextStatuses = newStatus switch
-                {
-                    OrderStatus.Confirmed => new[] { OrderStatus.Placed },
-                    OrderStatus.InPreparation => new[] { OrderStatus.Confirmed },
-                    OrderStatus.ReadyForPickup => new[] { OrderStatus.InPreparation },
-                    OrderStatus.OutForDelivery => new[] { OrderStatus.ReadyForPickup },
-                    OrderStatus.Delivered => new[] { OrderStatus.OutForDelivery },
-                    OrderStatus.Canceled => new[] { OrderStatus.Placed, OrderStatus.Confirmed, OrderStatus.InPreparation, OrderStatus.ReadyForPickup, OrderStatus.OutForDelivery },
-                    _ => Array.Empty<OrderStatus>()
-                };
-
-                if (!validNextStatuses.Contains(order.Status))
-                {
-                    TempData["ErrorMessage"] = $"Cannot change status from {order.Status} to {newStatus}.";
-                    return RedirectToAction("Manage");
-                }
-
-                if (newStatus == OrderStatus.Canceled && order.Payment?.Status == PaymentStatus.Paid)
-                {
-                    var refundResult = await _paymentService.ProcessRefund(order.Payment.TransactionId, order.Total, $"Order {id} cancelled");
-                    if (!refundResult.Success)
-                    {
-                        TempData["ErrorMessage"] = $"Could not process refund: {refundResult.ErrorMessage}";
-                        return RedirectToAction("Manage");
-                    }
-                    order.Payment.Status = PaymentStatus.Refunded;
-                }
-
-                order.Status = newStatus;
-                await _orderRepository.UpdateAsync(order);
-                await _unitOfWork.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = $"Order #{id} updated to {newStatus}.";
-                return RedirectToAction("Manage");
+                return RedirectToAction(nameof(Details), new { id = order.Id });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating status for order {OrderId}", id);
-                TempData["ErrorMessage"] = "An error occurred while updating the order status.";
-                return RedirectToAction("Manage");
+                _logger.LogError(ex, "Error creating order");
+                TempData["Error"] = "An error occurred while creating your order.";
+                return View(model);
+            }
+        }
+
+        [HttpGet]
+        [Route("Checkout")]
+        public async Task<IActionResult> Checkout()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    TempData["Error"] = "User not authenticated.";
+                    return RedirectToAction("Login", "Account");
+                }
+
+                var cart = await _cartService.GetCartAsync(userId);
+                if (cart == null)
+                {
+                    TempData["Error"] = "Cart not found. Please try again.";
+                    return RedirectToAction("Index", "Cart");
+                }
+
+                if (cart.IsEmpty)
+                {
+                    TempData["Error"] = "Your cart is empty. Please add items before checkout.";
+                    return RedirectToAction("Index", "Cart");
+                }
+
+                var addresses = await _addressService.GetUserAddressesAsync(userId);
+                if (!addresses.Any())
+                {
+                    TempData["Warning"] = "Please add a delivery address before proceeding with checkout.";
+                    return RedirectToAction("Create", "Address", new { returnUrl = Url.Action("Checkout", "Order") });
+                }
+
+                var cartItems = await _cartService.GetCartItemsAsync(userId);
+                if (cartItems == null || !cartItems.Any())
+                {
+                    TempData["Error"] = "No items found in cart. Please try again.";
+                    return RedirectToAction("Index", "Cart");
+                }
+
+                var viewModel = new OrderCreateViewModel
+                {
+                    Items = cartItems.Select(item => new OrderItemCreateViewModel
+                    {
+                        MenuItemId = item.MenuItemId,
+                        RestaurantId = item.RestaurantId,
+                        Quantity = item.Quantity,
+                        SpecialInstructions = item.SpecialInstructions ?? "",
+                        MenuItemName = item.MenuItem?.Name ?? "Unknown Item",
+                        RestaurantName = item.MenuItem?.Restaurant?.Name ?? "Unknown Restaurant",
+                        ImageUrl = item.MenuItem?.ImageUrl ?? "/images/placeholder-dish.jpg",
+                        UnitPrice = item.MenuItem?.Price ?? 0,
+                        Modifiers = new List<string>(),
+                        
+                    }).ToList(),
+                    DeliveryAddresses = addresses.Select(a => new AddressViewModel
+                    {
+                        Id = a.Id,
+                        StreetAddress = a.StreetAddress,
+                        City = a.City,
+                        State = a.State,
+                        PostalCode = a.PostalCode,
+                        Country = a.Country,
+                        IsDefault = a.IsDefault
+                    }).ToList(),
+                    Subtotal = cart.Subtotal,
+                    Tax = cart.Tax,
+                    DeliveryFee = cart.DeliveryFee,
+                    Discount = cart.PromotionDiscountAmount,
+                    Total = cart.Total,
+                    PaymentMethod = PaymentMethod.CashOnDelivery
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error preparing checkout form");
+                TempData["Error"] = "An error occurred while preparing the checkout form.";
+                return RedirectToAction("Index", "Cart");
+            }
+        }
+
+        [HttpPost]
+        [Route("Checkout")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Checkout(OrderCreateViewModel model)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    TempData["Error"] = "User not authenticated.";
+                    return RedirectToAction("Login", "Account");
+                }
+
+                // Always ensure DeliveryAddresses is populated
+                var addresses = await _addressService.GetUserAddressesAsync(userId);
+                model.DeliveryAddresses = addresses.Select(a => new AddressViewModel
+                {
+                    Id = a.Id,
+                    StreetAddress = a.StreetAddress,
+                    City = a.City,
+                    State = a.State,
+                    PostalCode = a.PostalCode,
+                    Country = a.Country,
+                    IsDefault = a.IsDefault
+                }).ToList();
+
+                if (!ModelState.IsValid)
+                {
+                    return View(model);
+                }
+
+                var order = await _orderService.CreateOrderAsync(model);
+
+                if (order == null)
+                {
+                    TempData["Error"] = "Failed to create the order. Please try again.";
+                    return View(model);
+                }
+
+                // Clear the cart after successful order creation
+                await _cartService.ClearCartAsync(userId);
+
+                return RedirectToAction(nameof(Details), new { id = order.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing checkout");
+                TempData["Error"] = "An error occurred while processing your order.";
+                return View(model);
             }
         }
     }

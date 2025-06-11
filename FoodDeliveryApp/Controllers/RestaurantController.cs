@@ -1,922 +1,622 @@
-﻿using FoodDeliveryApp.Models;using FoodDeliveryApp.Repositories.Interfaces;using FoodDeliveryApp.ViewModels.Promotion;using FoodDeliveryApp.ViewModels.PromotionViewModels;using FoodDeliveryApp.ViewModels.Restaurant;using FoodDeliveryApp.ViewModels.Review;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using FoodDeliveryApp.Models;
+using FoodDeliveryApp.Services;
+using FoodDeliveryApp.ViewModels;
+using FoodDeliveryApp.ViewModels.Restaurant;
+using FoodDeliveryApp.ViewModels.MenuItem;
+using FoodDeliveryApp.ViewModels.Review;
+using FoodDeliveryApp.ViewModels.Promotion;
+using FoodDeliveryApp.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using FoodDeliveryApp.Services.Interfaces;
 
 namespace FoodDeliveryApp.Controllers
 {
     public class RestaurantController : Controller
     {
-        private readonly IRestaurantRepository _restaurantRepository;
-        private readonly IMenuItemRepository _menuItemRepository;
-        private readonly IReviewRepository _reviewRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IFileService _fileService;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IRepository<RestaurantCategory> _categoryRepository;
-        private readonly IRepository<Promotion> _promotionRepository;
-        private readonly IRepository<PromotionUsage> _promoUsageRepository;
+        private readonly ILogger<RestaurantController> _logger;
 
         public RestaurantController(
-            IRestaurantRepository restaurantRepository,
-            IMenuItemRepository menuItemRepository,
-            IReviewRepository reviewRepository,
-            IRepository<RestaurantCategory> categoryRepository,
-            IRepository<Promotion> promotionRepository,
-            IRepository<PromotionUsage> promoUsageRepository,
-            UserManager<ApplicationUser> userManager)
+            IUnitOfWork unitOfWork,
+            IFileService fileService,
+            UserManager<ApplicationUser> userManager,
+            ILogger<RestaurantController> logger,
+            IRestaurantRepository @object)
         {
-            _restaurantRepository = restaurantRepository;
-            _menuItemRepository = menuItemRepository;
-            _reviewRepository = reviewRepository;
-            _userManager = userManager;
-            _categoryRepository = categoryRepository;
-            _promotionRepository = promotionRepository;
-            _promoUsageRepository = promoUsageRepository;
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
+            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        #region Restaurant Management
-
-        // GET: Restaurant Home (Index) with filtering, sorting and pagination
-        [Route("restaurants")]
         [HttpGet]
-        public async Task<IActionResult> Index(int? categoryId, string searchTerm, string sortOrder = "name", int page = 1, string cuisines = "", string dietary = "", string features = "", string deliveryFee = "")
+        [Route("Restaurants")]
+        public async Task<IActionResult> Index(string searchTerm = "", int? categoryId = null, string sortBy = "name", int pageNumber = 1)
         {
-            const int pageSize = 9;
-            var categories = await _categoryRepository.GetAllAsync();
-            var restaurantsQuery = await _restaurantRepository.GetAllAsync();
-
-            if (categoryId.HasValue)
-                restaurantsQuery = restaurantsQuery.Where(r => r.CategoryId == categoryId.Value);
-            
-            if (!string.IsNullOrEmpty(searchTerm))
-                restaurantsQuery = restaurantsQuery.Where(r => r.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) || 
-                                                             r.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                                                             r.Category.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
-
-            var cuisineList = !string.IsNullOrEmpty(cuisines) ? cuisines.Split(',', StringSplitOptions.RemoveEmptyEntries) : new string[0];
-            var dietaryList = !string.IsNullOrEmpty(dietary) ? dietary.Split(',', StringSplitOptions.RemoveEmptyEntries) : new string[0];
-            var featureList = !string.IsNullOrEmpty(features) ? features.Split(',', StringSplitOptions.RemoveEmptyEntries) : new string[0];
-
-            // Filter by delivery fee
-            if (!string.IsNullOrEmpty(deliveryFee))
+            try
             {
-                if (decimal.TryParse(deliveryFee, out var fee))
+                var pageSize = 12;
+                var restaurants = await _unitOfWork.Restaurants.GetAllAsync();
+
+                // Apply search filter
+                if (!string.IsNullOrEmpty(searchTerm))
                 {
-                    restaurantsQuery = restaurantsQuery.Where(r => r.DeliveryFee <= fee);
+                    restaurants = restaurants.Where(r =>
+                        r.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        (r.Description != null && r.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                    ).ToList();
                 }
-            }
-            
-            // Filter by dietary restrictions (this would need to be expanded with more detailed dietary data)
-            if (dietaryList.Any())
-            {
-                restaurantsQuery = restaurantsQuery.Where(r => dietaryList.Any(d => r.Description.Contains(d, StringComparison.OrdinalIgnoreCase)));
-            }
-            
-            // Filter by cuisines (using category as a proxy in this simple example)
-            if (cuisineList.Any())
-            {
-                restaurantsQuery = restaurantsQuery.Where(r => cuisineList.Any(c => r.Category.Name.Contains(c, StringComparison.OrdinalIgnoreCase)));
-            }
 
-            // Sort restaurants
-            restaurantsQuery = sortOrder switch
-            {
-                "name_desc" => restaurantsQuery.OrderByDescending(r => r.Name),
-                "rating" => restaurantsQuery.OrderByDescending(r => r.Rating),
-                "rating_asc" => restaurantsQuery.OrderBy(r => r.Rating),
-                "delivery_fee" => restaurantsQuery.OrderBy(r => r.DeliveryFee),
-                _ => restaurantsQuery.OrderBy(r => r.Name)
-            };
-            
-            // Paginate restaurants
-            var totalRestaurants = restaurantsQuery.Count();
-            var totalPages = (int)Math.Ceiling((double)totalRestaurants / pageSize);
-            var restaurants = restaurantsQuery
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+                // Apply category filter
+                if (categoryId.HasValue)
+                {
+                    restaurants = restaurants.Where(r => r.Categories != null && r.Categories.Any(c => c.Id == categoryId.Value)).ToList();
+                }
 
-            var restaurantViewModels = restaurants.Select(r => new RestaurantViewModel
-            {
-                Id = r.Id,
-                Name = r.Name,
-                Description = r.Description,
-                LogoUrl = r.ImageUrl,
-                CoverImageUrl = r.ImageUrl,
-                PhoneNumber = r.PhoneNumber,
-                Website = r.WebsiteUrl,
-                Rating = (double)r.Rating,
-                CategoryName = r.Category?.Name,
-                IsOpen = IsRestaurantOpenNow(r),
-                IsActive = r.IsActive,
-                DeliveryFee = r.DeliveryFee,
-                IsAdminOrOwner = IsOwnerOrAdmin(r.OwnerId),
-            }).ToList();
+                // Apply sorting
+                restaurants = sortBy.ToLower() switch
+                {
+                    "rating" => restaurants.OrderByDescending(r => r.Reviews != null && r.Reviews.Any() ? r.Reviews.Average(review => review.Rating) : 0).ToList(),
+                    "deliverytime" => restaurants.OrderBy(r => r.DeliveryTime).ToList(),
+                    _ => restaurants.OrderBy(r => r.Name).ToList()
+                };
 
-            var viewModel = new RestaurantListViewModel
+                // Calculate pagination
+                var totalItems = restaurants.Count();
+                var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+                pageNumber = Math.Max(1, Math.Min(pageNumber, totalPages));
+                var pagedRestaurants = restaurants
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                var currentUser = await _userManager.GetUserAsync(User);
+                var favorites = currentUser != null
+                    ? await _unitOfWork.Favorites.GetUserFavoritesAsync(currentUser.Id)
+                    : new List<MenuItem>();
+
+                var viewModel = new RestaurantListViewModel
+                {
+                    Restaurants = pagedRestaurants.Select(r => new RestaurantViewModel
+                    {
+                        Id = r.Id,
+                        Name = r.Name,
+                        Description = r.Description,
+                        PhoneNumber = r.PhoneNumber ?? "",
+                        ImageUrl = r.ImageUrl ?? "",
+                        Rating = r.Reviews != null && r.Reviews.Any() ? (double)r.Reviews.Average(review => review.Rating) : 0,
+                        ReviewCount = r.Reviews?.Count ?? 0,
+                        DeliveryTime = r.DeliveryTime ?? "30-45 min",
+                        Categories = r.Categories != null ? r.Categories.Select(c => c.Name).ToArray() : new string[0],
+                        Website = r.WebsiteUrl ?? "",
+                        DeliveryFee = r.DeliveryFee,
+                        IsOpen = IsRestaurantOpen(r.OpeningTime, r.ClosingTime),
+                        IsActive = r.IsActive,
+                        OpeningTime = r.OpeningTime ?? TimeSpan.FromHours(10),
+                        ClosingTime = r.ClosingTime ?? TimeSpan.FromHours(22),
+                        Address = new RestaurantAddressViewModel
+                        {
+                            Street = r.Address ?? "",
+                            City = r.City ?? "",
+                            State = r.State ?? "",
+                            PostalCode = r.PostalCode ?? ""
+                        },
+                        TaxRate = r.TaxRate,
+                        IsAdminOrOwner = User.IsInRole("Admin") || r.OwnerId == currentUser?.Id
+                    }),
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalPages = totalPages,
+                    TotalItems = totalItems,
+                    CurrentPage = pageNumber,
+                    SearchTerm = searchTerm,
+                    CategoryId = categoryId,
+                    SortBy = sortBy
+                };
+
+                // Add categories to ViewBag for dropdown
+                ViewBag.Categories = await _unitOfWork.MenuItemCategories.GetAllAsync();
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
             {
-                Restaurants = restaurantViewModels,
-                Categories = new SelectList(categories, "Id", "Name"),
-                CurrentCategoryId = categoryId,
-                SearchTerm = searchTerm,
-                CurrentSortOrder = sortOrder,
-                CurrentPage = page,
-                TotalPages = totalPages,
-                TotalCount = totalRestaurants,
-                MaxDeliveryFee = deliveryFee,
-                SelectedCuisines = cuisineList.ToList(),
-                SelectedDietaryOptions = dietaryList.ToList(),
-                IsAdmin = User.IsInRole("Admin"),
-            };
-            
-            return View(viewModel);
+                _logger.LogError(ex, "Error retrieving restaurants");
+                TempData["Error"] = "An error occurred while retrieving restaurants.";
+                return View(new RestaurantListViewModel());
+            }
         }
 
-        // GET: Restaurant Details
-        [Route("restaurants/{id:int}")]
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
-            var restaurant = await _restaurantRepository.GetByIdAsync(id);
-            if (restaurant == null) return NotFound();
-
-            var menuItems = await _menuItemRepository.GetByRestaurantAsync(id);
-            var reviews = await _reviewRepository.GetRecentReviewsAsync(id);
-            var promotions = await _promotionRepository.FindAsync(p => p.RestaurantId == id);
-            var isAdminOrOwner = IsOwnerOrAdmin(restaurant.OwnerId);
-
-            var menuItemsModel = new List<RestaurantMenuItemViewModel>();
-            foreach (var item in menuItems)
+            try
             {
-                menuItemsModel.Add(new RestaurantMenuItemViewModel
+                var restaurant = await _unitOfWork.Restaurants.GetByIdAsync(id);
+                if (restaurant == null)
                 {
-                    Id = item.Id,
-                    Name = item.Name,
-                    Description = item.Description,
-                    Price = item.Price,
-                    ImageUrl = item.ImageUrl,
-                    IsAvailable = item.IsAvailable
-                });
-            }
-            
-            var reviewsModel = new List<ReviewViewModel>();
-            foreach (var review in reviews)
-            {
-                reviewsModel.Add(new ReviewViewModel
-                {
-                    Id = review.Id,
-                    CustomerName = $"{review.CustomerProfile.FirstName} {review.CustomerProfile.LastName}",
-                    Rating = (int)review.Rating,
-                    Comment = review.Comment,
-                    CreatedAt = review.CreatedAt,
-                });
-            }
+                    _logger.LogWarning($"Restaurant with id {id} not found.");
+                    return NotFound();
+                }
+                //var MenuItems = await _unitOfWork.MenuItems.GetByRestaurantIdAsync(id);
+                
+                // Get categories for the restaurant menu items
+                var categories = await _unitOfWork.MenuItemCategories.GetAllAsync(includes: m => m.MenuItems);
+                var restaurantCategories = categories.Where(c => c.MenuItems.Any(m => m.CategoryId == c.Id)).ToList();
+                var restaurantMenuItems = categories.SelectMany(c => c.MenuItems)
+                    .Where(m => m.RestaurantId == id)
+                    .ToList();
 
-            var promotionsModel = new List<PromotionViewModel>();
-            foreach (var promotion in promotions.Where(p => p.IsActive && p.EndDate > DateTime.Now))
-            {
-                promotionsModel.Add(new PromotionViewModel
-                {
-                    Id = promotion.Id,
-                    Description = promotion.Description,
-                    DiscountValue = promotion.DiscountValue,
-                    PromotionCode = promotion.Code,
-                    StartDate = promotion.StartDate,
-                    EndDate = promotion.EndDate,
-                    MinimumOrderAmount = promotion.MinimumOrderAmount ?? 0,
-                    UsageLimit = promotion.UsageLimit ?? 0,
-                    IsActive = promotion.IsActive
-                });
-            }
+                // Fetch promotions for this restaurant
+                var restaurantPromotions = await _unitOfWork.Promotions.GetByRestaurantIdAsync(id);
 
-            var model = new RestaurantDetailViewModel
-            {
-                Restaurant = new RestaurantViewModel
+                // Fetch reviews for this restaurant
+                var reviews = await _unitOfWork.Reviews.GetByRestaurantAsync(id);
+
+                
+
+
+                var viewModel = new RestaurantDetailViewModel
                 {
-                    Id = restaurant.Id,
-                    Name = restaurant.Name,
-                    Description = restaurant.Description,
-                    PhoneNumber = restaurant.PhoneNumber,
-                    CoverImageUrl = restaurant.ImageUrl,
-                    Rating = (double)restaurant.Rating,
-                    CategoryName = restaurant.Category?.Name,
-                    IsOpen = IsRestaurantOpenNow(restaurant),
-                    IsActive = restaurant.IsActive,
-                    Website = restaurant.WebsiteUrl,
-                    DeliveryFee = restaurant.DeliveryFee,
-                    Address = new ViewModels.Address.AddressViewModel
+                    Restaurant = new RestaurantViewModel
                     {
-                        AddressLine = restaurant.Address,
-                        City = restaurant.City,
-                        State = restaurant.State,
-                        PostalCode = restaurant.PostalCode
+                        Id = restaurant.Id,
+                        Name = restaurant.Name,
+                        Description = restaurant.Description,
+                        PhoneNumber = restaurant.PhoneNumber ?? "",
+                        ImageUrl = restaurant.ImageUrl ?? "",
+                        Rating = reviews != null && reviews.Any() ? (double)reviews.Average(review => review.Rating) : 0,
+                        ReviewCount = reviews?.Count() ?? 0,
+                        DeliveryTime = restaurant.DeliveryTime ?? "30-45 min",
+                        Categories = restaurant.Categories != null ? restaurant.Categories.Select(c => c.Name).ToArray() : new string[0],
+                        Website = restaurant.WebsiteUrl ?? "",
+                        DeliveryFee = restaurant.DeliveryFee,
+                        IsOpen = IsRestaurantOpen(restaurant.OpeningTime, restaurant.ClosingTime),
+                        IsActive = restaurant.IsActive,
+                        OpeningTime = restaurant.OpeningTime ?? TimeSpan.FromHours(10),
+                        ClosingTime = restaurant.ClosingTime ?? TimeSpan.FromHours(22),
+                        TaxRate = restaurant.TaxRate,
+                        Address = new RestaurantAddressViewModel
+                        {
+                            Street = restaurant.Address ?? "",
+                            City = restaurant.City ?? "",
+                            State = restaurant.State ?? "",
+                            PostalCode = restaurant.PostalCode ?? ""
+                        },
+                        RatingDistribution = reviews?.GroupBy(r => (int)r.Rating)
+                            .ToDictionary(g => g.Key, g => g.Count()) ?? new Dictionary<int, int>()
                     },
-                    OpeningTime = restaurant.OpeningTime,
-                    ClosingTime = restaurant.ClosingTime,
-                    IsAdminOrOwner = isAdminOrOwner,
+                    MenuItems = restaurantMenuItems.Select(mi => new MenuItemViewModel
+                    {
+                        Id = mi.Id,
+                        Name = mi.Name,
+                        Description = mi.Description ?? "No description provided.",
+                        Price = mi.Price,
+                        ImageUrl = mi.ImageUrl ?? "",
+                        IsAvailable = mi.IsAvailable,
+                        CategoryId = mi.CategoryId,
+                        CategoryName = mi.Category?.Name ?? "No category provided.",
+                        RestaurantId = mi.RestaurantId,
+                        Calories = mi.Calories,
+                        SpiceLevel = mi.SpiceLevel,
+                        IsFavorite = false,
+                        IsVegetarian = mi.IsVegetarian,
+                        IsVegan = mi.IsVegan,
+                    }).ToList(),
+                    Reviews = reviews.Select(r => new RestaurantReviewViewModel
+                    {
+                        Id = r.Id,
+                        UserName = r.User?.UserName ?? "Anonymous",
+                        UserImageUrl = r.User?.ImageUrl ?? "",
+                        Rating = (double)r.Rating,
+                        Content = r.Content ?? "No content provided.",
+                        CreatedAt = r.CreatedAt,
+                        IsVerified = false,
+                        RestaurantId = r.RestaurantId ?? 0,
+                        RestaurantName = restaurant.Name,
+                        UserId = r.UserId,
+                        Images = new List<string>()
+                    }).ToList(),
+                    Promotions = restaurantPromotions.Select(p => new PromotionViewModel
+                    {
+                        Id = p.Id,
+                        Description = p.Description,
+                        StartDate = p.StartDate,
+                        EndDate = p.EndDate,
+                        Code = p.Code,
+                        IsActive = p.IsActive,
+                        RestaurantId = p.RestaurantId ?? 0,
+                        UsageLimit = p.UsageLimit,
+                        CreatedAt = p.CreatedAt,
+                        UpdatedAt = p.UpdatedAt,
+                        IsPercentage = p.IsPercentage,
+                        MinimumOrderAmount = p.MinimumOrderAmount,
+                        ImageUrl = p.ImageUrl ?? "",
+                        DiscountValue = p.DiscountValue,
+                        UsageCount = p.UsageCount,
+                        CreatedBy = p.CreatedBy,
+                        RestaurantName = p.Restaurant?.Name ?? "Food Delivery App",
+                        Notes = $"{p.Code} ({p.UsageCount}/{p.UsageLimit})",
+                    }).ToList(),
+                    Categories = restaurantCategories.Select(c => new RestaurantCategoryViewModel
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        Description = c.Description,
+                        ImageUrl = c.ImageUrl,
+                        ItemCount = restaurantMenuItems.Count,
+                        MenuItems = restaurantMenuItems
+                            .Select(m => new RestaurantMenuItemViewModel
+                            {
+                                Id = m.Id,
+                                Name = m.Name,
+                                Description = m.Description ?? "No description provided.",
+                                Price = m.Price,
+                                OriginalPrice = m.Price,
+                                Discount = 0,
+                                ImageUrl = m.ImageUrl ?? "",
+                                IsAvailable = m.IsAvailable,
+                                IsPopular = m.IsPopular(),
+                                IsSpicy = m.IsSpicy(),
+                                IsVegetarian = m.IsVegetarian,
+                                IsVegan = m.IsVegan,
+                                Rating = m.Rating,
+                                ReviewCount = m.Reviews?.Count ?? 0,
+                                CategoryId = m.CategoryId ?? 0,
+                                CategoryName = m.Category?.Name ?? "Uncategorized",
+                                RestaurantId = m.RestaurantId,
+                                RestaurantName = m.Restaurant?.Name ?? string.Empty
+                            }).ToList()
+                    }).ToList(),
+                    IsAdminOrOwner = User.IsInRole("Admin") || restaurant.OwnerId == _userManager.GetUserId(User)
+                };
 
-                },
-                MenuItems = menuItemsModel,
-                Reviews = reviewsModel,
-                Promotions = promotionsModel,
-                IsAdminOrOwner = isAdminOrOwner,
-            };
-
-            return View(model);
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while processing the request.");
+                return View(new RestaurantDetailViewModel());
+            }
         }
 
-        // GET: Restaurant Create
-        [Authorize(Roles = "Admin, Owner")]
-        [Route("restaurants/create")]
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create()
         {
-            var categories = await _categoryRepository.GetAllAsync();
-            var currentUser = await _userManager.GetUserAsync(User);
-
-            if (currentUser == null)
-            {
-                TempData["ErrorMessage"] = "You must be logged in to create a restaurant.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var viewModel = new CreateRestaurantViewModel
-            {
-                Categories = new SelectList(categories, "Id", "Name"),
-                OpeningTime = new TimeSpan(9, 0, 0),
-                ClosingTime = new TimeSpan(22, 0, 0),
-            };
-
-            if (User.IsInRole("Admin"))
-            {
-                var owners = await _userManager.GetUsersInRoleAsync("Owner");
-                viewModel.OwnerId = "";
-                viewModel.Owners = new SelectList(owners, "Id", "UserName");
-            }
-            else
-            {
-                viewModel.OwnerId = currentUser.Id;
-            }
-
-            return View(viewModel);
-        }
-
-        // POST: Restaurant Create
-        [Authorize(Roles = "Admin, Owner")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Route("restaurants/create")]
-        public async Task<IActionResult> Create(CreateRestaurantViewModel model)
-        {
-            var currentUser = await _userManager.GetUserAsync(User);
-
-            if (!ModelState.IsValid)
-            {
-                model.Categories = await GetCategorySelectList();
-
-                // Repopulate owners list if admin
-                if (User.IsInRole("Admin"))
-                {
-                    var owners = await _userManager.GetUsersInRoleAsync("Owner");
-                    model.Owners = new SelectList(owners, "Id", "UserName");
-                }
-
-                return View(model);
-            }
-
-            // Validate owner assignment
-            if (User.IsInRole("Owner") && model.OwnerId != currentUser?.Id)
-            {
-                ModelState.AddModelError("", "You can only create restaurants for yourself.");
-                model.Categories = await GetCategorySelectList();
-                return View(model);
-            }
-
-            var restaurant = new Restaurant
-            {
-                Name = model.Name,
-                Description = model.Description,
-                PhoneNumber = model.PhoneNumber,
-                Address = model.Address,
-                City = model.City,
-                State = model.State,
-                PostalCode = model.PostalCode,
-                OpeningTime = model.OpeningTime,
-                ClosingTime = model.ClosingTime,
-                CategoryId = model.CategoryId,
-                OwnerId = User.IsInRole("Admin") ? model.OwnerId : currentUser?.Id,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                WebsiteUrl = model.Website,
-                LocationUrl = model.LocationUrl,
-                DeliveryFee = model.DeliveryFee,
-                TaxRate = model.TaxRate,
-                Rating = 0 // New restaurant starts with 0 rating
-            };
-
-            if (model.ImageFile != null)
-            {
-                restaurant.ImageUrl = await SaveImageAsync(model.ImageFile, model.Name);
-            }
-            else if (!string.IsNullOrEmpty(model.ImageUrl))
-            {
-                restaurant.ImageUrl = model.ImageUrl;
-            }
-
             try
             {
-                await _restaurantRepository.AddAsync(restaurant);
-                TempData["SuccessMessage"] = "Restaurant created successfully!";
-                return RedirectToAction(nameof(Index));
+                var categories = _unitOfWork.MenuItemCategories.GetAllAsync().Result;
+                ViewBag.Categories = new SelectList(categories, "Id", "Name");
+
+                var viewModel = new RestaurantCreateViewModel
+                {
+                    Address = new RestaurantAddressViewModel(),
+                    OpeningTime = TimeSpan.FromHours(10),
+                    ClosingTime = TimeSpan.FromHours(22),
+                    DeliveryFee = 5,
+                    TaxRate = 10,
+                    DeliveryTime = "30 - 45 minutes"
+                };
+
+                return View(viewModel);
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Error creating restaurant: {ex.Message}";
-                model.Categories = await GetCategorySelectList();
-
-                if (User.IsInRole("Admin"))
-                {
-                    var owners = await _userManager.GetUsersInRoleAsync("Owner");
-                    model.Owners = new SelectList(owners, "Id", "UserName");
-                }
-
-                return View(model);
+                _logger.LogError(ex, "Error loading create restaurant form");
+                TempData["Error"] = "An error occurred while loading the create form.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
-        // GET: Restaurant Edit
-        [Authorize(Roles = "Admin, Owner")]
-        [Route("restaurants/edit/{id:int}")]
-        public async Task<IActionResult> Edit(int id)
-        {
-            var restaurant = await _restaurantRepository.GetByIdAsync(id);
-            if (restaurant == null) return NotFound();
-
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-                return Forbid();
-
-            var categories = await _categoryRepository.GetAllAsync();
-            var currentUser = await _userManager.GetUserAsync(User);
-
-            var viewModel = new EditRestaurantViewModel
-            {
-                Id = restaurant.Id,
-                OwnerId = restaurant.OwnerId,
-                Name = restaurant.Name,
-                Description = restaurant.Description,
-                PhoneNumber = restaurant.PhoneNumber,
-                Address = restaurant.Address,
-                City = restaurant.City,
-                State = restaurant.State,
-                PostalCode = restaurant.PostalCode,
-                OpeningTime = restaurant.OpeningTime,
-                ClosingTime = restaurant.ClosingTime,
-                CategoryId = restaurant.CategoryId,
-                ImageUrl = restaurant.ImageUrl,
-                Categories = new SelectList(categories, "Id", "Name", restaurant.CategoryId),
-                IsActive = restaurant.IsActive,
-                Website = restaurant.WebsiteUrl,
-                LocationUrl = restaurant.LocationUrl,
-                DeliveryFee = restaurant.DeliveryFee,
-                TaxRate = restaurant.TaxRate,
-            };
-
-            // If admin, show owner selection dropdown
-            if (User.IsInRole("Admin"))
-            {
-                var owners = await _userManager.GetUsersInRoleAsync("Owner");
-                viewModel.Owners = new SelectList(owners, "Id", "UserName", restaurant.OwnerId);
-            }
-
-            return View(viewModel);
-        }
-
-        // POST: Restaurant Edit
-        [Authorize(Roles = "Admin, Owner")]
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Route("restaurants/edit/{id:int}")]
-        public async Task<IActionResult> Edit(EditRestaurantViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                model.Categories = await GetCategorySelectList();
-
-                if (User.IsInRole("Admin"))
-                {
-                    var owners = await _userManager.GetUsersInRoleAsync("Owner");
-                    model.Owners = new SelectList(owners, "Id", "UserName", model.OwnerId);
-                }
-                return View(model);
-            }
-
-            var restaurant = await _restaurantRepository.GetByIdAsync(model.Id);
-            if (restaurant == null) return NotFound();
-
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-                return Forbid();
-
-            // Validate owner assignment
-            var currentUser = await _userManager.GetUserAsync(User);
-            if (User.IsInRole("Owner") && model.OwnerId != currentUser?.Id)
-            {
-                ModelState.AddModelError("", "You can only assign restaurants to yourself.");
-                model.Categories = await GetCategorySelectList();
-                return View(model);
-            }
-
-            restaurant.Name = model.Name;
-            restaurant.Description = model.Description;
-            restaurant.PhoneNumber = model.PhoneNumber;
-            restaurant.Address = model.Address;
-            restaurant.City = model.City;
-            restaurant.State = model.State;
-            restaurant.PostalCode = model.PostalCode;
-            restaurant.OpeningTime = model.OpeningTime;
-            restaurant.ClosingTime = model.ClosingTime;
-            restaurant.CategoryId = model.CategoryId;
-            restaurant.UpdatedAt = DateTime.UtcNow;
-            restaurant.IsActive = model.IsActive;
-            restaurant.WebsiteUrl = model.Website;
-            restaurant.LocationUrl = model.LocationUrl;
-            restaurant.DeliveryFee = model.DeliveryFee;
-            restaurant.TaxRate = model.TaxRate;
-
-            // Only allow admin to change owner
-            if (User.IsInRole("Admin"))
-            {
-                restaurant.OwnerId = model.OwnerId;
-            }
-
-            if (model.ImageFile != null)
-            {
-                restaurant.ImageUrl = await SaveImageAsync(model.ImageFile, model.Name);
-            }
-            else if (!string.IsNullOrEmpty(model.ImageUrl))
-            {
-                restaurant.ImageUrl = model.ImageUrl;
-            }
-
-            try
-            {
-                await _restaurantRepository.UpdateAsync(restaurant);
-                TempData["SuccessMessage"] = "Restaurant updated successfully!";
-                return RedirectToAction(nameof(Details), new { id = restaurant.Id });
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"Error updating restaurant: {ex.Message}";
-                model.Categories = await GetCategorySelectList();
-
-                if (User.IsInRole("Admin"))
-                {
-                    var owners = await _userManager.GetUsersInRoleAsync("Owner");
-                    model.Owners = new SelectList(owners, "Id", "UserName");
-                }
-
-                return View(model);
-            }
-        }
-
-        // POST: Toggle Restaurant Status
-        [Authorize(Roles = "Admin, Owner")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Route("restaurants/toggle-status/{id:int}")]
-        public async Task<IActionResult> ToggleStatus(int id)
-        {
-            var restaurant = await _restaurantRepository.GetByIdAsync(id);
-            if (restaurant == null) return NotFound();
-
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-                return Forbid();
-
-            restaurant.IsActive = !restaurant.IsActive;
-            await _restaurantRepository.UpdateAsync(restaurant);
-
-            TempData["SuccessMessage"] = $"Restaurant {(restaurant.IsActive ? "activated" : "deactivated")} successfully!";
-            return RedirectToAction(nameof(Index));
-        }
-
-        // GET: Restaurant Delete
         [Authorize(Roles = "Admin")]
-        [Route("restaurants/delete/{id:int}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var restaurant = await _restaurantRepository.GetByIdAsync(id);
-            if (restaurant == null) return NotFound();
-
-            return View(restaurant);
-        }
-
-        // POST: Restaurant Delete
-        [Authorize(Roles = "Admin")]
-        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var restaurant = await _restaurantRepository.GetByIdAsync(id);
-            if (restaurant == null) return NotFound();
-
-            try
-            {
-                await _restaurantRepository.RemoveAsync(restaurant);
-                TempData["SuccessMessage"] = "Restaurant deleted successfully!";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"Error deleting restaurant: {ex.Message}";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
-        private static bool IsRestaurantOpenNow(Restaurant restaurant)
-        {
-            var currentTime = DateTime.UtcNow.TimeOfDay;
-            return currentTime >= restaurant.OpeningTime && currentTime <= restaurant.ClosingTime;
-        }
-
-        private async Task<SelectList> GetCategorySelectList()
-        {
-            var categories = await _categoryRepository.GetAllAsync();
-            return new SelectList(categories, "Id", "Name");
-        }
-
-        private bool IsOwnerOrAdmin(string ownerId)
-        {
-            var currentUserId = _userManager.GetUserId(User);
-            var Admin = User.IsInRole("Admin");
-            var Owner = User.IsInRole("Owner") && currentUserId == ownerId;
-            return Admin || Owner;
-        }
-
-        private async Task<string> SaveImageAsync(IFormFile imageFile, string restaurantName)
-        {
-            if (imageFile == null || imageFile.Length == 0) return null;
-
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "restaurants");
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
-
-            var uniqueFileName = $"{restaurantName.Replace(" ", "-")}-{Guid.NewGuid()}{Path.GetExtension(imageFile.FileName)}";
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await imageFile.CopyToAsync(stream);
-            }
-
-            return $"/images/restaurants/{uniqueFileName}";
-        }
-        #endregion
-
-        #region Promotion Management
-        // Get: Promotion List
-        [Authorize(Roles = "Admin, Owner")]
-        [Route("restaurants/promotions/{restaurantId:int}")]
-        public async Task<IActionResult> Promotions(int restaurantId)
-        {
-            var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
-            if (restaurant == null)
-            {
-                return NotFound("Restaurant not found.");
-            }
-
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-            {
-                return Forbid();
-            }
-
-            var promotions = await _promotionRepository.FindAsync(p => p.RestaurantId == restaurantId);
-            if (promotions == null || !promotions.Any())
-            {
-                TempData["InfoMessage"] = "No promotions found for this restaurant.";
-            }
-
-            var viewModel = new RestaurantPromotionsViewModel
-            {
-                RestaurantId = restaurantId,
-                RestaurantName = restaurant.Name,
-                Promotions = promotions.Select(p => new PromotionViewModel
-                {
-                    Id = p.Id,
-                    PromotionCode = p.Code ?? string.Empty,
-                    Description = p.Description ?? string.Empty,
-                    DiscountValue = p.DiscountValue,
-                    StartDate = p.StartDate,
-                    EndDate = p.EndDate,
-                    MinimumOrderAmount = p.MinimumOrderAmount ?? 0,
-                    UsageLimit = p.UsageLimit ?? 0,
-                    RestaurantId = p.RestaurantId ?? 0,
-                    RestaurantName = restaurant.Name,
-                    IsActive = p.IsActive && p.StartDate <= DateTime.UtcNow && p.EndDate >= DateTime.UtcNow
-                }).ToList()
-            };
-
-            return View(viewModel);
-        }
-
-        // GET: /Restaurant/Promotions/Create/5
-        [Authorize(Roles = "Admin, Owner")]
-        [Route("restaurants/promotions/create/{restaurantId:int}")]
-        public async Task<IActionResult> CreatePromotion(int restaurantId)
-        {
-            var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
-            if (restaurant == null)
-            {
-                return NotFound("Restaurant not found.");
-            }
-
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-            {
-                return Forbid();
-            }
-
-            var viewModel = new PromotionCreateViewModel
-            {
-                RestaurantId = restaurantId,
-                StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddMonths(1),
-                Code = string.Empty, // Initialize required string
-                Description = string.Empty // Initialize required string
-            };
-            return View(viewModel);
-        }
-
-        // POST: /Restaurant/Promotions/Create
-        [Authorize(Roles = "Admin, Owner")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Route("restaurants/promotions/create/{restaurantId:int}")]
-        public async Task<IActionResult> CreatePromotion(PromotionCreateViewModel model, int restaurantId)
+        public async Task<IActionResult> Create(RestaurantCreateViewModel viewModel, IFormFile? imageFile)
         {
             if (!ModelState.IsValid)
             {
-                return View(model);
+                var categories = await _unitOfWork.MenuItemCategories.GetAllAsync();
+                ViewBag.Categories = new SelectList(categories, "Id", "Name");
+                viewModel.Address ??= new RestaurantAddressViewModel();
+                return View(viewModel);
             }
-            var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
-            if (restaurant == null) return NotFound();
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-                return Forbid();
-            var promotion = new Promotion
-            {
-                Code = model.Code,
-                Description = model.Description,
-                DiscountValue = model.DiscountValue,
-                IsPercentage = model.IsPercentage,
-                StartDate = model.StartDate,
-                EndDate = model.EndDate,
-                RestaurantId = model.RestaurantId,
-                UsageLimit = model.UsageLimit,
-                MinimumOrderAmount = (int)model.MinimumOrderAmount,
-                IsActive = true
-            };
+
             try
-            {
-                await _promotionRepository.AddAsync(promotion);
-                TempData["SuccessMessage"] = "Promotion created successfully!";
-                return RedirectToAction("Promotions", new { restaurantId = restaurant.Id });
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"Error creating promotion: {ex.Message}";
-                return View(model);
-            }
-        }
-        // GET: Promotion Edit
-        [HttpGet]
-        [Authorize(Roles = "Admin, Owner")]
-        [Route("restaurants/promotions/edit/{id:int}")]
-        public async Task<IActionResult> EditPromotion(int id)
-        {
-            var promotion = await _promotionRepository.GetByIdAsync(id);
-            if (promotion == null) return NotFound();
-            var restaurant = await _restaurantRepository.GetByIdAsync(promotion.RestaurantId ?? 0);
-            if (restaurant == null) return NotFound();
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-                return Forbid();
-            var viewModel = new PromotionEditViewModel
-            {
-                Id = promotion.Id,
-                Code = promotion.Code,
-                Description = promotion.Description,
-                DiscountValue = promotion.DiscountValue,
-                IsPercentage = promotion.IsPercentage,
-                StartDate = promotion.StartDate,
-                EndDate = promotion.EndDate,
-                MinimumOrderAmount = (int)promotion.MinimumOrderAmount,
-                UsageLimit = promotion.UsageLimit,
-                RestaurantId = restaurant.Id,
-                IsActive = promotion.IsActive
-            };
-            return View(viewModel);
-        }
-
-        // POST: Promotion Edit
-        [HttpPost]
-        [Authorize(Roles = "Admin, Owner")]
-        [ValidateAntiForgeryToken]
-        [Route("restaurants/promotions/edit/{id:int}")]
-        public async Task<IActionResult> EditPromotion(PromotionEditViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-            var promotion = await _promotionRepository.GetByIdAsync(model.Id);
-            if (promotion == null) return NotFound();
-            var restaurantId = promotion.RestaurantId ?? 0;
-            var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
-            if (restaurant == null) return NotFound();
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-                return Forbid();
-            promotion.Code = model.Code;
-            promotion.Description = model.Description;
-            promotion.DiscountValue = model.DiscountValue;
-            promotion.IsPercentage = model.IsPercentage;
-            promotion.StartDate = model.StartDate;
-            promotion.EndDate = model.EndDate;
-            promotion.MinimumOrderAmount = (int)model.MinimumOrderAmount;
-            promotion.UsageLimit = model.UsageLimit;
-            promotion.IsActive = model.IsActive;
-            try
-            {
-                await _promotionRepository.UpdateAsync(promotion);
-                TempData["SuccessMessage"] = "Promotion updated successfully!";
-                return RedirectToAction("Promotions", new { restaurantId = restaurant.Id });
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"Error updating promotion: {ex.Message}";
-                return View(model);
-            }
-        }
-
-        // POST: Promotion Delete
-        [HttpPost]
-        [Authorize(Roles = "Admin, Owner")]
-        [Route("restaurants/promotions/delete/{id:int}")]
-        public async Task<IActionResult> DeletePromotion(int id)
-        {
-            var promotion = await _promotionRepository.GetByIdAsync(id);
-            if (promotion == null) return NotFound();
-            var restaurantId = promotion.RestaurantId ?? 0;
-            var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-                return Forbid();
-            try
-            {
-                await _promotionRepository.RemoveAsync(promotion);
-                TempData["SuccessMessage"] = "Promotion deleted successfully!";
-                return RedirectToAction("Promotions", new { restaurantId = restaurant.Id });
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = $"Error deleting promotion: {ex.Message}";
-                return RedirectToAction("Promotions", new { restaurantId = restaurant.Id });
-            }
-        }
-
-        // POST: Toggle Promotion Status
-        [HttpPost]
-        [Authorize(Roles = "Admin, Owner")]
-        [Route("restaurants/promotions/toggle-status/{id:int}")]
-        public async Task<IActionResult> TogglePromotionStatus(int id)
-        {
-            var promotion = await _promotionRepository.GetByIdAsync(id);
-            if (promotion == null) return NotFound();
-            var restaurantId = promotion.RestaurantId ?? 0;
-            var restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-                return Forbid();
-            promotion.IsActive = !promotion.IsActive;
-            await _promotionRepository.UpdateAsync(promotion);
-            TempData["SuccessMessage"] = $"Promotion {(promotion.IsActive ? "activated" : "deactivated")} successfully!";
-            return RedirectToAction("Promotions", new { restaurantId = restaurant.Id });
-        }
-
-        // GET: Promotion Details
-        [HttpGet]
-        [Authorize(Roles = "Admin, Owner")]
-        [Route("restaurants/promotions/details/{id:int}")]
-        public async Task<IActionResult> PromotionDetails(int id)
-        {
-            var promotion = await _promotionRepository.GetByIdAsync(id);
-            if (promotion == null) return NotFound();
-            var restaurant = await _restaurantRepository.GetByIdAsync(promotion.RestaurantId ?? 0);
-            if (restaurant == null) return NotFound();
-            if (!IsOwnerOrAdmin(restaurant.OwnerId))
-                return Forbid();
-            var viewModel = new PromotionViewModel
-            {
-                Id = promotion.Id,
-                PromotionCode = promotion.Code,
-                Description = promotion.Description,
-                DiscountValue = promotion.DiscountValue,
-                StartDate = promotion.StartDate,
-                EndDate = promotion.EndDate,
-                MinimumOrderAmount = promotion.MinimumOrderAmount ?? 0,
-                UsageLimit = promotion.UsageLimit ?? 0,
-                RestaurantName = restaurant.Name,
-                RestaurantId = restaurant.Id,
-                IsActive = promotion.IsActive
-            };
-            return View(viewModel);
-        }
-
-        // GET: Apply Promotion
-        [HttpGet]
-        public async Task<IActionResult> ApplyPromotion(string code)
-        {
-            var promotion = await _promotionRepository.FirstOrDefaultAsync(p => p.Code == code);
-            if (promotion == null || !promotion.IsActive)
-            {
-                TempData["ErrorMessage"] = "Invalid or inactive promotion code.";
-                return RedirectToAction("Index", "Home");
-            }
-            // Check if the promotion is valid for the current user
-            var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser == null)
-            {
-                TempData["ErrorMessage"] = "You must be logged in to apply a promotion.";
-                return RedirectToAction("Login", "Account");
-            }
-            // Check if the promotion is valid for the current restaurant
-            var restaurant = await _restaurantRepository.GetByIdAsync(promotion.RestaurantId ?? 0);
-            if (restaurant == null)
-            {
-                TempData["ErrorMessage"] = "Invalid restaurant for this promotion.";
-                return RedirectToAction("Index", "Home");
-            }
-
-            // Check if the promotion is valid for the current order
-            var model = new PromotionApplyViewModel
-            {
-                PromoCode = code,
-                RestaurantId = restaurant.Id,
-                DiscountAmount = promotion.IsPercentage ? promotion.DiscountValue : 0,
-                FinalAmount = promotion.IsPercentage ? promotion.DiscountValue : 0,
-                IsPromoApplied = true,
-                TotalAmount = 0
-            };
-            return View(model);
-        }
-
-
-        // POST: Apply Promotion
-        [HttpPost]
-        [Authorize]
-        [Route("restaurants/promotions/apply/{code}")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ApplyPromotion(PromotionApplyViewModel model)
-        {
-            if (ModelState.IsValid)
             {
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser == null)
                 {
-                    TempData["ErrorMessage"] = "You must be logged in to apply a promotion.";
-                    return RedirectToAction("Login", "Account");
+                    return Unauthorized();
                 }
-                var promotion = await _promotionRepository.FirstOrDefaultAsync(p => p.Code == model.PromoCode);
-                if (promotion == null || !promotion.IsActive)
+
+                var restaurant = new Restaurant
                 {
-                    TempData["ErrorMessage"] = "Invalid or inactive promotion code.";
-                    return RedirectToAction("Index", "Home");
-                }
-                // Check if the promotion is valid for the current order
-                var restaurant = await _restaurantRepository.GetByIdAsync(promotion.RestaurantId ?? 0);
-                if (restaurant == null)
+                    Name = viewModel.Name,
+                    Description = viewModel.Description,
+                    PhoneNumber = viewModel.PhoneNumber,
+                    DeliveryTime = viewModel.DeliveryTime,
+                    WebsiteUrl = viewModel.Website,
+                    LocationUrl = viewModel.LocationUrl,
+                    DeliveryFee = viewModel.DeliveryFee,
+                    IsActive = true,
+                    OpeningTime = viewModel.OpeningTime,
+                    ClosingTime = viewModel.ClosingTime,
+                    Address = viewModel.Address?.Street ?? "",
+                    City = viewModel.Address?.City ?? "",
+                    State = viewModel.Address?.State ?? "",
+                    PostalCode = viewModel.Address?.PostalCode ?? "",
+                    TaxRate = viewModel.TaxRate,
+                    OwnerId = currentUser.Id
+                };
+
+                if (imageFile != null)
                 {
-                    TempData["ErrorMessage"] = "Invalid restaurant for this promotion.";
-                    return RedirectToAction("Index", "Home");
+                    var (fileName, filePath) = await _fileService.SaveFileAsync(imageFile, "Restaurants");
+                    restaurant.ImageUrl = filePath;
                 }
-                // Create a new promotion usage record
-                await CreatePromotionUsageRecord(promotion.Id, currentUser.Id, 0); // Assuming orderId is 0 for now
-                TempData["SuccessMessage"] = "Promotion applied successfully!";
+
+                await _unitOfWork.Restaurants.AddAsync(restaurant);
+                await _unitOfWork.SaveChangesAsync();
+
+                TempData["Success"] = "Restaurant created successfully.";
+                return RedirectToAction(nameof(Details), new { id = restaurant.Id });
             }
-            else
+            catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Failed to apply promotion.";
+                _logger.LogError(ex, "Error creating restaurant");
+                ModelState.AddModelError("", "An error occurred while creating the restaurant.");
+                var categories = await _unitOfWork.MenuItemCategories.GetAllAsync();
+                ViewBag.Categories = new SelectList(categories, "Id", "Name");
+                viewModel.Address ??= new RestaurantAddressViewModel();
+                return View(viewModel);
             }
-            return RedirectToAction("Index", "Home");
         }
 
-        // create a new promotion usage record
-        private async Task CreatePromotionUsageRecord(int promotionId, string userId, int orderId)
+        [HttpGet]
+        [Authorize(Roles = "Admin,Owner")]
+        public async Task<IActionResult> Edit(int? id)
         {
-            var usage = new PromotionUsage
+            if (id == null)
             {
-                PromotionId = promotionId,
-                UserId = userId,
-                OrderId = orderId,
-                UsedAt = DateTime.UtcNow
-            };
-            await _promoUsageRepository.AddAsync(usage);
+                return NotFound();
+            }
+
+            try
+            {
+                var restaurant = await _unitOfWork.Restaurants.GetRestaurantByIdAsync(id.Value);
+                if (restaurant == null)
+                {
+                    return NotFound();
+                }
+
+                // Check if user is authorized to edit this restaurant
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (!User.IsInRole("Admin") && restaurant.OwnerId != currentUser.Id)
+                {
+                    return Forbid();
+                }
+
+                var viewModel = new RestaurantEditViewModel
+                {
+                    Id = restaurant.Id,
+                    Name = restaurant.Name,
+                    Description = restaurant.Description,
+                    PhoneNumber = restaurant.PhoneNumber ?? "",
+                    CurrentImageUrl = restaurant.ImageUrl ?? "",
+                    EstimatedTime = restaurant.DeliveryTime ?? "30-45 min",
+                    Website = restaurant.WebsiteUrl ?? "",
+                    LocationUrl = restaurant.LocationUrl ?? "",
+                    DeliveryFee = restaurant.DeliveryFee,
+                    IsActive = restaurant.IsActive,
+                    OpeningTime = restaurant.OpeningTime ?? TimeSpan.FromHours(10),
+                    ClosingTime = restaurant.ClosingTime ?? TimeSpan.FromHours(22),
+                    CategoryId = restaurant.CategoryId,
+                    TaxRate = restaurant.TaxRate,
+
+                    Address = new RestaurantAddressViewModel
+                    {
+                        Street = restaurant.Address ?? "",
+                        City = restaurant.City ?? "",
+                        State = restaurant.State ?? "",
+                        Country = "Egypt",
+                        PostalCode = restaurant.PostalCode ?? ""
+                    }
+                };
+
+                var categories = await _unitOfWork.MenuItemCategories.GetAllAsync();
+                ViewBag.Categories = new SelectList(categories, "Id", "Name", viewModel.CategoryId);
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading restaurant edit form for ID: {Id}", id);
+                TempData["Error"] = "An error occurred while loading the edit form.";
+                return RedirectToAction(nameof(Index));
+            }
         }
-        #endregion
+
+        [HttpPost]
+        [Authorize(Roles = "Admin,Owner")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, RestaurantEditViewModel viewModel)
+        {
+            if (id != viewModel.Id)
+            {
+                return NotFound();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var categories = await _unitOfWork.MenuItemCategories.GetAllAsync();
+                ViewBag.Categories = new SelectList(categories, "Id", "Name", viewModel.CategoryId);
+                viewModel.Address ??= new RestaurantAddressViewModel();
+                TempData["Error"] = "Invalid input.";
+                return View(viewModel);
+            }
+
+            try
+            {
+                var restaurant = await _unitOfWork.Restaurants.GetRestaurantByIdAsync(id);
+                if (restaurant == null)
+                {
+                    TempData["Error"] = "Restaurant not found.";
+                    return NotFound();
+                }
+
+                // Check if user is authorized to edit this restaurant
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (!User.IsInRole("Admin") && restaurant.OwnerId != currentUser?.Id)
+                {
+                    TempData["Error"] = "Unauthorized to edit this restaurant.";
+                    return Forbid();
+                }
+
+                restaurant.Name = viewModel.Name;
+                restaurant.Description = viewModel.Description;
+                restaurant.PhoneNumber = viewModel.PhoneNumber;
+                restaurant.DeliveryTime = viewModel.EstimatedTime;
+                restaurant.WebsiteUrl = viewModel.Website;
+                restaurant.DeliveryFee = viewModel.DeliveryFee;
+                restaurant.IsActive = viewModel.IsActive;
+                restaurant.OpeningTime = viewModel.OpeningTime;
+                restaurant.ClosingTime = viewModel.ClosingTime;
+                restaurant.Address = viewModel.Address?.Street ?? "";
+                restaurant.City = viewModel.Address?.City ?? "";
+                restaurant.State = viewModel.Address?.State ?? "";
+                restaurant.PostalCode = viewModel.Address?.PostalCode ?? "";
+                restaurant.TaxRate = viewModel.TaxRate;
+                restaurant.LocationUrl = viewModel.LocationUrl;
+                restaurant.CategoryId = viewModel.CategoryId;
+
+
+                if (viewModel.NewImageFile != null)
+                {
+                    // Delete old image if exists
+                    if (!string.IsNullOrEmpty(restaurant.ImageUrl))
+                    {
+                        await _fileService.DeleteFileAsync(restaurant.ImageUrl);
+                    }
+                    var (fileName, filePath) = await _fileService.SaveFileAsync(viewModel.NewImageFile, "Restaurants");
+                    restaurant.ImageUrl = filePath;
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                TempData["Success"] = "Restaurant updated successfully.";
+                return RedirectToAction(nameof(Details), new { id = restaurant.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating restaurant with ID: {Id}", id);
+                ModelState.AddModelError("", "An error occurred while updating the restaurant.");
+                var categories = await _unitOfWork.MenuItemCategories.GetAllAsync();
+                ViewBag.Categories = new SelectList(categories, "Id", "Name");
+                viewModel.Address ??= new RestaurantAddressViewModel();
+                TempData["Error"] = "Invalid input . Please try again.";
+                return View(viewModel);
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,Owner")]
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                var restaurant = await _unitOfWork.Restaurants.GetRestaurantByIdAsync(id.Value);
+                if (restaurant == null)
+                {
+                    return NotFound();
+                }
+
+                // Check if user is authorized to delete this restaurant
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (!User.IsInRole("Admin") && restaurant.OwnerId != currentUser?.Id)
+                {
+                    return Forbid();
+                }
+
+                return View(restaurant);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading restaurant delete confirmation for ID: {Id}", id);
+                TempData["Error"] = "An error occurred while loading the delete confirmation.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpPost, ActionName("Delete")]
+        [Authorize(Roles = "Admin,Owner")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            try
+            {
+                var restaurant = await _unitOfWork.Restaurants.GetRestaurantByIdAsync(id);
+                if (restaurant == null)
+                {
+                    return NotFound();
+                }
+
+                // Check if user is authorized to delete this restaurant
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (!User.IsInRole("Admin") && restaurant.OwnerId != currentUser.Id)
+                {
+                    return Forbid();
+                }
+
+                // Delete restaurant image if exists
+                if (!string.IsNullOrEmpty(restaurant.ImageUrl))
+                {
+                    await _fileService.DeleteFileAsync(restaurant.ImageUrl);
+                }
+
+                await _unitOfWork.Restaurants.DeleteAsync(restaurant);
+                await _unitOfWork.SaveChangesAsync();
+
+                TempData["Success"] = "Restaurant deleted successfully.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting restaurant with ID: {Id}", id);
+                TempData["Error"] = "An error occurred while deleting the restaurant.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        private bool IsRestaurantOpen(TimeSpan? openingTime, TimeSpan? closingTime)
+        {
+            if (!openingTime.HasValue || !closingTime.HasValue)
+                return true;
+
+            var currentTime = DateTime.Now.TimeOfDay;
+
+            // Handle cases where restaurant closes after midnight
+            if (closingTime < openingTime)
+            {
+                return currentTime >= openingTime || currentTime <= closingTime;
+            }
+
+            return currentTime >= openingTime && currentTime <= closingTime;
+        }
     }
 }

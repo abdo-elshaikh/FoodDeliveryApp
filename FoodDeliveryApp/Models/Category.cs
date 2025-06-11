@@ -2,10 +2,8 @@
 
 namespace FoodDeliveryApp.Models
 {
-    public class RestaurantCategory
+    public class RestaurantCategory : BaseEntity
     {
-        [Key]
-        public int Id { get; set; }
 
         [Required]
         [StringLength(50)]

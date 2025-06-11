@@ -1,0 +1,200 @@
+@model FoodDeliveryApp.ViewModels.Account.ExternalLoginConfirmationViewModel
+@{
+    ViewData["Title"] = "Complete Registration";
+    ViewData["Subtitle"] = "Please complete your registration details";
+    Layout = "_LayoutAccount";
+}
+
+<div class="external-login-confirmation-form">
+    <form asp-action="ExternalLoginConfirmation" method="post" class="needs-validation" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+        <div class="form-group">
+            <label asp-for="Email" class="form-label">Email Address</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-envelope"></i>
+                </span>
+                <input asp-for="Email" class="form-control" type="email" readonly />
+            </div>
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="FirstName" class="form-label">First Name</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-user"></i>
+                </span>
+                <input asp-for="FirstName" class="form-control" required />
+            </div>
+            <span asp-validation-for="FirstName" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="LastName" class="form-label">Last Name</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-user"></i>
+                </span>
+                <input asp-for="LastName" class="form-control" required />
+            </div>
+            <span asp-validation-for="LastName" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="PhoneNumber" class="form-label">Phone Number</label>
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-phone"></i>
+                </span>
+                <input asp-for="PhoneNumber" class="form-control" type="tel" required />
+            </div>
+            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        </div>
+
+        <div class="form-check mb-3">
+            <input asp-for="AcceptTerms" class="form-check-input" required />
+            <label asp-for="AcceptTerms" class="form-check-label">
+                I accept the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a>
+            </label>
+            <span asp-validation-for="AcceptTerms" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg">
+            <i class="fas fa-check-circle me-2"></i>Complete Registration
+        </button>
+    </form>
+
+    <div class="account-links">
+        <a asp-action="Login">
+            <i class="fas fa-arrow-left me-1"></i>Back to Sign In
+        </a>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Acceptance of Terms</h6>
+                <p>By accessing and using this application, you accept and agree to be bound by the terms and provision
+                    of this agreement.</p>
+
+                <h6>2. Use License</h6>
+                <p>Permission is granted to temporarily download one copy of the application per device for personal,
+                    non-commercial transitory viewing only.</p>
+
+                <h6>3. User Account</h6>
+                <p>You are responsible for maintaining the confidentiality of your account and password and for
+                    restricting access to your computer.</p>
+
+                <h6>4. Privacy Policy</h6>
+                <p>Your use of the application is also governed by our Privacy Policy, which is incorporated into these
+                    terms by reference.</p>
+
+                <h6>5. Disclaimer</h6>
+                <p>The materials on the application are provided on an 'as is' basis. We make no warranties, expressed
+                    or implied, and hereby disclaim and negate all other warranties including, without limitation,
+                    implied warranties or conditions of merchantability, fitness for a particular purpose, or
+                    non-infringement of intellectual property or other violation of rights.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .external-login-confirmation-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group-text {
+            background-color: transparent;
+            border-right: none;
+            color: var(--text-muted);
+        }
+
+        .input-group .form-control {
+            border-left: none;
+        }
+
+        .input-group .form-control:focus {
+            border-color: var(--border-color);
+            box-shadow: none;
+        }
+
+        .input-group:focus-within {
+            box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+            border-radius: var(--border-radius);
+        }
+
+        .input-group:focus-within .input-group-text,
+        .input-group:focus-within .form-control {
+            border-color: var(--primary-color);
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .form-check-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .form-check-label a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .form-check-label a:hover {
+            text-decoration: underline;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: var(--border-radius);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--background-color);
+        }
+
+        .modal-body {
+            background-color: var(--background-color);
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+            background-color: var(--background-color);
+        }
+
+        .modal-body h6 {
+            color: var(--text-color);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-body p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+}

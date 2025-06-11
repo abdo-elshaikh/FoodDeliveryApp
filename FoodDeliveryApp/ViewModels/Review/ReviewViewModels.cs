@@ -1,59 +1,133 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Http;
 
 namespace FoodDeliveryApp.ViewModels.Review
 {
-    public class ReviewViewModel
+    public class RestaurantReviewViewModel : BaseViewModel
     {
-        public int Id { get; set; }
-        public string CustomerName { get; set; } = string.Empty;
-        public string? CustomerImageUrl { get; set; }
-        public int Rating { get; set; }
-        public string? Comment { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public int RestaurantId { get; set; }
-        public string RestaurantName { get; set; } = string.Empty;
-        public int? MenuItemId { get; set; }
-        public string? MenuItemName { get; set; }
-        public bool IsVerified { get; set; }
-        public bool IsHelpful { get; set; }
-        public int HelpfulCount { get; set; }
-    }
+        [Required(ErrorMessage = "Content is required")]
+        [StringLength(1000, ErrorMessage = "Content cannot exceed 1000 characters")]
+        [Display(Name = "Content")]
+        public string Content { get; set; }
 
-    public class CreateReviewViewModel
-    {
         [Required(ErrorMessage = "Rating is required")]
         [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5")]
-        public int Rating { get; set; }
+        [Display(Name = "Rating")]
+        public double Rating { get; set; }
 
-        [StringLength(500, ErrorMessage = "Comment cannot exceed 500 characters")]
-        public string? Comment { get; set; }
+        [Required(ErrorMessage = "User is required")]
+        [Display(Name = "User")]
+        public string UserId { get; set; }
 
+        [Required(ErrorMessage = "Restaurant is required")]
+        [Display(Name = "Restaurant")]
         public int RestaurantId { get; set; }
-        public int? MenuItemId { get; set; }
+
+        [Required(ErrorMessage = "Restaurant name is required")]
+        [Display(Name = "Restaurant Name")]
+        public string RestaurantName { get; set; } = "Restaurant Name";
+        public string UserName { get; set; } = "Unknown User";
+        public string UserImageUrl { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public bool IsVerified { get; set; }
+        public List<string> Images { get; set; } = new();
+
+        internal object ToList()
+        {
+            throw new NotImplementedException();
+        }
     }
 
-    public class EditReviewViewModel : CreateReviewViewModel
+    public class MenuItemReviewViewModel : BaseViewModel
     {
-        public int Id { get; set; }
+        [Required(ErrorMessage = "Content is required")]
+        [StringLength(1000, ErrorMessage = "Content cannot exceed 1000 characters")]
+        [Display(Name = "Content")]
+        public string Content { get; set; }
+
+        [Required(ErrorMessage = "Rating is required")]
+        [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5")]
+        [Display(Name = "Rating")]
+        public double Rating { get; set; }
+
+        [Required(ErrorMessage = "User is required")]
+        [Display(Name = "User")]
+        public string UserId { get; set; }
+
+        [Required(ErrorMessage = "Menu item is required")]
+        [Display(Name = "Menu Item")]
+        public int MenuItemId { get; set; }
+
+        [Required(ErrorMessage = "Menu item name is required")]
+        [Display(Name = "Menu Item Name")]
+        public string MenuItemName { get; set; }
+        public string UserName { get; set; }
     }
 
     public class ReviewListViewModel
     {
-        public List<ReviewViewModel> Reviews { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int CurrentPage { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
-        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
-        public string? SortBy { get; set; }
-        public string? SortOrder { get; set; }
+        public RestaurantReviewListViewModel restaurantReviewListViewModel { get; set; } = new RestaurantReviewListViewModel();
+        public MenuItemReviewListViewModel menuItemReviewListViewModel { get; set; } = new MenuItemReviewListViewModel();
     }
 
-    public class ReviewSummaryViewModel
+    public class RestaurantReviewListViewModel : BaseListViewModel<RestaurantReviewViewModel>
     {
-        public double AverageRating { get; set; }
-        public int TotalReviews { get; set; }
-        public Dictionary<int, int> RatingDistribution { get; set; } = new();
-        public List<ReviewListViewModel> RecentReviews { get; set; } = new();
+    }
+    public class MenuItemReviewListViewModel : BaseListViewModel<MenuItemReviewViewModel>
+    {
+    }
+
+    public class RestaurantReviewCreateViewModel
+    {
+        [Required(ErrorMessage = "Content is required")]
+        [StringLength(1000, ErrorMessage = "Content cannot exceed 1000 characters")]
+        [Display(Name = "Content")]
+        public string Content { get; set; }
+        [Required(ErrorMessage = "Rating is required")]
+        [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5")]
+        [Display(Name = "Rating")]
+        public double Rating { get; set; }
+
+        [Required(ErrorMessage = "User ID is required")]
+        [Display(Name = "User ID")]
+        public string UserId { get; set; }
+
+        [Required(ErrorMessage = "Restaurant ID is required")]
+        [Display(Name = "Restaurant ID")]
+        public int RestaurantId { get; set; }
+    }
+
+    public class MenuItemReviewCreateViewModel
+    {
+        [Required(ErrorMessage = "Content is required")]
+        [StringLength(1000, ErrorMessage = "Content cannot exceed 1000 characters")]
+        [Display(Name = "Content")]
+        public string Content { get; set; }
+
+        [Required(ErrorMessage = "Rating is required")]
+        [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5")]
+        [Display(Name = "Rating")]
+        public double Rating { get; set; }
+
+        [Required(ErrorMessage = "User ID is required")]
+        [Display(Name = "User ID")]
+        public string UserId { get; set; }
+
+        [Required(ErrorMessage = "Menu Item ID is required")]
+        [Display(Name = "Menu Item ID")]
+        public int MenuItemId { get; set; }
+    }
+
+    public class RestaurantReviewUpdateViewModel : RestaurantReviewCreateViewModel
+    {
+        [Required(ErrorMessage = "ID is required")]
+        [Display(Name = "ID")]
+        public int Id { get; set; }
+    }
+
+    public class MenuItemReviewUpdateViewModel : MenuItemReviewCreateViewModel
+    {
+        [Required(ErrorMessage = "ID is required")]
+        [Display(Name = "ID")]
+        public int Id { get; set; }
     }
 } 

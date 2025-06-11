@@ -1,0 +1,62 @@
+@model FoodDeliveryApp.ViewModels.Account.ProfileViewModel
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0">My Favorites</h5>
+</div>
+
+@if (!Model.Favorites.Any())
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>You haven't added any items to your favorites yet.
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var favorite in Model.Favorites)
+        {
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <img src="@favorite.ImageUrl" class="card-img-top" alt="@favorite.Name" style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        <h5 class="card-title">@favorite.Name</h5>
+                        <p class="card-text text-muted">@favorite.Description</p>
+                        <div class="d-flex justify-content-end">
+                            <a href="@Url.Action("Details", "Menu", new { id = favorite.Id })" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            <div class="btn-group">
+                                <a href="@Url.Action("Details", "Menu", new { id = favorite.Id })" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </a>
+                                <button type="button" 
+                                        class="btn btn-outline-danger btn-sm"
+                                        onclick="removeFromFavorites('@favorite.Id')">
+                                    <i class="fas fa-heart-broken me-1"></i>Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function removeFromFavorites(itemId) {
+            if (confirm('Are you sure you want to remove this item from your favorites?')) {
+                $.post('@Url.Action("RemoveFromFavorites")', { itemId: itemId })
+                    .done(function() {
+                        location.reload();
+                    })
+                    .fail(function() {
+                        alert('Failed to remove item from favorites');
+                    });
+            }
+        }
+    </script>
+} 
